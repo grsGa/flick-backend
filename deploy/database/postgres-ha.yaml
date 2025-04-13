@@ -1,0 +1,242 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: flick
+  labels:
+    app: postgres
+spec:
+  serviceName: postgres
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      initContainers:
+      - name: init-postgres-data
+        image: busybox:1.34
+        command: ["/bin/sh", "-c", "mkdir -p /var/lib/postgresql/data/pgdata && chmod 700 /var/lib/postgresql/data/pgdata && chown 999:999 /var/lib/postgresql/data/pgdata"]
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      containers:
+      - name: postgres
+        image: postgres:14
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - pg_isready -U postgres -d flick
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - pg_isready -U postgres -d flick
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: flick-secrets
+              key: db.user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: flick-secrets
+              key: db.password
+        - name: POSTGRES_DB
+          value: flick
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-config
+          mountPath: /docker-entrypoint-initdb.d
+        - name: postgres-scripts
+          mountPath: /usr/local/bin/postgres-scripts
+      - name: patroni
+        image: patroni:latest
+        env:
+        - name: PATRONI_SCOPE
+          value: flick
+        - name: PATRONI_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: PATRONI_POSTGRESQL_CONNECT_ADDRESS
+          value: $(POD_IP):5432
+        - name: PATRONI_POSTGRESQL_DATA_DIR
+          value: /var/lib/postgresql/data/pgdata
+        - name: PATRONI_RESTAPI_CONNECT_ADDRESS
+          value: $(POD_IP):8008
+        - name: PATRONI_SUPERUSER_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: flick-secrets
+              key: db.user
+        - name: PATRONI_SUPERUSER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: flick-secrets
+              key: db.password
+        - name: PATRONI_REPLICATION_USERNAME
+          value: replicator
+        - name: PATRONI_REPLICATION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: flick-secrets
+              key: db.replication.password
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: postgres-config
+        configMap:
+          name: postgres-config
+      - name: postgres-scripts
+        configMap:
+          name: postgres-scripts
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  namespace: flick
+  labels:
+    app: postgres
+    role: primary
+spec:
+  selector:
+    app: postgres
+    role: primary
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: flick
+  labels:
+    app: postgres
+    role: replica
+spec:
+  selector:
+    app: postgres
+    role: replica
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: flick
+data:
+  01-init.sql: |
+    CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replpass';
+    CREATE DATABASE flick;
+  02-setup-replication.sql: |
+    ALTER SYSTEM SET max_connections = 200;
+    ALTER SYSTEM SET max_wal_size = '1GB';
+    ALTER SYSTEM SET hot_standby = 'on';
+    ALTER SYSTEM SET wal_level = 'replica';
+    ALTER SYSTEM SET max_wal_senders = 10;
+    ALTER SYSTEM SET max_replication_slots = 10;
+    ALTER SYSTEM SET hot_standby_feedback = 'on';
+    ALTER SYSTEM SET shared_buffers = '256MB';
+    ALTER SYSTEM SET work_mem = '8MB';
+    ALTER SYSTEM SET maintenance_work_mem = '64MB';
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-scripts
+  namespace: flick
+data:
+  setup-replica.sh: |
+    #!/bin/bash
+    set -e
+    
+    if [ "$POSTGRES_ROLE" == "replica" ]; then
+      echo "Setting up replica..."
+      # 确保postgres未运行
+      pg_ctl -D $PGDATA stop -m fast || true
+      
+      # 清空数据目录
+      rm -rf $PGDATA/*
+      
+      # 执行基础备份
+      pg_basebackup -h postgres-primary -U replicator -D $PGDATA -P -v -R
+      
+      # 创建复制配置
+      cat > $PGDATA/recovery.conf <<EOF
+    standby_mode = 'on'
+    primary_conninfo = 'host=postgres-primary port=5432 user=replicator password=replpass application_name=$HOSTNAME'
+    trigger_file = '/tmp/promote_to_primary'
+    EOF
+      
+      chmod 600 $PGDATA/recovery.conf
+      
+      echo "Replica setup completed."
+    fi 

@@ -1,0 +1,46 @@
+# Go编译文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+
+# 依赖目录
+/vendor/
+
+# IDE配置
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 本地配置文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日志
+*.log
+
+# 二进制文件
+/bin/
+/dist/
+
+# 临时文件
+*.tmp
+*~
+.DS_Store
+
+# 数据库文件
+*.db
+*.sqlite
+
+# 敏感信息
+secrets/
+credentials.json
+*_secret.json
+*_credentials.json 

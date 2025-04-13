@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: flick
+  labels:
+    app: postgres
+    component: backup
+spec:
+  schedule: "0 1 * * *"  # 每天凌晨1点执行
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400  # 1天后自动删除
+      template:
+        spec:
+          containers:
+          - name: postgres-backup
+            image: postgres:14
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # 设置备份名称（包含日期时间）
+              BACKUP_NAME="flick-db-$(date +%Y%m%d-%H%M%S)"
+              
+              # 创建备份目录
+              mkdir -p /backups
+              
+              # 执行数据库备份
+              echo "开始备份数据库..."
+              PGPASSWORD=$DB_PASSWORD pg_dump -h postgres-primary -U $DB_USER -d flick -F c -Z 9 -f /backups/$BACKUP_NAME.dump
+              
+              # 如果成功，上传到对象存储
+              if [ $? -eq 0 ]; then
+                echo "备份成功，备份文件: /backups/$BACKUP_NAME.dump"
+                
+                # 复制到对象存储
+                echo "上传备份到对象存储..."
+                
+                # 使用minio客户端上传
+                mc config host add minio http://minio:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+                mc cp /backups/$BACKUP_NAME.dump minio/flick-backups/postgres/
+                
+                # 记录备份元数据
+                echo "备份完成: $BACKUP_NAME.dump, 大小: $(ls -lh /backups/$BACKUP_NAME.dump | awk '{print $5}')"
+              else
+                echo "备份失败"
+                exit 1
+              fi
+              
+              # 保留最近7天的备份，删除旧备份
+              echo "清理旧备份..."
+              mc find minio/flick-backups/postgres/ --older-than 7d --exec "mc rm {}"
+              
+              echo "备份过程完成"
+            env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: flick-secrets
+                  key: db.user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flick-secrets
+                  key: db.password
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: accesskey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: secretkey
+            volumeMounts:
+            - name: backup-volume
+              mountPath: /backups
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-volume
+            persistentVolumeClaim:
+              claimName: postgres-backup-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backup-pvc
+  namespace: flick
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard 
