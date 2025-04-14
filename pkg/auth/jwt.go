@@ -162,4 +162,41 @@ func ValidateRefreshToken(tokenString string) (string, error) {
 
 	log.Debug("Invalid refresh token")
 	return "", ErrInvalidToken
+}
+
+// ValidateToken 包级函数，用于验证JWT令牌
+// 这个函数是为了方便中间件调用，它使用配置中的JWT密钥
+func ValidateToken(tokenString string) (*Claims, error) {
+	cfg := config.GetConfig()
+	log := config.GetLogger()
+	
+	// 解析令牌
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// 验证签名算法
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("非预期的签名方法: %v", token.Header["alg"])
+		}
+		return []byte(cfg.JWTSecret), nil
+	})
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			log.Debug("Token expired")
+			return nil, ErrExpiredToken
+		}
+		log.Debug("Token validation failed", zap.Error(err))
+		return nil, ErrInvalidToken
+	}
+
+	if !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	// 获取声明
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, ErrInvalidToken
+	}
+
+	return claims, nil
 } 
