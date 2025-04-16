@@ -50,6 +50,8 @@ type UserRepository interface {
 	GetSession(ctx context.Context, id string) (*models.UserSession, error)
 	DeleteSession(ctx context.Context, id string) error
 	DeleteUserSessions(ctx context.Context, userID string) error
+	GetActiveSessionsForUser(ctx context.Context, userID string) ([]*models.UserSession, error)
+	UpdateSession(ctx context.Context, session *models.UserSession) error
 	
 	// 活动日志相关操作
 	LogUserActivity(ctx context.Context, activity *models.UserActivity) error
