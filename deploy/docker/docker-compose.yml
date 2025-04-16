@@ -25,6 +25,8 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -66,6 +68,10 @@ services:
     image: flick/user-service:latest
     container_name: flick-user-service
     restart: unless-stopped
+    ports:
+      - "8081:8081"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -102,6 +108,10 @@ services:
     image: flick/content-service:latest
     container_name: flick-content-service
     restart: unless-stopped
+    ports:
+      - "8082:8082"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -138,6 +148,10 @@ services:
     image: flick/recommendation-service:latest
     container_name: flick-recommendation-service
     restart: unless-stopped
+    ports:
+      - "8085:8085"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -174,6 +188,10 @@ services:
     image: flick/notification-service:latest
     container_name: flick-notification-service
     restart: unless-stopped
+    ports:
+      - "8084:8084"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -210,6 +228,10 @@ services:
     image: flick/interaction-service:latest
     container_name: flick-interaction-service
     restart: unless-stopped
+    ports:
+      - "8083:8083"
+    env_file:
+      - ../../.env
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -241,6 +263,8 @@ services:
     image: postgres:14-alpine
     container_name: flick-postgres
     restart: unless-stopped
+    env_file:
+      - ../../.env
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -271,6 +295,8 @@ services:
     image: redis:7-alpine
     container_name: flick-redis
     restart: unless-stopped
+    env_file:
+      - ../../.env
     command: redis-server --requirepass redis123
     ports:
       - "6379:6379"
@@ -298,6 +324,8 @@ services:
     image: prom/prometheus:latest
     container_name: flick-prometheus
     restart: unless-stopped
+    env_file:
+      - ../../.env
     volumes:
       - ../../deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
@@ -316,6 +344,8 @@ services:
     image: grafana/grafana:latest
     container_name: flick-grafana
     restart: unless-stopped
+    env_file:
+      - ../../.env
     ports:
       - "3000:3000"
     volumes:
@@ -332,6 +362,8 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: flick-jaeger
     restart: unless-stopped
+    env_file:
+      - ../../.env
     ports:
       - "16686:16686" # UI
       - "14268:14268" # Collector HTTP
