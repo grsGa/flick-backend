@@ -2,12 +2,19 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
+	"backend/pkg/auth"
+	"backend/pkg/config"
 	"backend/pkg/models"
 	"backend/services/user/repository"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/zerolog"
 )
@@ -74,9 +81,10 @@ type UserProfileUpdate struct {
 
 // NewUserRequest 新用户请求
 type NewUserRequest struct {
-	Email     string `json:"email" binding:"required,email"`
-	Username  string `json:"username" binding:"required,min=3,max=30"`
-	Password  string `json:"password" binding:"required,min=8"`
+	Email       string `json:"email" binding:"required,email"`
+	Username    string `json:"username" binding:"required,min=3,max=30"`
+	Password    string `json:"password" binding:"required,min=8"`
+	PhoneNumber string `json:"phone_number" binding:"required"`
 }
 
 // LoginRequest 登录请求
@@ -191,30 +199,851 @@ func (s *UserServiceImpl) GetCurrentUserHandler(w http.ResponseWriter, r *http.R
 
 // UpdateCurrentUserHandler 处理更新当前用户请求
 func (s *UserServiceImpl) UpdateCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取当前用户
+	user, err := s.repo.GetUserByID(r.Context(), userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("获取用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 解析请求体
+	var updateReq struct {
+		Username        *string `json:"username,omitempty"`
+		DisplayName     *string `json:"display_name,omitempty"`
+		Bio             *string `json:"bio,omitempty"`
+		ProfileComplete *bool   `json:"profile_complete,omitempty"`
+	}
+	
+	err = json.NewDecoder(r.Body).Decode(&updateReq)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("无法解析更新请求")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析请求",
+		})
+		return
+	}
+	
+	// 更新字段
+	updated := false
+	
+	if updateReq.Username != nil && *updateReq.Username != user.Username {
+		// 检查用户名是否已存在
+		existingUser, err := s.repo.GetUserByUsername(r.Context(), *updateReq.Username)
+		if err == nil && existingUser != nil && existingUser.ID != user.ID {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "username_exists",
+				Description: "该用户名已被使用",
+			})
+			return
+		}
+		
+		user.Username = *updateReq.Username
+		updated = true
+	}
+	
+	if updateReq.DisplayName != nil {
+		user.DisplayName = *updateReq.DisplayName
+		updated = true
+	}
+	
+	if updateReq.Bio != nil {
+		user.Bio = *updateReq.Bio
+		updated = true
+	}
+	
+	if updateReq.ProfileComplete != nil {
+		user.ProfileComplete = *updateReq.ProfileComplete
+		updated = true
+	}
+	
+	// 如果有更新，保存到数据库
+	if updated {
+		err = s.repo.UpdateUser(r.Context(), user)
+		if err != nil {
+			s.logger.Error().Err(err).Str("userID", userID).Msg("更新用户资料失败")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "server_error",
+				Description: "更新用户资料失败",
+			})
+			return
+		}
+		
+		// 记录活动
+		activity := &models.UserActivity{
+			UserID:      user.ID,
+			ActionType:  "profile_update",
+			IPAddress:   r.RemoteAddr,
+			UserAgent:   r.UserAgent(),
+			Description: "更新用户资料",
+		}
+		
+		if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+			s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+		}
+	}
+	
+	// 返回更新后的用户信息
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
 // RegisterHandler 处理用户注册请求
 func (s *UserServiceImpl) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 解析请求体
+	var req NewUserRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("无法解析注册请求")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析请求",
+		})
+		return
+	}
+	
+	// 验证请求
+	if req.Email == "" || req.Username == "" || req.Password == "" || req.PhoneNumber == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "邮箱、用户名、密码和手机号码为必填项",
+		})
+		return
+	}
+	
+	// 验证手机号码格式（中国大陆手机号）
+	phonePattern := `^1[3-9]\d{9}$`
+	matched, _ := regexp.MatchString(phonePattern, req.PhoneNumber)
+	if !matched {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_phone",
+			Description: "请输入有效的中国大陆手机号码",
+		})
+		return
+	}
+	
+	if len(req.Password) < 8 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_password",
+			Description: "密码长度必须至少为8个字符",
+		})
+		return
+	}
+	
+	// 检查邮箱是否已存在
+	existingUser, err := s.repo.GetUserByEmail(r.Context(), req.Email)
+	if err == nil && existingUser != nil {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "email_exists",
+			Description: "该邮箱已被注册",
+		})
+		return
+	}
+	
+	// 检查用户名是否已存在
+	existingUser, err = s.repo.GetUserByUsername(r.Context(), req.Username)
+	if err == nil && existingUser != nil {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "username_exists",
+			Description: "该用户名已被使用",
+		})
+		return
+	}
+	
+	// 创建用户
+	user := &models.User{
+		Email:         req.Email,
+		Username:      req.Username,
+		PhoneNumber:   req.PhoneNumber,
+		DisplayName:   req.Username, // 默认使用用户名作为显示名
+		AccountStatus: "active",
+	}
+	
+	// 设置密码（Hash处理）
+	err = user.SetPassword(req.Password)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("密码加密失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 保存用户
+	err = s.repo.CreateUser(r.Context(), user)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("创建用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 分配普通用户角色
+	err = s.repo.AssignRoleToUser(r.Context(), user.ID, "user")
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("分配角色失败")
+	}
+	
+	// 记录用户注册活动
+	activity := &models.UserActivity{
+		UserID:      user.ID,
+		ActionType:  "user_register",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "用户注册",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+	}
+	
+	// 生成JWT令牌
+	tokenExpiry := 24 * time.Hour // 24小时
+	refreshExpiry := 7 * 24 * time.Hour // 7天
+	
+	// 准备JWT声明
+	claims := &auth.Claims{
+		UserID:   user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Roles:    []string{"user"},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "flick-api",
+		},
+	}
+	
+	// 获取配置
+	cfg := config.GetConfig()
+	
+	// 签名JWT
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成访问令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 准备刷新令牌声明
+	refreshClaims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Subject:   user.ID,
+		Issuer:    "flick-api",
+	}
+	
+	// 签名刷新令牌
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(cfg.JWTSecret + "-refresh"))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成刷新令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 创建会话
+	session := &models.UserSession{
+		UserID:       user.ID,
+		RefreshToken: refreshToken,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.UserAgent(),
+		Device:       extractDeviceInfo(r.UserAgent()),
+		LastActivity: time.Now(),
+		ExpiresAt:    time.Now().Add(refreshExpiry),
+	}
+	
+	err = s.repo.CreateSession(r.Context(), session)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("创建会话失败")
+	}
+	
+	// 返回响应
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(AuthResponse{
+		User:         user,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int(tokenExpiry.Seconds()),
+	})
 }
 
 // LoginHandler 处理用户登录请求
 func (s *UserServiceImpl) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 解析请求体
+	var req LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("无法解析登录请求")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析请求",
+		})
+		return
+	}
+	
+	// 验证请求
+	if req.UsernameOrEmail == "" || req.Password == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "用户名/邮箱和密码为必填项",
+		})
+		return
+	}
+	
+	// 根据用户名或邮箱查找用户
+	var user *models.User
+	
+	// 尝试通过邮箱查找
+	if strings.Contains(req.UsernameOrEmail, "@") {
+		user, err = s.repo.GetUserByEmail(r.Context(), req.UsernameOrEmail)
+	} else {
+		// 尝试通过用户名查找
+		user, err = s.repo.GetUserByUsername(r.Context(), req.UsernameOrEmail)
+	}
+	
+	if err != nil || user == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_credentials",
+			Description: "用户名/邮箱或密码错误",
+		})
+		return
+	}
+	
+	// 验证密码
+	if !user.CheckPassword(req.Password) {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_credentials",
+			Description: "用户名/邮箱或密码错误",
+		})
+		return
+	}
+	
+	// 检查账户状态
+	if user.AccountStatus != "active" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "account_" + user.AccountStatus,
+			Description: "账户" + user.AccountStatus,
+		})
+		return
+	}
+	
+	// 获取用户角色
+	roles, err := s.repo.GetUserRoles(r.Context(), user.ID)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("获取用户角色失败")
+		roles = []string{"user"} // 默认角色
+	}
+	
+	// 更新最后登录时间
+	now := time.Now()
+	user.LastLogin = &now
+	user.LastIPAddress = r.RemoteAddr
+	user.UserAgent = r.UserAgent()
+	
+	err = s.repo.UpdateUser(r.Context(), user)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("更新用户登录信息失败")
+	}
+	
+	// 记录登录活动
+	activity := &models.UserActivity{
+		UserID:      user.ID,
+		ActionType:  "user_login",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "用户登录",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+	}
+	
+	// 生成JWT令牌
+	tokenExpiry := 24 * time.Hour // 24小时
+	refreshExpiry := 7 * 24 * time.Hour // 7天
+	
+	// 准备JWT声明
+	claims := &auth.Claims{
+		UserID:   user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Roles:    roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "flick-api",
+		},
+	}
+	
+	// 获取配置
+	cfg := config.GetConfig()
+	
+	// 签名JWT
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成访问令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 准备刷新令牌声明
+	refreshClaims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Subject:   user.ID,
+		Issuer:    "flick-api",
+	}
+	
+	// 签名刷新令牌
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(cfg.JWTSecret + "-refresh"))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成刷新令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 创建会话
+	session := &models.UserSession{
+		UserID:       user.ID,
+		RefreshToken: refreshToken,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.UserAgent(),
+		Device:       extractDeviceInfo(r.UserAgent()),
+		LastActivity: time.Now(),
+		ExpiresAt:    time.Now().Add(refreshExpiry),
+	}
+	
+	err = s.repo.CreateSession(r.Context(), session)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("创建会话失败")
+	}
+	
+	// 返回响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(AuthResponse{
+		User:         user,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int(tokenExpiry.Seconds()),
+	})
 }
 
 // LogoutHandler 处理用户登出请求
 func (s *UserServiceImpl) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从Authorization头获取令牌
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "未提供认证令牌",
+		})
+		return
+	}
+	
+	tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+	
+	// 解析令牌
+	cfg := config.GetConfig()
+	token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.JWTSecret), nil
+	})
+	
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_token",
+			Description: "认证令牌无效",
+		})
+		return
+	}
+	
+	claims, ok := token.Claims.(*auth.Claims)
+	if !ok || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_token",
+			Description: "认证令牌无效",
+		})
+		return
+	}
+	
+	// 获取会话ID
+	sessionID := r.URL.Query().Get("session_id")
+	
+	// 如果提供了会话ID，则删除特定会话
+	if sessionID != "" {
+		session, err := s.repo.GetSession(r.Context(), sessionID)
+		if err != nil || session == nil || session.UserID != claims.UserID {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "session_not_found",
+				Description: "未找到会话",
+			})
+			return
+		}
+		
+		err = s.repo.DeleteSession(r.Context(), sessionID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("sessionID", sessionID).Msg("删除会话失败")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "server_error",
+				Description: "服务器内部错误",
+			})
+			return
+		}
+	} else {
+		// 否则，删除所有会话（全部登出）
+		err = s.repo.DeleteUserSessions(r.Context(), claims.UserID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("userID", claims.UserID).Msg("删除用户会话失败")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "server_error",
+				Description: "服务器内部错误",
+			})
+			return
+		}
+	}
+	
+	// 记录登出活动
+	activity := &models.UserActivity{
+		UserID:      claims.UserID,
+		ActionType:  "user_logout",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "用户登出",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", claims.UserID).Msg("记录活动失败")
+	}
+	
+	// 返回成功响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "已成功登出",
+	})
 }
 
 // RefreshTokenHandler 处理刷新令牌请求
 func (s *UserServiceImpl) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 解析请求体
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("无法解析刷新令牌请求")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析请求",
+		})
+		return
+	}
+	
+	if req.RefreshToken == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "刷新令牌是必需的",
+		})
+		return
+	}
+	
+	// 解析刷新令牌
+	cfg := config.GetConfig()
+	token, err := jwt.ParseWithClaims(req.RefreshToken, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.JWTSecret + "-refresh"), nil
+	})
+	
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_token",
+			Description: "刷新令牌无效",
+		})
+		return
+	}
+	
+	refreshClaims, ok := token.Claims.(*jwt.RegisteredClaims)
+	if !ok || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_token",
+			Description: "刷新令牌无效",
+		})
+		return
+	}
+	
+	// 获取用户ID
+	userID := refreshClaims.Subject
+	
+	// 获取用户
+	user, err := s.repo.GetUserByID(r.Context(), userID)
+	if err != nil || user == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_token",
+			Description: "刷新令牌无效",
+		})
+		return
+	}
+	
+	// 检查账户状态
+	if user.AccountStatus != "active" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "account_" + user.AccountStatus,
+			Description: "账户" + user.AccountStatus,
+		})
+		return
+	}
+	
+	// 获取用户角色
+	roles, err := s.repo.GetUserRoles(r.Context(), user.ID)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("获取用户角色失败")
+		roles = []string{"user"} // 默认角色
+	}
+	
+	// 生成新令牌
+	tokenExpiry := 24 * time.Hour // 24小时
+	refreshExpiry := 7 * 24 * time.Hour // 7天
+	
+	// 准备JWT声明
+	claims := &auth.Claims{
+		UserID:   user.ID,
+		Email:    user.Email,
+		Username: user.Username,
+		Roles:    roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "flick-api",
+		},
+	}
+	
+	// 签名JWT
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成访问令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 准备新的刷新令牌声明
+	newRefreshClaims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Subject:   user.ID,
+		Issuer:    "flick-api",
+	}
+	
+	// 签名新的刷新令牌
+	newRefreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, newRefreshClaims).SignedString([]byte(cfg.JWTSecret + "-refresh"))
+	if err != nil {
+		s.logger.Error().Err(err).Msg("生成刷新令牌失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 更新会话（查找与旧刷新令牌相关的会话）
+	sessions, err := s.repo.GetActiveSessionsForUser(r.Context(), user.ID)
+	if err == nil {
+		for _, session := range sessions {
+			if session.RefreshToken == req.RefreshToken {
+				// 更新会话
+				session.RefreshToken = newRefreshToken
+				session.LastActivity = time.Now()
+				session.ExpiresAt = time.Now().Add(refreshExpiry)
+				
+				err = s.repo.UpdateSession(r.Context(), session)
+				if err != nil {
+					s.logger.Warn().Err(err).Str("sessionID", session.ID).Msg("更新会话失败")
+				}
+				break
+			}
+		}
+	}
+	
+	// 记录活动
+	activity := &models.UserActivity{
+		UserID:      user.ID,
+		ActionType:  "token_refresh",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "令牌刷新",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+	}
+	
+	// 返回新令牌
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"access_token":  accessToken,
+		"refresh_token": newRefreshToken,
+		"expires_in":    int(tokenExpiry.Seconds()),
+		"token_type":    "Bearer",
+	})
+}
+
+// 辅助函数：从User-Agent提取设备信息
+func extractDeviceInfo(userAgent string) string {
+	ua := strings.ToLower(userAgent)
+	
+	// 检测设备类型
+	device := "unknown"
+	
+	if strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad") || strings.Contains(ua, "ipod") {
+		device = "iOS"
+	} else if strings.Contains(ua, "android") {
+		device = "Android"
+	} else if strings.Contains(ua, "windows") {
+		device = "Windows"
+	} else if strings.Contains(ua, "macintosh") || strings.Contains(ua, "mac os") {
+		device = "macOS"
+	} else if strings.Contains(ua, "linux") {
+		device = "Linux"
+	}
+	
+	// 检测浏览器
+	browser := "unknown"
+	
+	if strings.Contains(ua, "chrome") && !strings.Contains(ua, "chromium") {
+		browser = "Chrome"
+	} else if strings.Contains(ua, "firefox") {
+		browser = "Firefox"
+	} else if strings.Contains(ua, "safari") && !strings.Contains(ua, "chrome") {
+		browser = "Safari"
+	} else if strings.Contains(ua, "edge") {
+		browser = "Edge"
+	} else if strings.Contains(ua, "opera") || strings.Contains(ua, "opr") {
+		browser = "Opera"
+	}
+	
+	return fmt.Sprintf("%s / %s", device, browser)
 } 
