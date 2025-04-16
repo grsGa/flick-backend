@@ -142,7 +142,7 @@ func (r *PostgresRepository) AssignRoleToUser(ctx context.Context, userID, roleN
 	}
 
 	var user models.User
-	if err := r.db.WithContext(ctx).First(&user, userID).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", userID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("user not found: %w", err)
 		}
@@ -163,7 +163,7 @@ func (r *PostgresRepository) RemoveRoleFromUser(ctx context.Context, userID, rol
 	}
 
 	var user models.User
-	if err := r.db.WithContext(ctx).First(&user, userID).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", userID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("user not found: %w", err)
 		}
@@ -455,4 +455,24 @@ func (r *PostgresRepository) GetUserActivities(ctx context.Context, userID strin
 	}
 
 	return activities, total, nil
+}
+
+// GetActiveSessionsForUser 获取用户的活跃会话
+func (r *PostgresRepository) GetActiveSessionsForUser(ctx context.Context, userID string) ([]*models.UserSession, error) {
+	var sessions []*models.UserSession
+	
+	err := r.db.WithContext(ctx).
+		Where("user_id = ? AND expires_at > ?", userID, time.Now()).
+		Find(&sessions).Error
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	return sessions, nil
+}
+
+// UpdateSession 更新会话信息
+func (r *PostgresRepository) UpdateSession(ctx context.Context, session *models.UserSession) error {
+	return r.db.WithContext(ctx).Save(session).Error
 }
