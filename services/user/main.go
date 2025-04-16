@@ -54,14 +54,14 @@ func main() {
 	// 设置路由
 	r := mux.NewRouter()
 
-	// API 路由
+	// API 路由 - 注意：先定义特定路由，再定义通配符路由
+	r.HandleFunc("/api/v1/users/me", userService.GetCurrentUserHandler).Methods("GET")
+	r.HandleFunc("/api/v1/users/me", userService.UpdateCurrentUserHandler).Methods("PUT")
 	r.HandleFunc("/api/v1/users", userService.ListUsersHandler).Methods("GET")
 	r.HandleFunc("/api/v1/users", userService.CreateUserHandler).Methods("POST")
 	r.HandleFunc("/api/v1/users/{id}", userService.GetUserHandler).Methods("GET")
 	r.HandleFunc("/api/v1/users/{id}", userService.UpdateUserHandler).Methods("PUT")
 	r.HandleFunc("/api/v1/users/{id}", userService.DeleteUserHandler).Methods("DELETE")
-	r.HandleFunc("/api/v1/users/me", userService.GetCurrentUserHandler).Methods("GET")
-	r.HandleFunc("/api/v1/users/me", userService.UpdateCurrentUserHandler).Methods("PUT")
 	r.HandleFunc("/api/v1/auth/register", userService.RegisterHandler).Methods("POST")
 	r.HandleFunc("/api/v1/auth/login", userService.LoginHandler).Methods("POST")
 	r.HandleFunc("/api/v1/auth/logout", userService.LogoutHandler).Methods("POST")
