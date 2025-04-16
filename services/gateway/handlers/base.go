@@ -92,11 +92,19 @@ func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
 
+	// 获取服务配置
+	serviceConfig, exists := h.Config.Services[strings.ToLower(serviceName)]
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务未配置", "details": fmt.Sprintf("服务 '%s' 未配置", serviceName)})
+		return
+	}
+
 	// 构建目标路径
 	path := c.Request.URL.Path
 
-	// 如果请求是针对API的，移除API前缀
-	if strings.HasPrefix(path, "/api/v1") {
+	// 仅当服务URL不包含/api/v1前缀时才移除请求中的前缀
+	// 检查服务URL是否已包含/api/v1
+	if !strings.Contains(serviceConfig.URL, "/api/v1") && strings.HasPrefix(path, "/api/v1") {
 		path = strings.TrimPrefix(path, "/api/v1")
 	}
 
