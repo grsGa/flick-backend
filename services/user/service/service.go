@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/zerolog"
+	"github.com/gorilla/mux"
 )
 
 // UserService 定义用户服务接口
@@ -193,8 +195,90 @@ func (s *UserServiceImpl) DeleteUserHandler(w http.ResponseWriter, r *http.Reque
 
 // GetCurrentUserHandler 处理获取当前用户请求
 func (s *UserServiceImpl) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Not implemented"))
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取当前用户
+	user, err := s.repo.GetUserByID(r.Context(), userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("获取用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 获取用户角色
+	roles, err := s.repo.GetUserRoles(r.Context(), user.ID)
+	if err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("获取用户角色失败")
+	} else {
+		// 设置用户角色
+		for _, roleName := range roles {
+			role := models.Role{Name: roleName}
+			user.Roles = append(user.Roles, role)
+		}
+	}
+	
+	// 返回用户信息
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
 // UpdateCurrentUserHandler 处理更新当前用户请求
@@ -1046,4 +1130,992 @@ func extractDeviceInfo(userAgent string) string {
 	}
 	
 	return fmt.Sprintf("%s / %s", device, browser)
+}
+
+// GetFollowStatsHandler 处理获取用户关注统计信息请求
+func (s *UserServiceImpl) GetFollowStatsHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取关注统计信息
+	followers, following, err := s.repo.GetFollowStats(r.Context(), userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("获取关注统计信息失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 返回关注统计信息
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct {
+		Followers int64 `json:"followers"`
+		Following int64 `json:"following"`
+	}{
+		Followers: followers,
+		Following: following,
+	})
+}
+
+// UploadAvatarHandler 处理上传用户头像
+func (s *UserServiceImpl) UploadAvatarHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取当前用户
+	user, err := s.repo.GetUserByID(r.Context(), userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("获取用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 最大文件大小 (5MB)
+	maxSize := int64(5 * 1024 * 1024)
+	err = r.ParseMultipartForm(maxSize)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("解析文件失败")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析上传文件",
+		})
+		return
+	}
+	
+	// 获取上传的文件
+	file, handler, err := r.FormFile("avatar")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("获取上传文件失败")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "获取上传文件失败",
+		})
+		return
+	}
+	defer file.Close()
+	
+	// 检查文件类型
+	contentType := handler.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "只允许上传图片文件",
+		})
+		return
+	}
+	
+	// TODO: 实际项目中，这里应该将文件上传到对象存储服务如AWS S3或阿里云OSS
+	// 这里为演示简化，假设已上传并返回URL
+	// 实际项目中应该实现文件上传到存储服务的功能
+	
+	// 模拟的头像URL（实际项目中应该返回真实的URL）
+	avatarURL := fmt.Sprintf("/uploads/avatars/%s-%s", userID, handler.Filename)
+	
+	// 更新用户头像URL
+	user.AvatarURL = avatarURL
+	err = s.repo.UpdateUser(r.Context(), user)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("更新用户头像失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "更新用户头像失败",
+		})
+		return
+	}
+	
+	// 记录活动
+	activity := &models.UserActivity{
+		UserID:      user.ID,
+		ActionType:  "avatar_update",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "更新用户头像",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+	}
+	
+	// 返回成功响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct {
+		Success   bool   `json:"success"`
+		AvatarURL string `json:"avatar_url"`
+	}{
+		Success:   true,
+		AvatarURL: avatarURL,
+	})
+}
+
+// UploadCoverImageHandler 处理上传用户封面图片
+func (s *UserServiceImpl) UploadCoverImageHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取当前用户
+	user, err := s.repo.GetUserByID(r.Context(), userID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("获取用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 最大文件大小 (5MB)
+	maxSize := int64(5 * 1024 * 1024)
+	err = r.ParseMultipartForm(maxSize)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("解析文件失败")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "无法解析上传文件",
+		})
+		return
+	}
+	
+	// 获取上传的文件
+	file, handler, err := r.FormFile("cover_image")
+	if err != nil {
+		s.logger.Error().Err(err).Msg("获取上传文件失败")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "获取上传文件失败",
+		})
+		return
+	}
+	defer file.Close()
+	
+	// 检查文件类型
+	contentType := handler.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "image/") {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "只允许上传图片文件",
+		})
+		return
+	}
+	
+	// TODO: 实际项目中，这里应该将文件上传到对象存储服务如AWS S3或阿里云OSS
+	// 这里为演示简化，假设已上传并返回URL
+	// 实际项目中应该实现文件上传到存储服务的功能
+	
+	// 模拟的封面图片URL（实际项目中应该返回真实的URL）
+	coverImageURL := fmt.Sprintf("/uploads/covers/%s-%s", userID, handler.Filename)
+	
+	// 更新用户封面图片URL
+	user.CoverImageURL = coverImageURL
+	err = s.repo.UpdateUser(r.Context(), user)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Msg("更新用户封面图片失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "更新用户封面图片失败",
+		})
+		return
+	}
+	
+	// 记录活动
+	activity := &models.UserActivity{
+		UserID:      user.ID,
+		ActionType:  "cover_image_update",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: "更新用户封面图片",
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", user.ID).Msg("记录活动失败")
+	}
+	
+	// 返回成功响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct {
+		Success      bool   `json:"success"`
+		CoverImageURL string `json:"cover_image_url"`
+	}{
+		Success:      true,
+		CoverImageURL: coverImageURL,
+	})
+}
+
+// FollowUserHandler 处理关注用户请求
+func (s *UserServiceImpl) FollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取当前用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取目标用户ID（被关注的用户）
+	vars := mux.Vars(r)
+	targetID := vars["id"]
+	if targetID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "未提供目标用户ID",
+		})
+		return
+	}
+	
+	// 检查是否自己关注自己
+	if userID == targetID {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "不能关注自己",
+		})
+		return
+	}
+	
+	// 检查目标用户是否存在
+	targetUser, err := s.repo.GetUserByID(r.Context(), targetID)
+	if err != nil || targetUser == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "not_found",
+			Description: "目标用户不存在",
+		})
+		return
+	}
+	
+	// 检查是否已经关注
+	isFollowing, err := s.repo.IsFollowing(r.Context(), userID, targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Str("targetID", targetID).Msg("检查关注状态失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 如果已经关注，返回成功但不执行关注操作
+	if isFollowing {
+		// 获取关注统计
+		followers, following, err := s.repo.GetFollowStats(r.Context(), targetID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取关注统计失败")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "server_error",
+				Description: "服务器内部错误",
+			})
+			return
+		}
+		
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(FollowResponse{
+			Success:   true,
+			Followers: followers,
+			Following: following,
+		})
+		return
+	}
+	
+	// 执行关注操作
+	err = s.repo.FollowUser(r.Context(), userID, targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Str("targetID", targetID).Msg("关注用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 记录活动
+	activity := &models.UserActivity{
+		UserID:      userID,
+		ActionType:  "follow_user",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: fmt.Sprintf("关注用户 %s", targetID),
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", userID).Msg("记录活动失败")
+	}
+	
+	// 获取关注统计
+	followers, following, err := s.repo.GetFollowStats(r.Context(), targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取关注统计失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 返回成功响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(FollowResponse{
+		Success:   true,
+		Followers: followers,
+		Following: following,
+	})
+}
+
+// UnfollowUserHandler 处理取消关注用户请求
+func (s *UserServiceImpl) UnfollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取当前用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取目标用户ID（被取消关注的用户）
+	vars := mux.Vars(r)
+	targetID := vars["id"]
+	if targetID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "未提供目标用户ID",
+		})
+		return
+	}
+	
+	// 检查目标用户是否存在
+	targetUser, err := s.repo.GetUserByID(r.Context(), targetID)
+	if err != nil || targetUser == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "not_found",
+			Description: "目标用户不存在",
+		})
+		return
+	}
+	
+	// 检查是否已经关注
+	isFollowing, err := s.repo.IsFollowing(r.Context(), userID, targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Str("targetID", targetID).Msg("检查关注状态失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 如果没有关注，返回成功但不执行取消关注操作
+	if !isFollowing {
+		// 获取关注统计
+		followers, following, err := s.repo.GetFollowStats(r.Context(), targetID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取关注统计失败")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "server_error",
+				Description: "服务器内部错误",
+			})
+			return
+		}
+		
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(FollowResponse{
+			Success:   true,
+			Followers: followers,
+			Following: following,
+		})
+		return
+	}
+	
+	// 执行取消关注操作
+	err = s.repo.UnfollowUser(r.Context(), userID, targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("userID", userID).Str("targetID", targetID).Msg("取消关注用户失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 记录活动
+	activity := &models.UserActivity{
+		UserID:      userID,
+		ActionType:  "unfollow_user",
+		IPAddress:   r.RemoteAddr,
+		UserAgent:   r.UserAgent(),
+		Description: fmt.Sprintf("取消关注用户 %s", targetID),
+	}
+	
+	if err := s.repo.LogUserActivity(r.Context(), activity); err != nil {
+		s.logger.Warn().Err(err).Str("userID", userID).Msg("记录活动失败")
+	}
+	
+	// 获取关注统计
+	followers, following, err := s.repo.GetFollowStats(r.Context(), targetID)
+	if err != nil {
+		s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取关注统计失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 返回成功响应
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(FollowResponse{
+		Success:   true,
+		Followers: followers,
+		Following: following,
+	})
+}
+
+// GetUserFollowersHandler 处理获取用户粉丝列表请求
+func (s *UserServiceImpl) GetUserFollowersHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取当前用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取目标用户ID
+	vars := mux.Vars(r)
+	targetID := vars["id"]
+	if targetID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "未提供目标用户ID",
+		})
+		return
+	}
+	
+	// 检查目标用户是否存在
+	targetUser, err := s.repo.GetUserByID(r.Context(), targetID)
+	if err != nil || targetUser == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "not_found",
+			Description: "目标用户不存在",
+		})
+		return
+	}
+	
+	// 获取分页参数
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+	
+	page := 1
+	pageSize := 20
+	
+	if pageStr != "" {
+		pageVal, err := strconv.Atoi(pageStr)
+		if err == nil && pageVal > 0 {
+			page = pageVal
+		}
+	}
+	
+	if pageSizeStr != "" {
+		pageSizeVal, err := strconv.Atoi(pageSizeStr)
+		if err == nil && pageSizeVal > 0 && pageSizeVal <= 100 {
+			pageSize = pageSizeVal
+		}
+	}
+	
+	// 计算偏移量
+	offset := (page - 1) * pageSize
+	
+	// 获取粉丝列表
+	followers, total, err := s.repo.GetFollowers(r.Context(), targetID, offset, pageSize)
+	if err != nil {
+		s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取粉丝列表失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 返回粉丝列表
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct {
+		Data    []*models.User `json:"data"`
+		Total   int64          `json:"total"`
+		Page    int            `json:"page"`
+		PerPage int            `json:"per_page"`
+	}{
+		Data:    followers,
+		Total:   total,
+		Page:    page,
+		PerPage: pageSize,
+	})
+}
+
+// GetUserFollowingHandler 处理获取用户关注列表请求
+func (s *UserServiceImpl) GetUserFollowingHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+	
+	// 从请求中获取当前用户ID
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// 尝试从Authorization头部获取
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "unauthorized",
+				Description: "未提供认证令牌",
+			})
+			return
+		}
+		
+		tokenStr := authHeader[7:] // 去掉"Bearer "前缀
+		
+		// 解析令牌
+		cfg := config.GetConfig()
+		token, err := jwt.ParseWithClaims(tokenStr, &auth.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JWTSecret), nil
+		})
+		
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		claims, ok := token.Claims.(*auth.Claims)
+		if !ok || !token.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{
+				Error: "invalid_token",
+				Description: "认证令牌无效",
+			})
+			return
+		}
+		
+		userID = claims.UserID
+	}
+	
+	// 确保有用户ID
+	if userID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "unauthorized",
+			Description: "无法识别用户",
+		})
+		return
+	}
+	
+	// 获取目标用户ID
+	vars := mux.Vars(r)
+	targetID := vars["id"]
+	if targetID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "invalid_request",
+			Description: "未提供目标用户ID",
+		})
+		return
+	}
+	
+	// 检查目标用户是否存在
+	targetUser, err := s.repo.GetUserByID(r.Context(), targetID)
+	if err != nil || targetUser == nil {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "not_found",
+			Description: "目标用户不存在",
+		})
+		return
+	}
+	
+	// 获取分页参数
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+	
+	page := 1
+	pageSize := 20
+	
+	if pageStr != "" {
+		pageVal, err := strconv.Atoi(pageStr)
+		if err == nil && pageVal > 0 {
+			page = pageVal
+		}
+	}
+	
+	if pageSizeStr != "" {
+		pageSizeVal, err := strconv.Atoi(pageSizeStr)
+		if err == nil && pageSizeVal > 0 && pageSizeVal <= 100 {
+			pageSize = pageSizeVal
+		}
+	}
+	
+	// 计算偏移量
+	offset := (page - 1) * pageSize
+	
+	// 获取关注列表
+	following, total, err := s.repo.GetFollowing(r.Context(), targetID, offset, pageSize)
+	if err != nil {
+		s.logger.Error().Err(err).Str("targetID", targetID).Msg("获取关注列表失败")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error: "server_error",
+			Description: "服务器内部错误",
+		})
+		return
+	}
+	
+	// 返回关注列表
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct {
+		Data    []*models.User `json:"data"`
+		Total   int64          `json:"total"`
+		Page    int            `json:"page"`
+		PerPage int            `json:"per_page"`
+	}{
+		Data:    following,
+		Total:   total,
+		Page:    page,
+		PerPage: pageSize,
+	})
 } 
