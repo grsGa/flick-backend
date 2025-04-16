@@ -57,6 +57,13 @@ func main() {
 	// API 路由 - 注意：先定义特定路由，再定义通配符路由
 	r.HandleFunc("/api/v1/users/me", userService.GetCurrentUserHandler).Methods("GET")
 	r.HandleFunc("/api/v1/users/me", userService.UpdateCurrentUserHandler).Methods("PUT")
+	r.HandleFunc("/api/v1/users/me/follow-stats", userService.GetFollowStatsHandler).Methods("GET")
+	r.HandleFunc("/api/v1/users/me/avatar", userService.UploadAvatarHandler).Methods("POST")
+	r.HandleFunc("/api/v1/users/me/cover-image", userService.UploadCoverImageHandler).Methods("POST")
+	r.HandleFunc("/api/v1/users/{id}/followers", userService.GetUserFollowersHandler).Methods("GET")
+	r.HandleFunc("/api/v1/users/{id}/following", userService.GetUserFollowingHandler).Methods("GET")
+	r.HandleFunc("/api/v1/users/{id}/follow", userService.FollowUserHandler).Methods("POST")
+	r.HandleFunc("/api/v1/users/{id}/follow", userService.UnfollowUserHandler).Methods("DELETE")
 	r.HandleFunc("/api/v1/users", userService.ListUsersHandler).Methods("GET")
 	r.HandleFunc("/api/v1/users", userService.CreateUserHandler).Methods("POST")
 	r.HandleFunc("/api/v1/users/{id}", userService.GetUserHandler).Methods("GET")
