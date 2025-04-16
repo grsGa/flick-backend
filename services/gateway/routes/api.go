@@ -6,7 +6,35 @@ import (
 	"backend/services/gateway/middleware"
 	
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
+
+// AddRoute 添加自定义路由并处理可能包含参数的路径
+func AddRoute(router *gin.Engine, method string, path string, handler gin.HandlerFunc) {
+	// 构建API路径前缀
+	apiPath := "/api/v1" + path
+	
+	// 根据HTTP方法注册路由
+	switch method {
+	case http.MethodGet:
+		router.GET(apiPath, handler)
+	case http.MethodPost:
+		router.POST(apiPath, handler)
+	case http.MethodPut:
+		router.PUT(apiPath, handler)
+	case http.MethodDelete:
+		router.DELETE(apiPath, handler)
+	case http.MethodPatch:
+		router.PATCH(apiPath, handler)
+	case http.MethodHead:
+		router.HEAD(apiPath, handler)
+	case http.MethodOptions:
+		router.OPTIONS(apiPath, handler)
+	default:
+		// 默认为GET
+		router.GET(apiPath, handler)
+	}
+}
 
 // SetupAPIRoutes 配置API路由
 func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
@@ -108,4 +136,12 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	adminRoutes.GET("/recommendations/ab-tests/:id/metrics", recommendationHandler.GetABTestMetrics)
 	adminRoutes.PUT("/recommendations/ab-tests/:id", recommendationHandler.UpdateABTest)
 	adminRoutes.DELETE("/recommendations/ab-tests/:id", recommendationHandler.DeleteABTest)
+
+	// 用户资料相关路由 - 这些路由会被转发到用户服务
+	AddRoute(router, http.MethodGet, "/users/me/follow-stats", userHandler.GetUserFollowStats)
+	AddRoute(router, http.MethodPost, "/users/me/avatar", userHandler.UploadAvatar)
+	AddRoute(router, http.MethodPost, "/users/me/cover-image", userHandler.UploadCoverImage)
+	AddRoute(router, http.MethodGet, "/users/{id}/follow", userHandler.GetUserFollowers)
+	AddRoute(router, http.MethodPost, "/users/{id}/follow", userHandler.FollowUser)
+	AddRoute(router, http.MethodDelete, "/users/{id}/follow", userHandler.UnfollowUser)
 } 
