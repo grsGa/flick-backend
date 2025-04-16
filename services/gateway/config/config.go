@@ -113,23 +113,23 @@ func LoadConfig() (*Config, error) {
 	defaultServices := map[string]ServiceConfig{
 		"user": {
 			Name: "user-service",
-			URL:  "http://localhost:8081/api/v1",
+			URL:  "http://user-service:8081/api/v1",
 		},
 		"content": {
 			Name: "content-service",
-			URL:  "http://localhost:8082/api/v1",
+			URL:  "http://content-service:8082/api/v1",
 		},
 		"interaction": {
 			Name: "interaction-service",
-			URL:  "http://localhost:8083/api/v1",
+			URL:  "http://interaction-service:8083/api/v1",
 		},
 		"notification": {
 			Name: "notification-service",
-			URL:  "http://localhost:8084/api/v1",
+			URL:  "http://notification-service:8084/api/v1",
 		},
 		"recommendation": {
 			Name: "recommendation-service",
-			URL:  "http://localhost:8085/api/v1",
+			URL:  "http://recommendation-service:8085/api/v1",
 		},
 	}
 
