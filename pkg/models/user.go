@@ -13,7 +13,7 @@ type User struct {
 	Username        string         `json:"username" gorm:"uniqueIndex;size:50;not null"`
 	Email           string         `json:"email" gorm:"uniqueIndex;not null"`
 	Password        string         `json:"-" gorm:"not null"` // 不返回密码
-	PhoneNumber     string         `json:"phone_number" gorm:"uniqueIndex;size:20"`
+	PhoneNumber     string         `json:"phone_number" gorm:"uniqueIndex;size:20"` // 对手机号码添加唯一索引
 	DisplayName     string         `json:"display_name" gorm:"size:100"`
 	Bio             string         `json:"bio" gorm:"size:500"`
 	AvatarURL       string         `json:"avatar_url"`
@@ -25,7 +25,7 @@ type User struct {
 	LastLogin       *time.Time     `json:"last_login"`
 	LastIPAddress   string         `json:"-"` // 不返回IP地址
 	UserAgent       string         `json:"-"` // 不返回用户代理
-	Roles           []Role         `json:"roles" gorm:"many2many:user_roles;"`
+	Roles           []Role         `json:"roles" gorm:"many2many:flick_user_roles;"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
@@ -71,7 +71,7 @@ type Role struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-	Users       []User         `json:"-" gorm:"many2many:user_roles;"`
+	Users       []User         `json:"-" gorm:"many2many:flick_user_roles;"`
 }
 
 // UserVerification 用户验证（邮箱、手机验证码等）
