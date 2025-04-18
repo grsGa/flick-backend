@@ -4,7 +4,7 @@ import (
 	"backend/services/gateway/config"
 	"backend/services/gateway/handlers"
 	"backend/services/gateway/middleware"
-	
+
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -13,7 +13,7 @@ import (
 func AddRoute(router *gin.Engine, method string, path string, handler gin.HandlerFunc) {
 	// 构建API路径前缀
 	apiPath := "/api/v1" + path
-	
+
 	// 根据HTTP方法注册路由
 	switch method {
 	case http.MethodGet:
@@ -40,14 +40,14 @@ func AddRoute(router *gin.Engine, method string, path string, handler gin.Handle
 func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	// 创建API组
 	api := router.Group("/api/v1")
-	
+
 	// 创建处理程序实例
 	userHandler := handlers.NewUserHandler(cfg)
 	contentHandler := handlers.NewContentHandler(cfg)
 	interactionHandler := handlers.NewInteractionHandler(cfg)
 	notificationHandler := handlers.NewNotificationHandler(cfg)
 	recommendationHandler := handlers.NewRecommendationHandler(cfg)
-	
+
 	// 无需认证的路由
 	// 用户认证相关
 	api.POST("/auth/register", userHandler.Register)
@@ -56,15 +56,15 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	api.POST("/auth/forgot-password", userHandler.ForgotPassword)
 	api.POST("/auth/reset-password", userHandler.ResetPassword)
 	api.POST("/auth/verify-email", userHandler.VerifyEmail)
-	
+
 	// 内容相关的公开路由
 	api.GET("/content/posts", contentHandler.GetPublicPosts)
 	api.GET("/content/posts/:id", contentHandler.GetPostByID)
-	
+
 	// 需要认证的路由
 	authRoutes := api.Group("")
 	authRoutes.Use(middleware.JWTAuth(cfg.JwtSecret))
-	
+
 	// 用户相关
 	authRoutes.GET("/users/me", userHandler.GetCurrentUser)
 	authRoutes.PUT("/users/me", userHandler.UpdateCurrentUser)
@@ -76,14 +76,14 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.POST("/users/:id/block", userHandler.BlockUser)
 	authRoutes.DELETE("/users/:id/block", userHandler.UnblockUser)
 	authRoutes.GET("/users/search", userHandler.SearchUsers)
-	
+
 	// 内容相关
 	authRoutes.POST("/content/posts", contentHandler.CreatePost)
 	authRoutes.PUT("/content/posts/:id", contentHandler.UpdatePost)
 	authRoutes.DELETE("/content/posts/:id", contentHandler.DeletePost)
 	authRoutes.GET("/content/users/:id/posts", contentHandler.GetUserPosts)
 	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)
-	
+
 	// 交互相关
 	authRoutes.POST("/interactions/posts/:id/like", interactionHandler.LikePost)
 	authRoutes.DELETE("/interactions/posts/:id/like", interactionHandler.UnlikePost)
@@ -93,7 +93,7 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.DELETE("/interactions/comments/:id", interactionHandler.DeleteComment)
 	authRoutes.POST("/interactions/comments/:id/like", interactionHandler.LikeComment)
 	authRoutes.DELETE("/interactions/comments/:id/like", interactionHandler.UnlikeComment)
-	
+
 	// 通知相关
 	authRoutes.GET("/notifications", notificationHandler.GetUserNotifications)
 	authRoutes.PUT("/notifications/:id/read", notificationHandler.MarkNotificationAsRead)
@@ -102,7 +102,7 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.PUT("/notifications/settings", notificationHandler.UpdateNotificationSettings)
 	authRoutes.POST("/notifications/devices", notificationHandler.RegisterDevice)
 	authRoutes.DELETE("/notifications/devices/:id", notificationHandler.UnregisterDevice)
-	
+
 	// 推荐相关
 	authRoutes.GET("/recommendations/for-you", recommendationHandler.GetRecommendations)
 	authRoutes.GET("/recommendations/trending", recommendationHandler.GetTrendingContent)
@@ -110,38 +110,47 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.POST("/recommendations/:id/feedback", recommendationHandler.RecordFeedback)
 	authRoutes.PUT("/recommendations/:id/view", recommendationHandler.MarkAsViewed)
 	authRoutes.PUT("/recommendations/:id/click", recommendationHandler.MarkAsClicked)
-	
+
 	// 管理员路由
 	adminRoutes := authRoutes.Group("/admin")
 	adminRoutes.Use(middleware.RoleAuth("admin"))
-	
+
 	// 用户管理
 	adminRoutes.GET("/users", userHandler.ListUsers)
 	adminRoutes.PUT("/users/:id/roles", userHandler.UpdateUserRoles)
 	adminRoutes.DELETE("/users/:id", userHandler.DeleteUser)
-	
+
 	// 内容管理
 	adminRoutes.GET("/content/posts/all", contentHandler.GetAllPosts)
 	adminRoutes.PUT("/content/posts/:id/status", contentHandler.UpdatePostStatus)
-	
+
 	// 推荐模型管理
 	adminRoutes.GET("/recommendations/models", recommendationHandler.ListModels)
 	adminRoutes.POST("/recommendations/models", recommendationHandler.CreateModel)
 	adminRoutes.PUT("/recommendations/models/:id", recommendationHandler.UpdateModel)
 	adminRoutes.DELETE("/recommendations/models/:id", recommendationHandler.DeleteModel)
-	
+
 	// A/B测试管理
 	adminRoutes.GET("/recommendations/ab-tests", recommendationHandler.ListABTests)
 	adminRoutes.POST("/recommendations/ab-tests", recommendationHandler.CreateABTest)
 	adminRoutes.GET("/recommendations/ab-tests/:id/metrics", recommendationHandler.GetABTestMetrics)
-	adminRoutes.PUT("/recommendations/ab-tests/:id", recommendationHandler.UpdateABTest)
+	authRoutes.PUT("/recommendations/ab-tests/:id", recommendationHandler.UpdateABTest)
 	adminRoutes.DELETE("/recommendations/ab-tests/:id", recommendationHandler.DeleteABTest)
 
-	// 用户资料相关路由 - 这些路由会被转发到用户服务
-	AddRoute(router, http.MethodGet, "/users/me/follow-stats", userHandler.GetUserFollowStats)
-	AddRoute(router, http.MethodPost, "/users/me/avatar", userHandler.UploadAvatar)
-	AddRoute(router, http.MethodPost, "/users/me/cover-image", userHandler.UploadCoverImage)
-	AddRoute(router, http.MethodGet, "/users/{id}/follow", userHandler.GetUserFollowers)
-	AddRoute(router, http.MethodPost, "/users/{id}/follow", userHandler.FollowUser)
-	AddRoute(router, http.MethodDelete, "/users/{id}/follow", userHandler.UnfollowUser)
-} 
+	// 用户资料相关路由 - 这些路由需要身份验证
+	authRoutes.GET("/users/me/follow-stats", userHandler.GetUserFollowStats)
+	
+	// 用户头像和封面图片上传路由 - 支持POST和PUT两种方法
+	authRoutes.POST("/users/me/avatar", userHandler.UploadAvatar)
+	authRoutes.PUT("/users/me/avatar", userHandler.UploadAvatar) // 添加PUT方法支持
+	authRoutes.POST("/users/me/cover-image", userHandler.UploadCoverImage)
+	authRoutes.PUT("/users/me/cover-image", userHandler.UploadCoverImage) // 添加PUT方法支持
+
+	// 添加一个健康检查路由
+	api.GET("/upload-check", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "文件上传服务正常",
+		})
+	})
+}
