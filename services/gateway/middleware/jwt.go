@@ -59,6 +59,12 @@ type TokenClaims struct {
 // JWTMiddleware 创建JWT认证中间件
 func JWTMiddleware(config *JWTConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 允许OPTIONS请求通过
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		
 		// 检查是否是匿名路径
 		path := c.FullPath()
 		for _, anonPath := range config.AnonymousPaths {
