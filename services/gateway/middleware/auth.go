@@ -20,6 +20,12 @@ type JWTClaims struct {
 // JWTAuth 中间件检查JWT令牌认证
 func JWTAuth(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 允许OPTIONS请求通过
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		
 		token, err := getTokenFromRequest(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权：" + err.Error()})
@@ -35,6 +41,7 @@ func JWTAuth(jwtSecret string) gin.HandlerFunc {
 		}
 
 		// 将用户信息保存到上下文中
+		c.Set("userID", claims.UserID)
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
 
@@ -107,6 +114,12 @@ func GenerateJWT(userID, role, jwtSecret string, expirationHours int) (string, e
 // RoleAuth 中间件检查用户角色
 func RoleAuth(requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 允许OPTIONS请求通过
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		
 		// 从上下文中获取角色（需要先经过JWTAuth中间件）
 		role, exists := c.Get("role")
 
