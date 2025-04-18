@@ -39,6 +39,14 @@ type Config struct {
 	JWTSecret     string
 	JWTExpiration time.Duration
 
+	// MinIO设置
+	MinioEndpoint         string
+	MinioAccessKey        string
+	MinioSecretKey        string
+	MinioBucketName       string
+	MinioUseSSL           bool
+	MinioPublicEndpoint   string // 前端访问的公共端点
+
 	// 服务设置
 	Server struct {
 		Port string
@@ -111,6 +119,15 @@ func LoadConfig(serviceName string) (*Config, error) {
 		},
 		JWTSecret:                getEnv("JWT_SECRET", "your-secret-key"),
 		JWTExpiration:            time.Duration(getEnvAsInt("JWT_EXPIRATION_HOURS", 24)) * time.Hour,
+		
+		// MinIO配置
+		MinioEndpoint:            getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		MinioAccessKey:           getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+		MinioSecretKey:           getEnv("MINIO_SECRET_KEY", "minioadmin"),
+		MinioBucketName:          getEnv("MINIO_BUCKET_NAME", "user-media"),
+		MinioUseSSL:              getEnvAsBool("MINIO_USE_SSL", false),
+		MinioPublicEndpoint:      getEnv("MINIO_PUBLIC_ENDPOINT", ""),
+		
 		LogLevel:                 getEnv("LOG_LEVEL", "info"),
 		ServiceName:              serviceName,
 		Environment:              getEnv("ENVIRONMENT", "development"),
@@ -199,5 +216,20 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 
+	return value
+}
+
+// getEnvAsBool 将环境变量值转换为布尔值
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+	
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	
 	return value
 }
