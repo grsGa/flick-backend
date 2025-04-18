@@ -15,15 +15,17 @@ type ServiceConfig struct {
 	URL  string
 }
 
-// Config 表示API网关的配置
+// Config 应用程序配置
 type Config struct {
-	Port                int
-	Env                 string
-	JwtSecret           string
-	ReadTimeoutSeconds  int
-	WriteTimeoutSeconds int
-	IdleTimeoutSeconds  int
+	// 基本配置
+	Port                int    `envconfig:"PORT" default:"8080"`
+	Env                 string `envconfig:"ENV" default:"development"`
+	JwtSecret           string `envconfig:"JWT_SECRET" required:"true"`
+	LogLevel            string `envconfig:"LOG_LEVEL" default:"info"`
 	Services            map[string]ServiceConfig
+	ReadTimeoutSeconds  int `envconfig:"READ_TIMEOUT_SECONDS" default:"30"`
+	WriteTimeoutSeconds int `envconfig:"WRITE_TIMEOUT_SECONDS" default:"30"`
+	IdleTimeoutSeconds  int `envconfig:"IDLE_TIMEOUT_SECONDS" default:"60"`
 }
 
 // LoadConfig 从环境变量加载配置
