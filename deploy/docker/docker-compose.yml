@@ -11,6 +11,7 @@ volumes:
   redis-data:
   prometheus-data:
   grafana-data:
+  minio-data:
 
 services:
   # API网关服务
@@ -39,9 +40,14 @@ services:
       - LOG_LEVEL=info
       - METRICS_ENABLED=true
       - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false
     depends_on:
       - postgres
       - redis
+      - minio
     networks:
       - flick-network
     deploy:
@@ -84,9 +90,15 @@ services:
       - LOG_LEVEL=info
       - METRICS_ENABLED=true
       - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false
+      - MINIO_BUCKET_USER=user-media
     depends_on:
       - postgres
       - redis
+      - minio
     networks:
       - flick-network
     deploy:
@@ -124,9 +136,15 @@ services:
       - LOG_LEVEL=info
       - METRICS_ENABLED=true
       - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false
+      - MINIO_BUCKET_CONTENT=content-media
     depends_on:
       - postgres
       - redis
+      - minio
     networks:
       - flick-network
     deploy:
@@ -371,3 +389,60 @@ services:
       - flick-network
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411 
+
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: flick-minio
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server --console-address ":9001" /data
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"  # API端口
+      - "9001:9001"  # 控制台端口
+    networks:
+      - flick-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+
+  # 初始化MinIO存储桶
+  minio-init:
+    image: minio/mc:latest
+    container_name: flick-minio-init
+    depends_on:
+      - minio
+    restart: "no"
+    env_file:
+      - ../../.env
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10 &&
+      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin &&
+      /usr/bin/mc mb --ignore-existing myminio/user-media &&
+      /usr/bin/mc mb --ignore-existing myminio/content-media &&
+      /usr/bin/mc anonymous set download myminio/user-media &&
+      /usr/bin/mc anonymous set download myminio/content-media &&
+      exit 0;
+      "
+    networks:
+      - flick-network 
