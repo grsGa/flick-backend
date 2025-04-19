@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -31,11 +31,11 @@ type TracerConfig struct {
 	Environment string
 	// 追踪采样率 (0.0-1.0)
 	SamplingRate float64
-	// 导出器类型: "jaeger", "otlp"
+	// 导出器类型: "otlp-http", "otlp-grpc"
 	ExporterType string
-	// Jaeger导出器配置
-	JaegerEndpoint string
-	// OTLP导出器配置
+	// 以下两个字段已被弃用
+	// JaegerEndpoint string - 已弃用，使用 OTLPEndpoint 代替
+	// 导出器端点配置
 	OTLPEndpoint string
 	// 是否开启调试模式
 	Debug bool
@@ -48,9 +48,8 @@ func DefaultTracerConfig() *TracerConfig {
 		ServiceVersion: "0.1.0",
 		Environment:    "development",
 		SamplingRate:   0.2,
-		ExporterType:   "jaeger",
-		JaegerEndpoint: "http://localhost:14268/api/traces",
-		OTLPEndpoint:   "localhost:4317",
+		ExporterType:   "otlp-http",
+		OTLPEndpoint:   "localhost:4318", // OTLP HTTP 默认端口
 		Debug:          false,
 	}
 }
@@ -73,12 +72,16 @@ func InitTracer(config *TracerConfig) (func(context.Context) error, error) {
 	var exporter sdktrace.SpanExporter
 
 	switch config.ExporterType {
-	case "jaeger":
-		exporter, err = jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.JaegerEndpoint)))
+	case "otlp-http":
+		exporter, err = otlptracehttp.New(
+			context.Background(),
+			otlptracehttp.WithEndpoint(config.OTLPEndpoint),
+			otlptracehttp.WithInsecure(),
+		)
 		if err != nil {
-			return nil, fmt.Errorf("无法创建Jaeger导出器: %w", err)
+			return nil, fmt.Errorf("无法创建OTLP HTTP导出器: %w", err)
 		}
-	case "otlp":
+	case "otlp-grpc", "otlp":
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		conn, err := grpc.DialContext(ctx, config.OTLPEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
@@ -88,7 +91,17 @@ func InitTracer(config *TracerConfig) (func(context.Context) error, error) {
 		otlpClient := otlptracegrpc.NewClient(otlptracegrpc.WithGRPCConn(conn))
 		exporter, err = otlptrace.New(context.Background(), otlpClient)
 		if err != nil {
-			return nil, fmt.Errorf("无法创建OTLP导出器: %w", err)
+			return nil, fmt.Errorf("无法创建OTLP gRPC导出器: %w", err)
+		}
+	case "jaeger":
+		// 兼容性警告，对于旧配置
+		exporter, err = otlptracehttp.New(
+			context.Background(),
+			otlptracehttp.WithEndpoint(config.OTLPEndpoint),
+			otlptracehttp.WithInsecure(),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("无法创建OTLP HTTP导出器(兼容jaeger模式): %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("不支持的导出器类型: %s", config.ExporterType)
