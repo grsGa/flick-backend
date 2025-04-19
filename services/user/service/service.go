@@ -81,6 +81,8 @@ type UserProfileUpdate struct {
 	DisplayName *string `json:"display_name,omitempty"`
 	Bio         *string `json:"bio,omitempty"`
 	PhoneNumber *string `json:"phone_number,omitempty"`
+	Location    *string `json:"location,omitempty"`
+	Website     *string `json:"website,omitempty"`
 }
 
 // NewUserRequest 新用户请求
@@ -359,6 +361,8 @@ func (s *UserServiceImpl) UpdateCurrentUserHandler(w http.ResponseWriter, r *htt
 		Username        *string `json:"username,omitempty"`
 		DisplayName     *string `json:"display_name,omitempty"`
 		Bio             *string `json:"bio,omitempty"`
+		Location        *string `json:"location,omitempty"`
+		Website         *string `json:"website,omitempty"`
 		ProfileComplete *bool   `json:"profile_complete,omitempty"`
 	}
 
@@ -399,6 +403,16 @@ func (s *UserServiceImpl) UpdateCurrentUserHandler(w http.ResponseWriter, r *htt
 
 	if updateReq.Bio != nil {
 		user.Bio = *updateReq.Bio
+		updated = true
+	}
+
+	if updateReq.Location != nil {
+		user.Location = *updateReq.Location
+		updated = true
+	}
+
+	if updateReq.Website != nil {
+		user.Website = *updateReq.Website
 		updated = true
 	}
 
