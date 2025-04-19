@@ -12,10 +12,12 @@ type User struct {
 	ID              string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Username        string         `json:"username" gorm:"uniqueIndex;size:50;not null"`
 	Email           string         `json:"email" gorm:"uniqueIndex;not null"`
-	Password        string         `json:"-" gorm:"not null"` // 不返回密码
+	Password        string         `json:"-" gorm:"not null"`                       // 不返回密码
 	PhoneNumber     string         `json:"phone_number" gorm:"uniqueIndex;size:20"` // 对手机号码添加唯一索引
 	DisplayName     string         `json:"display_name" gorm:"size:100"`
 	Bio             string         `json:"bio" gorm:"size:500"`
+	Location        string         `json:"location" gorm:"size:100"`
+	Website         string         `json:"website" gorm:"size:200"`
 	AvatarURL       string         `json:"avatar_url"`
 	CoverImageURL   string         `json:"cover_image_url"`
 	ProfileComplete bool           `json:"profile_complete" gorm:"default:false"`
@@ -36,7 +38,7 @@ type UserCredential struct {
 	ID          string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID      string         `json:"user_id" gorm:"type:uuid;not null;index"`
 	Type        string         `json:"type" gorm:"size:20;not null"` // 类型：2fa, oauth, api_key
-	Provider    string         `json:"provider" gorm:"size:20"`       // 提供者：google, github, etc
+	Provider    string         `json:"provider" gorm:"size:20"`      // 提供者：google, github, etc
 	Key         string         `json:"-"`                            // 密钥/令牌
 	Description string         `json:"description"`
 	LastUsed    *time.Time     `json:"last_used"`
@@ -49,18 +51,18 @@ type UserCredential struct {
 
 // UserSession 存储用户会话信息
 type UserSession struct {
-	ID            string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID        string         `json:"user_id" gorm:"type:uuid;not null;index"`
-	RefreshToken  string         `json:"-"`
-	IPAddress     string         `json:"-"`
-	UserAgent     string         `json:"-"`
-	Device        string         `json:"device"`
-	LastActivity  time.Time      `json:"last_activity"`
-	ExpiresAt     time.Time      `json:"expires_at"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
-	User          User           `json:"-" gorm:"foreignKey:UserID"`
+	ID           string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID       string         `json:"user_id" gorm:"type:uuid;not null;index"`
+	RefreshToken string         `json:"-"`
+	IPAddress    string         `json:"-"`
+	UserAgent    string         `json:"-"`
+	Device       string         `json:"device"`
+	LastActivity time.Time      `json:"last_activity"`
+	ExpiresAt    time.Time      `json:"expires_at"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+	User         User           `json:"-" gorm:"foreignKey:UserID"`
 }
 
 // Role 角色模型
@@ -76,28 +78,28 @@ type Role struct {
 
 // UserVerification 用户验证（邮箱、手机验证码等）
 type UserVerification struct {
-	ID          string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID      string         `json:"user_id" gorm:"type:uuid;not null;index"`
-	Type        string         `json:"type" gorm:"size:20;not null"` // email, phone, password_reset
-	Token       string         `json:"-"`                            // 验证码/令牌
-	Used        bool           `json:"used" gorm:"default:false"`
-	ExpiresAt   time.Time      `json:"expires_at"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-	User        User           `json:"-" gorm:"foreignKey:UserID"`
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID    string         `json:"user_id" gorm:"type:uuid;not null;index"`
+	Type      string         `json:"type" gorm:"size:20;not null"` // email, phone, password_reset
+	Token     string         `json:"-"`                            // 验证码/令牌
+	Used      bool           `json:"used" gorm:"default:false"`
+	ExpiresAt time.Time      `json:"expires_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	User      User           `json:"-" gorm:"foreignKey:UserID"`
 }
 
 // UserActivity 用户活动日志
 type UserActivity struct {
-	ID          string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	UserID      string         `json:"user_id" gorm:"type:uuid;not null;index"`
-	ActionType  string         `json:"action_type" gorm:"size:50;not null"` // login, profile_update, etc
-	IPAddress   string         `json:"-"`
-	UserAgent   string         `json:"-"`
-	Description string         `json:"description"`
-	CreatedAt   time.Time      `json:"created_at"`
-	User        User           `json:"-" gorm:"foreignKey:UserID"`
+	ID          string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID      string    `json:"user_id" gorm:"type:uuid;not null;index"`
+	ActionType  string    `json:"action_type" gorm:"size:50;not null"` // login, profile_update, etc
+	IPAddress   string    `json:"-"`
+	UserAgent   string    `json:"-"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	User        User      `json:"-" gorm:"foreignKey:UserID"`
 }
 
 // SetPassword 设置用户密码（hash后存储）
@@ -129,12 +131,12 @@ type UserFollow struct {
 
 // UserBlock 用户屏蔽关系
 type UserBlock struct {
-	ID          string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	BlockerID   string         `json:"blocker_id" gorm:"type:uuid;not null;index"`
-	BlockedID   string         `json:"blocked_id" gorm:"type:uuid;not null;index"`
-	Reason      string         `json:"reason" gorm:"size:200"`
-	CreatedAt   time.Time      `json:"created_at"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-	Blocker     User           `json:"-" gorm:"foreignKey:BlockerID"`
-	Blocked     User           `json:"-" gorm:"foreignKey:BlockedID"`
-} 
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	BlockerID string         `json:"blocker_id" gorm:"type:uuid;not null;index"`
+	BlockedID string         `json:"blocked_id" gorm:"type:uuid;not null;index"`
+	Reason    string         `json:"reason" gorm:"size:200"`
+	CreatedAt time.Time      `json:"created_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	Blocker   User           `json:"-" gorm:"foreignKey:BlockerID"`
+	Blocked   User           `json:"-" gorm:"foreignKey:BlockedID"`
+}
