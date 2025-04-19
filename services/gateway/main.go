@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,30 +14,46 @@ import (
 	"backend/services/gateway/routes"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
 	// 加载配置
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("加载配置失败: %v", err)
+		log.Fatal().Err(err).Msg("无法加载配置")
 	}
 
-	// 设置Gin模式
-	if cfg.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
+	// 设置日志级别
+	level, err := zerolog.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	} else {
+		zerolog.SetGlobalLevel(level)
 	}
 
-	// 初始化Router
-	router := gin.New()
+	// 初始化路由
+	r := gin.Default()
 
-	// 应用全局中间件
-	router.Use(gin.Recovery())
-	router.Use(middleware.Logger(middleware.DefaultLoggerConfig()))
-	router.Use(middleware.Cors())
+	// 设置最大multipart表单内存限制，增加到50MB
+	r.MaxMultipartMemory = 50 << 20 // 50MB
+
+	// 设置跨域中间件
+	r.Use(middleware.Cors())
+
+	// 设置请求日志中间件
+	loggerConfig := middleware.DefaultLoggerConfig()
+	loggerConfig.LogRequestBody = true
+	loggerConfig.LogResponseBody = true
+	loggerConfig.MaxBodySize = 10 << 20 // 10MB
+	r.Use(middleware.Logger(loggerConfig))
+
+	// 设置请求ID中间件
+	r.Use(middleware.RequestID())
 
 	// 健康检查路由
-	router.GET("/health", func(c *gin.Context) {
+	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 			"time":   time.Now().Format(time.RFC3339),
@@ -47,22 +61,19 @@ func main() {
 	})
 
 	// 初始化API路由
-	routes.SetupAPIRoutes(router, cfg)
+	routes.SetupAPIRoutes(r, cfg)
 
 	// 创建HTTP服务器
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      router,
-		ReadTimeout:  time.Duration(cfg.ReadTimeoutSeconds) * time.Second,
-		WriteTimeout: time.Duration(cfg.WriteTimeoutSeconds) * time.Second,
-		IdleTimeout:  time.Duration(cfg.IdleTimeoutSeconds) * time.Second,
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: r,
 	}
 
-	// 启动服务器（非阻塞）
+	// 在后台启动服务器
 	go func() {
-		log.Printf("服务器启动在 %s 端口", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("监听失败: %v", err)
+		log.Info().Msgf("服务器启动在 %s 端口", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("启动服务器失败")
 		}
 	}()
 
@@ -70,13 +81,13 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("关闭服务器...")
+	log.Info().Msg("正在关闭服务器...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("服务器强制关闭:", err)
+		log.Fatal().Err(err).Msg("服务器强制关闭")
 	}
 
-	log.Println("服务器已优雅关闭")
+	log.Info().Msg("服务器已优雅关闭")
 }
