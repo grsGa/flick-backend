@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -16,9 +16,13 @@ import (
 )
 
 // InitTracerProvider TracerProvider初始化和配置OpenTelemetry跟踪提供程序
-func InitTracerProvider(serviceName, jaegerEndpoint string) (*tracesdk.TracerProvider, error) {
-	// 创建Jaeger导出器
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(jaegerEndpoint)))
+func InitTracerProvider(serviceName, endpoint string) (*tracesdk.TracerProvider, error) {
+	// 创建OTLP HTTP导出器
+	exp, err := otlptracehttp.New(
+		context.Background(),
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithInsecure(),
+	)
 	if err != nil {
 		return nil, err
 	}
