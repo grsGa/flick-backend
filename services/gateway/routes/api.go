@@ -84,6 +84,24 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.GET("/content/users/:id/posts", contentHandler.GetUserPosts)
 	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)
 
+	// 帖子投票相关路由
+	authRoutes.POST("/content/posts/:id/vote", contentHandler.VotePoll)
+	authRoutes.GET("/content/posts/:id/poll", contentHandler.GetPollResults)
+
+	// 帖子保存相关路由
+	authRoutes.POST("/content/posts/:id/save", contentHandler.SavePost)
+	authRoutes.DELETE("/content/posts/:id/save", contentHandler.UnsavePost)
+	authRoutes.GET("/content/saved", contentHandler.GetSavedPosts)
+
+	// 热门帖子路由
+	authRoutes.GET("/content/posts/top", contentHandler.GetTopPosts)
+
+	// 帖子统计数据路由
+	authRoutes.GET("/content/posts/:id/stats", contentHandler.GetPostStats)
+
+	// 举报帖子路由
+	authRoutes.POST("/content/posts/:id/report", contentHandler.ReportPost)
+
 	// 交互相关
 	authRoutes.POST("/interactions/posts/:id/like", interactionHandler.LikePost)
 	authRoutes.DELETE("/interactions/posts/:id/like", interactionHandler.UnlikePost)
@@ -139,7 +157,7 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 
 	// 用户资料相关路由 - 这些路由需要身份验证
 	authRoutes.GET("/users/me/follow-stats", userHandler.GetUserFollowStats)
-	
+
 	// 用户头像和封面图片上传路由 - 支持POST和PUT两种方法
 	authRoutes.POST("/users/me/avatar", userHandler.UploadAvatar)
 	authRoutes.PUT("/users/me/avatar", userHandler.UploadAvatar) // 添加PUT方法支持
