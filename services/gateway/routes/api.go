@@ -83,6 +83,7 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.DELETE("/content/posts/:id", contentHandler.DeletePost)
 	authRoutes.GET("/content/users/:id/posts", contentHandler.GetUserPosts)
 	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)
+	authRoutes.POST("/content/upload", contentHandler.UploadContent)
 
 	// 帖子投票相关路由
 	authRoutes.POST("/content/posts/:id/vote", contentHandler.VotePoll)
