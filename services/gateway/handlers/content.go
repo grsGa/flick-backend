@@ -116,4 +116,44 @@ func (h *ContentHandler) DeleteMedia(c *gin.Context) {
 // SearchContent 搜索内容
 func (h *ContentHandler) SearchContent(c *gin.Context) {
 	h.HandleRequest(c, "content")
+}
+
+// VotePoll 对帖子进行投票
+func (h *ContentHandler) VotePoll(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// GetPollResults 获取投票结果
+func (h *ContentHandler) GetPollResults(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// SavePost 保存帖子
+func (h *ContentHandler) SavePost(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// UnsavePost 取消保存帖子
+func (h *ContentHandler) UnsavePost(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// GetSavedPosts 获取已保存的帖子
+func (h *ContentHandler) GetSavedPosts(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// GetTopPosts 获取热门帖子
+func (h *ContentHandler) GetTopPosts(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// GetPostStats 获取帖子统计数据
+func (h *ContentHandler) GetPostStats(c *gin.Context) {
+	h.HandleRequest(c, "content")
+}
+
+// ReportPost 举报帖子
+func (h *ContentHandler) ReportPost(c *gin.Context) {
+	h.HandleRequest(c, "content")
 } 
