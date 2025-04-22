@@ -1376,7 +1376,7 @@ func (s *UserServiceImpl) UploadAvatarHandler(w http.ResponseWriter, r *http.Req
 		Endpoint:       cfg.MinioEndpoint,
 		AccessKey:      cfg.MinioAccessKey,
 		SecretKey:      cfg.MinioSecretKey,
-		BucketName:     cfg.MinioBucketName,
+		BucketName:     "user-media",
 		UseSSL:         cfg.MinioUseSSL,
 		PublicEndpoint: cfg.MinioPublicEndpoint,
 	}
