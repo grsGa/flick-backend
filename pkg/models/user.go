@@ -140,3 +140,18 @@ type UserBlock struct {
 	Blocker   User           `json:"-" gorm:"foreignKey:BlockerID"`
 	Blocked   User           `json:"-" gorm:"foreignKey:BlockedID"`
 }
+
+// UserStats 用户统计信息
+type UserStats struct {
+	ID             string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	UserID         string         `json:"user_id" gorm:"type:uuid;not null;uniqueIndex"`
+	PostCount      int            `json:"post_count" gorm:"default:0"`
+	FollowerCount  int            `json:"follower_count" gorm:"default:0"`
+	FollowingCount int            `json:"following_count" gorm:"default:0"`
+	LikeCount      int            `json:"like_count" gorm:"default:0"`
+	CommentCount   int            `json:"comment_count" gorm:"default:0"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
+	User           User           `json:"-" gorm:"foreignKey:UserID"`
+}
