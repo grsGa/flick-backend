@@ -62,6 +62,7 @@ func main() {
 		&models.UserActivity{},
 		&models.UserFollow{},
 		&models.UserBlock{},
+		&models.UserStats{},
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("用户表迁移失败")
@@ -118,6 +119,33 @@ func main() {
 		logger.Fatal().Err(err).Msg("通知表迁移失败")
 	}
 
+	// 迁移统计相关表（新增）
+	logger.Info().Msg("迁移统计相关表...")
+	err = db.AutoMigrate(
+		&models.InteractionStats{},
+		&models.UserInteractionStats{},
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("统计表迁移失败")
+	}
+
+	// 迁移推荐系统相关表（新增）
+	logger.Info().Msg("迁移推荐系统相关表...")
+	err = db.AutoMigrate(
+		&models.UserInterest{},
+		&models.UserActivityRecord{},
+		&models.RecommendationModel{},
+		&models.ContentFeature{},
+		&models.RecommendationItem{},
+		&models.UserFeed{},
+		&models.Model{},
+		&models.ABTest{},
+		&models.UserABTestGroup{},
+	)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("推荐系统表迁移失败")
+	}
+
 	// 创建管理员角色
 	var adminRole models.Role
 	result := db.Where("name = ?", "admin").First(&adminRole)
@@ -147,4 +175,4 @@ func main() {
 	}
 
 	logger.Info().Msg("数据库初始化完成!")
-} 
+}
