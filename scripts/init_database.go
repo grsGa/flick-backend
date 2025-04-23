@@ -77,6 +77,7 @@ func main() {
 		&models.PostAuditLog{},
 		&models.PostReport{},
 		&models.SavedPost{},
+		&models.ContentMedia{},
 	)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("内容表迁移失败")
