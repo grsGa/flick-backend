@@ -12,6 +12,28 @@ import (
 )
 
 func main() {
+	// 创建永久链接ID生成函数的SQL
+	createPermalinkFunctionSQL := `
+		CREATE OR REPLACE FUNCTION gen_random_permalink() RETURNS VARCHAR(20) AS $$
+		DECLARE
+			chars TEXT := 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+			result VARCHAR(20) := '';
+			i INT;
+			rand_val INT;
+		BEGIN
+			-- 生成12位的随机字符串作为永久链接ID
+			FOR i IN 1..12 LOOP
+				-- 获取一个随机数来从字符集中选择
+				rand_val := 1 + floor(random() * 62)::INT;
+				-- 添加选择的字符到结果中
+				result := result || substr(chars, rand_val, 1);
+			END LOOP;
+			
+			RETURN result;
+		END;
+		$$ LANGUAGE plpgsql;
+	`
+
 	// 初始化日志
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"})
@@ -49,6 +71,13 @@ func main() {
 	}
 
 	logger.Info().Msg("数据库连接成功，开始初始化表...")
+
+	// 创建永久链接ID生成函数
+	logger.Info().Msg("创建永久链接ID生成函数...")
+	if err := db.Exec(createPermalinkFunctionSQL).Error; err != nil {
+		logger.Error().Err(err).Msg("创建永久链接ID生成函数失败")
+		// 继续执行，不要因为这个失败就终止整个脚本
+	}
 
 	// 使用GORM自动迁移创建表
 	// 用户相关表
