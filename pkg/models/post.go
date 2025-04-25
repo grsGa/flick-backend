@@ -110,6 +110,7 @@ func (p *PollOptions) Scan(value interface{}) error {
 // Post 帖子数据模型
 type Post struct {
 	ID            string         `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	PermalinkID   string         `json:"permalink_id" gorm:"type:varchar(20);index;not null;default:gen_random_permalink()"` // 数字性永久链接ID，类似Twitter的推文ID
 	UserID        string         `json:"user_id" gorm:"type:uuid;not null;index"`
 	Type          PostType       `json:"type" gorm:"size:20;not null;index"`
 	Title         string         `json:"title" gorm:"size:200"`
@@ -135,6 +136,8 @@ type Post struct {
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 	User          User           `json:"user" gorm:"foreignKey:UserID"`
+	IsLiked       *bool          `json:"is_liked,omitempty" gorm:"-"` // 当前用户是否已点赞，非持久化字段
+	IsSaved       *bool          `json:"is_saved,omitempty" gorm:"-"` // 当前用户是否已收藏，非持久化字段
 }
 
 // Tag 标签数据模型
