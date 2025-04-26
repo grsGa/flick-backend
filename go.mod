@@ -12,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/minio/minio-go/v7 v7.0.90
 	github.com/prometheus/client_golang v1.22.0
+	github.com/redis/go-redis/v9 v9.7.3
 	github.com/rs/zerolog v1.34.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/sirupsen/logrus v1.9.3
