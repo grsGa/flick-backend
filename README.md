@@ -31,17 +31,17 @@ Flick采用微服务架构，将不同的业务功能拆分为独立的服务。
 - 权限控制
 
 **API端点**:
-- `GET /api/v1/users` - 获取用户列表
-- `POST /api/v1/users` - 创建用户
-- `GET /api/v1/users/{id}` - 获取用户详情
-- `PUT /api/v1/users/{id}` - 更新用户
-- `DELETE /api/v1/users/{id}` - 删除用户
-- `GET /api/v1/users/me` - 获取当前用户
-- `PUT /api/v1/users/me` - 更新当前用户
-- `POST /api/v1/auth/register` - 注册
-- `POST /api/v1/auth/login` - 登录
-- `POST /api/v1/auth/logout` - 登出
-- `POST /api/v1/auth/refresh` - 刷新令牌
+- `GET /users` - 获取用户列表
+- `POST users` - 创建用户
+- `GET /users/{id}` - 获取用户详情
+- `PUT /users/{id}` - 更新用户
+- `DELETE /users/{id}` - 删除用户
+- `GET /users/me` - 获取当前用户
+- `PUT /users/me` - 更新当前用户
+- `POST /auth/register` - 注册
+- `POST /auth/login` - 登录
+- `POST /auth/logout` - 登出
+- `POST /auth/refresh` - 刷新令牌
 
 ### 2. 内容服务 (Content Service)
 
@@ -54,16 +54,16 @@ Flick采用微服务架构，将不同的业务功能拆分为独立的服务。
 - 内容审核
 
 **API端点**:
-- `GET /api/v1/content` - 获取内容列表
-- `POST /api/v1/content` - 创建内容
-- `GET /api/v1/content/{id}` - 获取内容详情
-- `PUT /api/v1/content/{id}` - 更新内容
-- `DELETE /api/v1/content/{id}` - 删除内容
-- `GET /api/v1/content/categories` - 获取分类列表
-- `GET /api/v1/content/tags` - 获取标签列表
-- `GET /api/v1/content/search` - 搜索内容
-- `GET /api/v1/content/trending` - 获取热门内容
-- `POST /api/v1/content/upload` - 上传内容
+- `GET /content` - 获取内容列表
+- `POST /content` - 创建内容
+- `GET /content/{id}` - 获取内容详情
+- `PUT /content/{id}` - 更新内容
+- `DELETE /content/{id}` - 删除内容
+- `GET /content/categories` - 获取分类列表
+- `GET /content/tags` - 获取标签列表
+- `GET /content/search` - 搜索内容
+- `GET /content/trending` - 获取热门内容
+- `POST /content/upload` - 上传内容
 
 ### 3. 交互服务 (Interaction Service)
 
@@ -76,11 +76,11 @@ Flick采用微服务架构，将不同的业务功能拆分为独立的服务。
 - 用户活动追踪
 
 **API端点**:
-- `POST /api/v1/interactions` - 创建交互
-- `GET /api/v1/interactions` - 获取交互列表
-- `GET /api/v1/interactions/{id}` - 获取交互详情
-- `PUT /api/v1/interactions/{id}` - 更新交互
-- `DELETE /api/v1/interactions/{id}` - 删除交互
+- `POST /interactions` - 创建交互
+- `GET /interactions` - 获取交互列表
+- `GET /interactions/{id}` - 获取交互详情
+- `PUT /interactions/{id}` - 更新交互
+- `DELETE /interactions/{id}` - 删除交互
 
 ### 4. 推荐服务 (Recommendation Service)
 
@@ -93,19 +93,19 @@ Flick采用微服务架构，将不同的业务功能拆分为独立的服务。
 - 推荐模型管理
 
 **API端点**:
-- `GET /api/v1/recommendations` - 获取推荐
-- `POST /api/v1/recommendations/feedback` - 记录反馈
-- `POST /api/v1/recommendations/viewed` - 标记为已查看
-- `POST /api/v1/recommendations/clicked` - 标记为已点击
-- `GET /api/v1/recommendation-models` - 获取推荐模型列表
-- `POST /api/v1/recommendation-models` - 创建推荐模型
-- `PUT /api/v1/recommendation-models/{id}` - 更新推荐模型
-- `DELETE /api/v1/recommendation-models/{id}` - 删除推荐模型
-- `GET /api/v1/recommendation-abtests` - 获取A/B测试列表
-- `POST /api/v1/recommendation-abtests` - 创建A/B测试
-- `GET /api/v1/recommendation-abtests/{id}/metrics` - 获取A/B测试指标
-- `PUT /api/v1/recommendation-abtests/{id}` - 更新A/B测试
-- `DELETE /api/v1/recommendation-abtests/{id}` - 删除A/B测试
+- `GET /recommendations` - 获取推荐
+- `POST /recommendations/feedback` - 记录反馈
+- `POST /recommendations/viewed` - 标记为已查看
+- `POST /recommendations/clicked` - 标记为已点击
+- `GET /recommendation-models` - 获取推荐模型列表
+- `POST /recommendation-models` - 创建推荐模型
+- `PUT /recommendation-models/{id}` - 更新推荐模型
+- `DELETE /recommendation-models/{id}` - 删除推荐模型
+- `GET /recommendation-abtests` - 获取A/B测试列表
+- `POST /recommendation-abtests` - 创建A/B测试
+- `GET /recommendation-abtests/{id}/metrics` - 获取A/B测试指标
+- `PUT /recommendation-abtests/{id}` - 更新A/B测试
+- `DELETE /recommendation-abtests/{id}` - 删除A/B测试
 
 ### 5. 通知服务 (Notification Service)
 
@@ -118,11 +118,11 @@ Flick采用微服务架构，将不同的业务功能拆分为独立的服务。
 - 推送通知
 
 **API端点**:
-- `GET /api/v1/notifications` - 获取通知列表
-- `GET /api/v1/notifications/{id}` - 获取通知详情
-- `PUT /api/v1/notifications/{id}/read` - 标记通知为已读
-- `GET /api/v1/notifications/settings` - 获取通知设置
-- `PUT /api/v1/notifications/settings` - 更新通知设置
+- `GET /notifications` - 获取通知列表
+- `GET /notifications/{id}` - 获取通知详情
+- `PUT /notifications/{id}/read` - 标记通知为已读
+- `GET /notifications/settings` - 获取通知设置
+- `PUT /notifications/settings` - 更新通知设置
 
 ### 6. 网关服务 (Gateway Service)
 
