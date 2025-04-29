@@ -115,23 +115,23 @@ func LoadConfig() (*Config, error) {
 	defaultServices := map[string]ServiceConfig{
 		"user": {
 			Name: "user-service",
-			URL:  "http://user-service:8081/api/v1",
+			URL:  "http://localhost:8081",
 		},
 		"content": {
 			Name: "content-service",
-			URL:  "http://content-service:8082/api/v1",
+			URL:  "http://localhost:8082",
 		},
 		"interaction": {
 			Name: "interaction-service",
-			URL:  "http://interaction-service:8083/api/v1",
+			URL:  "http://localhost:8083",
 		},
 		"notification": {
 			Name: "notification-service",
-			URL:  "http://notification-service:8084/api/v1",
+			URL:  "http://localhost:8084",
 		},
 		"recommendation": {
 			Name: "recommendation-service",
-			URL:  "http://recommendation-service:8085/api/v1",
+			URL:  "http://localhost:8085",
 		},
 	}
 
@@ -143,4 +143,30 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// DefaultServices 返回默认服务配置
+func DefaultServices() map[string]ServiceConfig {
+	return map[string]ServiceConfig{
+		"user": {
+			Name: "User Service",
+			URL:  "http://localhost:8081",
+		},
+		"content": {
+			Name: "Content Service",
+			URL:  "http://localhost:8082",
+		},
+		"interaction": {
+			Name: "Interaction Service",
+			URL:  "http://localhost:8083",
+		},
+		"notification": {
+			Name: "Notification Service",
+			URL:  "http://localhost:8084",
+		},
+		"recommendation": {
+			Name: "Recommendation Service",
+			URL:  "http://localhost:8085",
+		},
+	}
 }
