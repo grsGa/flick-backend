@@ -64,6 +64,21 @@ func (r *PostgresRepository) GetUserByUsername(ctx context.Context, username str
 	return &user, nil
 }
 
+// GetUserByUsernameIgnoreCase 根据用户名查询用户，不区分大小写
+func (r *PostgresRepository) GetUserByUsernameIgnoreCase(ctx context.Context, username string) (*models.User, error) {
+	var user models.User
+	// 使用LOWER函数进行大小写不敏感的匹配
+	if err := r.db.WithContext(ctx).Preload("Roles").
+		Where("LOWER(username) = LOWER(?)", username).
+		First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user not found: %w", err)
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 // UpdateUser 更新用户信息
 func (r *PostgresRepository) UpdateUser(ctx context.Context, user *models.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
@@ -460,15 +475,15 @@ func (r *PostgresRepository) GetUserActivities(ctx context.Context, userID strin
 // GetActiveSessionsForUser 获取用户的活跃会话
 func (r *PostgresRepository) GetActiveSessionsForUser(ctx context.Context, userID string) ([]*models.UserSession, error) {
 	var sessions []*models.UserSession
-	
+
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND expires_at > ?", userID, time.Now()).
 		Find(&sessions).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return sessions, nil
 }
 
