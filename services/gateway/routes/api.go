@@ -5,14 +5,15 @@ import (
 	"backend/services/gateway/handlers"
 	"backend/services/gateway/middleware"
 
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AddRoute 添加自定义路由并处理可能包含参数的路径
 func AddRoute(router *gin.Engine, method string, path string, handler gin.HandlerFunc) {
-	// 构建API路径前缀
-	apiPath := "/api/v1" + path
+	// 不再添加API路径前缀，由调用者负责提供完整路径
+	apiPath := path
 
 	// 根据HTTP方法注册路由
 	switch method {
@@ -38,8 +39,8 @@ func AddRoute(router *gin.Engine, method string, path string, handler gin.Handle
 
 // SetupAPIRoutes 配置API路由
 func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
-	// 创建API组
-	api := router.Group("/api/v1")
+	// 创建API组 - 不再使用/api/v1前缀
+	api := router.Group("")
 
 	// 创建处理程序实例
 	userHandler := handlers.NewUserHandler(cfg)
@@ -48,7 +49,7 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	notificationHandler := handlers.NewNotificationHandler(cfg)
 	recommendationHandler := handlers.NewRecommendationHandler(cfg)
 
-	// 无需认证的路由
+	// <无需认证的路由>
 	// 用户认证相关
 	api.POST("/auth/register", userHandler.Register)
 	api.POST("/auth/login", userHandler.Login)
@@ -59,61 +60,52 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 
 	// 内容相关的公开路由
 	api.GET("/content/posts", contentHandler.GetPublicPosts)
-	api.GET("/content/posts/:id", contentHandler.GetPostByID)
+	// api.GET("/content/posts/:id", contentHandler.GetPostByID)
 
-	// 需要认证的路由
+	// 支持X平台风格的URL结构 - (公开路由)
+	api.GET("/:username/status/:permalink_id", contentHandler.GetPostByPermalink)               // 例如：/api/v1/testuser123/status/185747420474
+	api.GET("/:username/status/:permalink_id/photo/:index", contentHandler.GetPostMediaByIndex) // 例如：/api/v1/testuser123/status/185747420474/photo/1
+
+	// 用户资料公开路由
+	api.GET("/users/profile/:username", userHandler.GetUserProfileByUsername) // 根据用户名获取用户资料
+	//api.GET("/users/:username/posts", contentHandler.GetUserPosts)            // 获取用户的帖子列表(新增)
+
+	// <需要认证的路由>
 	authRoutes := api.Group("")
 	authRoutes.Use(middleware.JWTAuth(cfg.JwtSecret))
 
-	// 用户相关
+	// 用户相关路由
 	authRoutes.GET("/users/me", userHandler.GetCurrentUser)
 	authRoutes.PUT("/users/me", userHandler.UpdateCurrentUser)
-	authRoutes.GET("/users/:id", userHandler.GetUserByID)
-	authRoutes.GET("/users/:id/followers", userHandler.GetUserFollowers)
-	authRoutes.GET("/users/:id/following", userHandler.GetUserFollowing)
-	authRoutes.POST("/users/:id/follow", userHandler.FollowUser)
-	authRoutes.DELETE("/users/:id/follow", userHandler.UnfollowUser)
-	authRoutes.POST("/users/:id/block", userHandler.BlockUser)
-	authRoutes.DELETE("/users/:id/block", userHandler.UnblockUser)
+	authRoutes.GET("/users/by-id/:id", userHandler.GetUserByID)
+	authRoutes.GET("/users/by-id/:id/followers", userHandler.GetUserFollowers)
+	authRoutes.GET("/users/by-id/:id/following", userHandler.GetUserFollowing)
+	authRoutes.POST("/users/by-id/:id/follow", userHandler.FollowUser)
+	authRoutes.DELETE("/users/by-id/:id/follow", userHandler.UnfollowUser)
+	authRoutes.POST("/users/by-id/:id/block", userHandler.BlockUser)
+	authRoutes.DELETE("/users/by-id/:id/block", userHandler.UnblockUser)
 	authRoutes.GET("/users/search", userHandler.SearchUsers)
 
-	// 内容相关
-	authRoutes.POST("/content/posts", contentHandler.CreatePost)
-	authRoutes.PUT("/content/posts/:id", contentHandler.UpdatePost)
-	authRoutes.DELETE("/content/posts/:id", contentHandler.DeletePost)
-	authRoutes.GET("/content/users/:id/posts", contentHandler.GetUserPosts)
-	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)
-	authRoutes.POST("/content/upload", contentHandler.UploadContent)
+	// 内容相关路由 - (X风格URL)
+	// 基础内容功能
+	authRoutes.POST("/content/posts", contentHandler.CreatePost)     // 创建帖子
+	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)      // 获取用户 Feed
+	authRoutes.POST("/content/upload", contentHandler.UploadContent) // 上传内容
+	// 支持X平台风格的需要认证的URL操作
+	authRoutes.PUT("/:username/status/:permalink_id", contentHandler.UpdatePostByPermalink)
+	authRoutes.DELETE("/:username/status/:permalink_id", contentHandler.DeletePostByPermalink)
 
-	// 帖子投票相关路由
-	authRoutes.POST("/content/posts/:id/vote", contentHandler.VotePoll)
-	authRoutes.GET("/content/posts/:id/poll", contentHandler.GetPollResults)
+	// 交互相关新路由 - (X风格URL)
+	authRoutes.POST("/:username/status/:permalink_id/like", interactionHandler.LikePostByPermalink)
+	authRoutes.DELETE("/:username/status/:permalink_id/like", interactionHandler.UnlikePostByPermalink)
+	authRoutes.POST("/:username/status/:permalink_id/comments", interactionHandler.CommentOnPostByPermalink)
+	authRoutes.GET("/:username/status/:permalink_id/comments", interactionHandler.GetPostCommentsByPermalink)
 
-	// 帖子保存相关路由
-	authRoutes.POST("/content/posts/:id/save", contentHandler.SavePost)
-	authRoutes.DELETE("/content/posts/:id/save", contentHandler.UnsavePost)
-	authRoutes.GET("/content/saved", contentHandler.GetSavedPosts)
+	// 帖子保存相关路由 - (X风格URL)
+	authRoutes.POST("/:username/status/:permalink_id/save", contentHandler.SavePostByPermalink)
+	authRoutes.DELETE("/:username/status/:permalink_id/save", contentHandler.UnsavePostByPermalink)
 
-	// 热门帖子路由
-	authRoutes.GET("/content/posts/top", contentHandler.GetTopPosts)
-
-	// 帖子统计数据路由
-	authRoutes.GET("/content/posts/:id/stats", contentHandler.GetPostStats)
-
-	// 举报帖子路由
-	authRoutes.POST("/content/posts/:id/report", contentHandler.ReportPost)
-
-	// 交互相关
-	authRoutes.POST("/interactions/posts/:id/like", interactionHandler.LikePost)
-	authRoutes.DELETE("/interactions/posts/:id/like", interactionHandler.UnlikePost)
-	authRoutes.POST("/interactions/posts/:id/comments", interactionHandler.CommentOnPost)
-	authRoutes.GET("/interactions/posts/:id/comments", interactionHandler.GetPostComments)
-	authRoutes.PUT("/interactions/comments/:id", interactionHandler.UpdateComment)
-	authRoutes.DELETE("/interactions/comments/:id", interactionHandler.DeleteComment)
-	authRoutes.POST("/interactions/comments/:id/like", interactionHandler.LikeComment)
-	authRoutes.DELETE("/interactions/comments/:id/like", interactionHandler.UnlikeComment)
-
-	// 通知相关
+	// (通知相关)
 	authRoutes.GET("/notifications", notificationHandler.GetUserNotifications)
 	authRoutes.PUT("/notifications/:id/read", notificationHandler.MarkNotificationAsRead)
 	authRoutes.PUT("/notifications/read-all", notificationHandler.MarkAllNotificationsAsRead)
@@ -122,48 +114,31 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.POST("/notifications/devices", notificationHandler.RegisterDevice)
 	authRoutes.DELETE("/notifications/devices/:id", notificationHandler.UnregisterDevice)
 
-	// 推荐相关
+	// (推荐相关)
 	authRoutes.GET("/recommendations/for-you", recommendationHandler.GetRecommendations)
 	authRoutes.GET("/recommendations/trending", recommendationHandler.GetTrendingContent)
-	authRoutes.GET("/recommendations/similar/:type/:id", recommendationHandler.GetSimilarContent)
-	authRoutes.POST("/recommendations/:id/feedback", recommendationHandler.RecordFeedback)
-	authRoutes.PUT("/recommendations/:id/view", recommendationHandler.MarkAsViewed)
-	authRoutes.PUT("/recommendations/:id/click", recommendationHandler.MarkAsClicked)
 
-	// 管理员路由
+	// (管理员路由)
 	adminRoutes := authRoutes.Group("/admin")
 	adminRoutes.Use(middleware.RoleAuth("admin"))
 
-	// 用户管理
+	// (用户管理)
 	adminRoutes.GET("/users", userHandler.ListUsers)
-	adminRoutes.PUT("/users/:id/roles", userHandler.UpdateUserRoles)
-	adminRoutes.DELETE("/users/:id", userHandler.DeleteUser)
+	adminRoutes.PUT("/users/by-id/:id/roles", userHandler.UpdateUserRoles)
+	adminRoutes.DELETE("/users/by-id/:id", userHandler.DeleteUser)
 
-	// 内容管理
+	// (内容管理)
 	adminRoutes.GET("/content/posts/all", contentHandler.GetAllPosts)
 	adminRoutes.PUT("/content/posts/:id/status", contentHandler.UpdatePostStatus)
 
-	// 推荐模型管理
-	adminRoutes.GET("/recommendations/models", recommendationHandler.ListModels)
-	adminRoutes.POST("/recommendations/models", recommendationHandler.CreateModel)
-	adminRoutes.PUT("/recommendations/models/:id", recommendationHandler.UpdateModel)
-	adminRoutes.DELETE("/recommendations/models/:id", recommendationHandler.DeleteModel)
-
-	// A/B测试管理
-	adminRoutes.GET("/recommendations/ab-tests", recommendationHandler.ListABTests)
-	adminRoutes.POST("/recommendations/ab-tests", recommendationHandler.CreateABTest)
-	adminRoutes.GET("/recommendations/ab-tests/:id/metrics", recommendationHandler.GetABTestMetrics)
-	authRoutes.PUT("/recommendations/ab-tests/:id", recommendationHandler.UpdateABTest)
-	adminRoutes.DELETE("/recommendations/ab-tests/:id", recommendationHandler.DeleteABTest)
-
-	// 用户资料相关路由 - 这些路由需要身份验证
+	// (用户资料相关路由 - 这些路由需要身份验证)
 	authRoutes.GET("/users/me/follow-stats", userHandler.GetUserFollowStats)
 
-	// 用户头像和封面图片上传路由 - 支持POST和PUT两种方法
+	// (用户头像和封面图片上传路由)
 	authRoutes.POST("/users/me/avatar", userHandler.UploadAvatar)
-	authRoutes.PUT("/users/me/avatar", userHandler.UploadAvatar) // 添加PUT方法支持
+	authRoutes.PUT("/users/me/avatar", userHandler.UploadAvatar)
 	authRoutes.POST("/users/me/cover-image", userHandler.UploadCoverImage)
-	authRoutes.PUT("/users/me/cover-image", userHandler.UploadCoverImage) // 添加PUT方法支持
+	// authRoutes.PUT("/users/me/cover-image", userHandler.UploadCoverImage) // 添加PUT方法支持
 
 	// 添加一个健康检查路由
 	api.GET("/upload-check", func(c *gin.Context) {
