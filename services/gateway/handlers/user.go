@@ -5,13 +5,14 @@ import (
 
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // UserHandler 处理用户相关的请求
@@ -101,7 +102,7 @@ func (h *UserHandler) GetUserFollowers(c *gin.Context) {
 	pageSize := c.DefaultQuery("page_size", "20")
 
 	// 转发到用户服务
-	url := fmt.Sprintf("%s/api/v1/users/%s/followers?page=%s&page_size=%s", h.userServiceURL, targetID, page, pageSize)
+	url := fmt.Sprintf("%s/users/%s/followers?page=%s&page_size=%s", h.userServiceURL, targetID, page, pageSize)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("创建请求失败")
@@ -183,7 +184,7 @@ func (h *UserHandler) FollowUser(c *gin.Context) {
 	}
 
 	// 转发到用户服务
-	url := fmt.Sprintf("%s/api/v1/users/%s/follow", h.userServiceURL, targetID)
+	url := fmt.Sprintf("%s/users/%s/follow", h.userServiceURL, targetID)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("创建请求失败")
@@ -260,7 +261,7 @@ func (h *UserHandler) UnfollowUser(c *gin.Context) {
 	}
 
 	// 转发到用户服务
-	url := fmt.Sprintf("%s/api/v1/users/%s/follow", h.userServiceURL, targetID)
+	url := fmt.Sprintf("%s/users/%s/follow", h.userServiceURL, targetID)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("创建请求失败")
@@ -357,7 +358,7 @@ func (h *UserHandler) GetUserFollowStats(c *gin.Context) {
 	}
 
 	// 转发到用户服务
-	url := fmt.Sprintf("%s/api/v1/users/me/follow-stats", h.userServiceURL)
+	url := fmt.Sprintf("%s/users/me/follow-stats", h.userServiceURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("创建请求失败")
@@ -416,7 +417,7 @@ func (h *UserHandler) GetUserFollowStats(c *gin.Context) {
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	// 记录请求信息用于调试
 	h.logger.Info().Str("path", c.FullPath()).Str("method", c.Request.Method).Msg("收到头像上传请求")
-	
+
 	// 检查 Authorization 头是否存在
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
@@ -548,7 +549,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	// 转发到用户服务
 	url := fmt.Sprintf("%s/users/me/avatar", h.userServiceURL)
 	h.logger.Info().Str("url", url).Msg("准备发送请求到用户服务")
-	
+
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("创建请求失败")
@@ -634,7 +635,7 @@ func (h *UserHandler) UploadCoverImage(c *gin.Context) {
 	// 检查请求内容类型
 	contentType := c.GetHeader("Content-Type")
 	h.logger.Info().Str("content_type", contentType).Msg("请求Content-Type")
-	
+
 	// 验证Content-Type是否为multipart/form-data
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
 		h.logger.Error().Str("content_type", contentType).Msg("请求Content-Type不是multipart/form-data")
@@ -787,4 +788,31 @@ func (h *UserHandler) UploadCoverImage(c *gin.Context) {
 
 	// 返回响应
 	c.Data(resp.StatusCode, "application/json", respBody)
+}
+
+// GetUserProfileByUsername 通过用户名获取用户资料
+func (h *UserHandler) GetUserProfileByUsername(c *gin.Context) {
+	// 获取用户名参数
+	username := c.Param("username")
+	if username == "" {
+		h.logger.Error().Msg("缺少用户名参数")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":       "invalid_request",
+			"description": "缺少用户名",
+		})
+		return
+	}
+
+	// 记录当前网关配置和服务URL
+	h.logger.Info().
+		Str("username", username).
+		Str("userServiceURL", h.userServiceURL).
+		Msg("通过用户名获取用户资料请求")
+
+	// 使用基本的HandleRequest方法，让基类处理URL前缀问题
+	h.logger.Info().
+		Str("username", username).
+		Msg("使用基本HandleRequest方法转发请求")
+
+	h.HandleRequest(c, "user")
 }
