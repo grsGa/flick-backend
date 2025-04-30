@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"backend/pkg/models"
+
 	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 )
@@ -15,6 +16,7 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, id string) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	GetUserByUsernameIgnoreCase(ctx context.Context, username string) (*models.User, error)
 	UpdateUser(ctx context.Context, user *models.User) error
 	DeleteUser(ctx context.Context, id string) error
 	ListUsers(ctx context.Context, offset, limit int) ([]*models.User, int64, error)
@@ -24,7 +26,7 @@ type UserRepository interface {
 	GetUserRoles(ctx context.Context, userID string) ([]string, error)
 	AssignRoleToUser(ctx context.Context, userID, role string) error
 	RemoveRoleFromUser(ctx context.Context, userID, role string) error
-	
+
 	// 关系相关操作
 	FollowUser(ctx context.Context, followerID, followingID string) error
 	UnfollowUser(ctx context.Context, followerID, followingID string) error
@@ -32,19 +34,19 @@ type UserRepository interface {
 	GetFollowing(ctx context.Context, userID string, offset, limit int) ([]*models.User, int64, error)
 	IsFollowing(ctx context.Context, followerID, followingID string) (bool, error)
 	GetFollowStats(ctx context.Context, userID string) (followers int64, following int64, err error)
-	
+
 	// 屏蔽相关操作
 	BlockUser(ctx context.Context, blockerID, blockedID string, reason string) error
 	UnblockUser(ctx context.Context, blockerID, blockedID string) error
 	GetBlockedUsers(ctx context.Context, userID string, offset, limit int) ([]*models.User, int64, error)
 	IsBlocked(ctx context.Context, blockerID, blockedID string) (bool, error)
-	
+
 	// 认证相关操作
 	CreateVerification(ctx context.Context, verification *models.UserVerification) error
 	GetVerification(ctx context.Context, userID, verificationType string) (*models.UserVerification, error)
 	VerifyToken(ctx context.Context, userID, verificationType, token string) (bool, error)
 	MarkVerificationUsed(ctx context.Context, id string) error
-	
+
 	// 会话相关操作
 	CreateSession(ctx context.Context, session *models.UserSession) error
 	GetSession(ctx context.Context, id string) (*models.UserSession, error)
@@ -52,7 +54,7 @@ type UserRepository interface {
 	DeleteUserSessions(ctx context.Context, userID string) error
 	GetActiveSessionsForUser(ctx context.Context, userID string) ([]*models.UserSession, error)
 	UpdateSession(ctx context.Context, session *models.UserSession) error
-	
+
 	// 活动日志相关操作
 	LogUserActivity(ctx context.Context, activity *models.UserActivity) error
 	GetUserActivities(ctx context.Context, userID string, offset, limit int) ([]*models.UserActivity, int64, error)
@@ -68,9 +70,9 @@ type Repository struct {
 func NewRepository(db *gorm.DB, logger zerolog.Logger) *Repository {
 	// 创建PostgreSQL仓库实现
 	postgresRepo := NewPostgresRepository(db)
-	
+
 	return &Repository{
 		PostgresRepository: postgresRepo,
-		logger: logger,
+		logger:             logger,
 	}
-} 
+}
