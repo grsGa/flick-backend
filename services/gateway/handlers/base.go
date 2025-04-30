@@ -84,9 +84,27 @@ func (h *BaseHandler) ForwardRequest(c *gin.Context, serviceName string, path st
 
 // HandleRequest 处理请求并转发到微服务
 func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
+	// 添加详细日志
+	log.Info().
+		Str("method", c.Request.Method).
+		Str("path", c.Request.URL.Path).
+		Str("content_type", c.GetHeader("Content-Type")).
+		Str("service", serviceName).
+		Msg("处理请求转发")
+
+	// 检查是否是文件上传请求
+	isFileUpload := c.Request.Method == "POST" &&
+		strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") &&
+		strings.Contains(c.Request.URL.Path, "/upload")
+
+	if isFileUpload {
+		log.Info().Msg("检测到文件上传请求，使用特殊处理流程")
+	}
+
 	// 读取并保存请求体，因为后面可能还需要使用
 	var bodyBytes []byte
-	if c.Request.Body != nil {
+	if c.Request.Body != nil && !isFileUpload {
+		// 对于普通请求，读取请求体
 		bodyBytes, _ = io.ReadAll(c.Request.Body)
 		// 恢复请求体，以便后续使用
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -95,27 +113,48 @@ func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
 	// 获取服务配置
 	serviceConfig, exists := h.Config.Services[strings.ToLower(serviceName)]
 	if !exists {
+		log.Error().Str("service", serviceName).Msg("未找到服务配置")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务未配置", "details": fmt.Sprintf("服务 '%s' 未配置", serviceName)})
 		return
 	}
 
 	// 构建目标路径
 	path := c.Request.URL.Path
+	originalPath := path
 
-	// 仅当服务URL不包含/api/v1前缀时才移除请求中的前缀
-	// 检查服务URL是否已包含/api/v1
-	if !strings.Contains(serviceConfig.URL, "/api/v1") && strings.HasPrefix(path, "/api/v1") {
-		path = strings.TrimPrefix(path, "/api/v1")
-	}
+	// 记录服务URL信息
+	log.Info().
+		Str("service", serviceName).
+		Str("serviceURL", serviceConfig.URL).
+		Str("originalPath", originalPath).
+		Msg("服务URL配置")
+
+	// 不再需要处理/api/v1前缀，直接使用路径
 
 	// 包含查询参数
 	if c.Request.URL.RawQuery != "" {
 		path = path + "?" + c.Request.URL.RawQuery
 	}
 
-	// 转发请求
-	resp, err := h.ForwardRequest(c, serviceName, path, c.Request.Method, bytes.NewBuffer(bodyBytes))
+	log.Info().
+		Str("target_path", path).
+		Str("target_url", serviceConfig.URL+path).
+		Msg("转发请求到目标服务")
+
+	// 根据请求类型处理转发
+	var resp *http.Response
+	var err error
+
+	if isFileUpload {
+		// 对于文件上传请求，直接转发整个请求，不预读请求体
+		resp, err = h.ForwardFileUpload(c, serviceName, path)
+	} else {
+		// 对于普通请求，使用标准处理
+		resp, err = h.ForwardRequest(c, serviceName, path, c.Request.Method, bytes.NewBuffer(bodyBytes))
+	}
+
 	if err != nil {
+		log.Error().Err(err).Str("service", serviceName).Str("path", path).Msg("转发请求失败")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务请求失败", "details": err.Error()})
 		return
 	}
@@ -124,9 +163,15 @@ func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
 	// 读取响应体
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Error().Err(err).Msg("读取响应失败")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取响应失败", "details": err.Error()})
 		return
 	}
+
+	log.Info().
+		Int("status", resp.StatusCode).
+		Int("body_size", len(respBody)).
+		Msg("收到服务响应")
 
 	// 复制响应头
 	for k, values := range resp.Header {
@@ -142,6 +187,160 @@ func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
 	if len(respBody) > 0 {
 		c.Writer.Write(respBody)
 	}
+}
+
+// HandleRequestWithPath 处理请求并转发到微服务，使用指定的目标路径
+func (h *BaseHandler) HandleRequestWithPath(c *gin.Context, serviceName string, targetPath string) {
+	// 添加详细日志
+	log.Info().
+		Str("method", c.Request.Method).
+		Str("path", c.Request.URL.Path).
+		Str("target_path", targetPath).
+		Str("content_type", c.GetHeader("Content-Type")).
+		Str("service", serviceName).
+		Msg("处理请求转发(自定义路径)")
+
+	// 检查是否是文件上传请求
+	isFileUpload := c.Request.Method == "POST" &&
+		strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") &&
+		strings.Contains(c.Request.URL.Path, "/upload")
+
+	if isFileUpload {
+		log.Info().Msg("检测到文件上传请求，使用特殊处理流程")
+	}
+
+	// 读取并保存请求体，因为后面可能还需要使用
+	var bodyBytes []byte
+	if c.Request.Body != nil && !isFileUpload {
+		// 对于普通请求，读取请求体
+		bodyBytes, _ = io.ReadAll(c.Request.Body)
+		// 恢复请求体，以便后续使用
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
+
+	// 获取服务配置
+	serviceConfig, exists := h.Config.Services[strings.ToLower(serviceName)]
+	if !exists {
+		log.Error().Str("service", serviceName).Msg("未找到服务配置")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务未配置", "details": fmt.Sprintf("服务 '%s' 未配置", serviceName)})
+		return
+	}
+
+	// 使用指定的目标路径
+	path := targetPath
+
+	// 包含查询参数
+	if c.Request.URL.RawQuery != "" {
+		path = path + "?" + c.Request.URL.RawQuery
+	}
+
+	log.Info().
+		Str("target_path", path).
+		Str("target_url", serviceConfig.URL+path).
+		Msg("转发请求到目标服务")
+
+	// 根据请求类型处理转发
+	var resp *http.Response
+	var err error
+
+	if isFileUpload {
+		// 对于文件上传请求，直接转发整个请求，不预读请求体
+		resp, err = h.ForwardFileUpload(c, serviceName, path)
+	} else {
+		// 对于普通请求，使用标准处理
+		resp, err = h.ForwardRequest(c, serviceName, path, c.Request.Method, bytes.NewBuffer(bodyBytes))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Str("service", serviceName).Str("path", path).Msg("转发请求失败")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务请求失败", "details": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+
+	// 读取响应体
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("读取响应失败")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取响应失败", "details": err.Error()})
+		return
+	}
+
+	log.Info().
+		Int("status", resp.StatusCode).
+		Int("body_size", len(respBody)).
+		Msg("收到服务响应")
+
+	// 复制响应头
+	for k, values := range resp.Header {
+		for _, v := range values {
+			c.Writer.Header().Add(k, v)
+		}
+	}
+
+	// 设置状态码
+	c.Status(resp.StatusCode)
+
+	// 写入响应体
+	if len(respBody) > 0 {
+		c.Writer.Write(respBody)
+	}
+}
+
+// ForwardFileUpload 专门转发文件上传请求
+func (h *BaseHandler) ForwardFileUpload(c *gin.Context, serviceName string, path string) (*http.Response, error) {
+	// 获取服务配置
+	serviceConfig, exists := h.Config.Services[strings.ToLower(serviceName)]
+	if !exists {
+		return nil, fmt.Errorf("服务 '%s' 未配置", serviceName)
+	}
+
+	// 构建目标URL
+	targetURL, err := url.Parse(serviceConfig.URL)
+	if err != nil {
+		log.Error().Err(err).Str("url", serviceConfig.URL).Msg("解析服务URL失败")
+		return nil, fmt.Errorf("解析服务URL失败: %w", err)
+	}
+
+	// 组合完整路径
+	targetURL.Path = path
+
+	// 创建新请求，传递原始请求体
+	req, err := http.NewRequest(c.Request.Method, targetURL.String(), c.Request.Body)
+	if err != nil {
+		log.Error().Err(err).Str("url", targetURL.String()).Str("method", c.Request.Method).Msg("创建请求失败")
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	// 复制原始请求的头部
+	for key, values := range c.Request.Header {
+		// 不复制Host和Connection头部
+		if key != "Host" && key != "Connection" {
+			for _, value := range values {
+				req.Header.Add(key, value)
+			}
+		}
+	}
+
+	// 如果有用户ID，添加到请求头
+	if userID, exists := c.Get("user_id"); exists {
+		req.Header.Set("X-User-ID", fmt.Sprintf("%v", userID))
+	}
+
+	// 如果有角色，添加到请求头
+	if role, exists := c.Get("role"); exists {
+		req.Header.Set("X-User-Role", fmt.Sprintf("%v", role))
+	}
+
+	// 发送请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error().Err(err).Str("url", targetURL.String()).Msg("请求失败")
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+
+	return resp, nil
 }
 
 // DecodeJSON 从请求中解码JSON数据
