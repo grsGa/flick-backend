@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -21,6 +22,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
+	"gorm.io/gorm"
 )
 
 // UserService 定义用户服务接口
@@ -2271,4 +2273,221 @@ func (s *UserServiceImpl) GetUserFollowingHandler(w http.ResponseWriter, r *http
 		Page:    page,
 		PerPage: pageSize,
 	})
+}
+
+// GetUserProfileByUsernameHandler 处理通过用户名获取用户资料的请求
+func (s *UserServiceImpl) GetUserProfileByUsernameHandler(w http.ResponseWriter, r *http.Request) {
+	// 获取URL参数中的用户名
+	vars := mux.Vars(r)
+	username := vars["username"]
+
+	// 记录请求信息
+	s.logger.Info().
+		Str("username", username).
+		Str("path", r.URL.Path).
+		Str("method", r.Method).
+		Msg("收到获取用户资料请求")
+
+	if username == "" {
+		s.logger.Error().Msg("缺少用户名参数")
+		s.respondWithError(w, http.StatusBadRequest, "缺少用户名参数")
+		return
+	}
+
+	// 从请求中获取当前用户ID（如果已认证）
+	var currentUserID string
+	userID := r.Header.Get("X-User-ID")
+	if userID != "" {
+		currentUserID = userID
+		s.logger.Debug().
+			Str("current_user_id", currentUserID).
+			Str("target_username", username).
+			Msg("当前用户尝试获取其他用户资料")
+	}
+
+	// 改进的用户查询逻辑，尝试多种查询方式
+	user, err := s.findUserByUsername(r.Context(), username)
+	if err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("username", username).
+			Msg("获取用户资料失败")
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.respondWithError(w, http.StatusNotFound, "用户不存在")
+		} else {
+			s.respondWithError(w, http.StatusInternalServerError, "内部服务器错误")
+		}
+		return
+	}
+
+	// 记录找到的用户信息
+	s.logger.Info().
+		Str("username", username).
+		Str("found_username", user.Username).
+		Str("user_id", user.ID).
+		Msg("成功找到用户")
+
+	// 获取用户统计信息
+	followersCount, followingCount, err := s.repo.GetFollowStats(r.Context(), user.ID)
+	if err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("user_id", user.ID).
+			Msg("获取用户关注统计失败")
+		// 不返回错误，继续处理
+	}
+
+	// 获取用户的帖子数量 (假设为0，实际实现中需要从内容服务获取)
+	postsCount := int64(0)
+
+	// 创建用户资料响应对象
+	profile := userProfile{
+		ID:             user.ID,
+		Username:       user.Username,
+		DisplayName:    user.DisplayName,
+		AvatarURL:      user.AvatarURL,
+		CoverImageURL:  user.CoverImageURL,
+		Bio:            user.Bio,
+		Location:       user.Location,
+		Website:        user.Website,
+		CreatedAt:      user.CreatedAt,
+		VerifiedEmail:  user.VerifiedEmail,
+		FollowersCount: int(followersCount),
+		FollowingCount: int(followingCount),
+		PostsCount:     int(postsCount),
+	}
+
+	// 如果当前用户已登录，添加与当前用户的关系信息
+	if currentUserID != "" && currentUserID != user.ID {
+		// 检查当前用户是否关注了此用户
+		isFollowing, err := s.repo.IsFollowing(r.Context(), currentUserID, user.ID)
+		if err != nil {
+			s.logger.Error().
+				Err(err).
+				Str("current_user_id", currentUserID).
+				Str("target_user_id", user.ID).
+				Msg("检查关注状态失败")
+		} else {
+			profile.IsFollowing = isFollowing
+		}
+
+		// 检查此用户是否被当前用户屏蔽
+		isBlocked, err := s.repo.IsBlocked(r.Context(), currentUserID, user.ID)
+		if err != nil {
+			s.logger.Error().
+				Err(err).
+				Str("current_user_id", currentUserID).
+				Str("target_user_id", user.ID).
+				Msg("检查屏蔽状态失败")
+		} else {
+			profile.IsBlocked = isBlocked
+		}
+	}
+
+	// 返回用户资料
+	s.logger.Info().
+		Str("username", username).
+		Str("user_id", user.ID).
+		Msg("成功返回用户资料")
+	s.respondWithJSON(w, http.StatusOK, profile)
+}
+
+// findUserByUsername 尝试多种方式查找用户，包括大小写不敏感匹配
+func (s *UserServiceImpl) findUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	// 记录开始查询
+	s.logger.Info().
+		Str("search_username", username).
+		Msg("开始查找用户，正在尝试多种匹配方式")
+
+	// 1. 首先尝试直接精确匹配
+	user, err := s.repo.GetUserByUsername(ctx, username)
+	if err == nil && user != nil {
+		s.logger.Debug().
+			Str("search_username", username).
+			Str("found_username", user.Username).
+			Msg("通过精确匹配找到用户")
+		return user, nil
+	}
+
+	// 记录第一次查询失败
+	s.logger.Debug().
+		Err(err).
+		Str("search_username", username).
+		Msg("精确匹配未找到用户，尝试不区分大小写查询")
+
+	// 2. 尝试大小写不敏感查询
+	user, err = s.repo.GetUserByUsernameIgnoreCase(ctx, username)
+	if err == nil && user != nil {
+		s.logger.Info().
+			Str("search_username", username).
+			Str("found_username", user.Username).
+			Str("user_id", user.ID).
+			Msg("通过大小写不敏感匹配找到用户")
+		return user, nil
+	}
+
+	// 记录第二次查询失败
+	s.logger.Warn().
+		Err(err).
+		Str("search_username", username).
+		Msg("所有查询方式均未找到用户")
+
+	return nil, fmt.Errorf("用户 %s 不存在: %w", username, gorm.ErrRecordNotFound)
+}
+
+// userProfile 用于API响应的用户资料结构
+type userProfile struct {
+	ID             string    `json:"id"`
+	Username       string    `json:"username"`
+	DisplayName    string    `json:"display_name,omitempty"`
+	AvatarURL      string    `json:"avatar_url,omitempty"`
+	CoverImageURL  string    `json:"cover_image_url,omitempty"`
+	Bio            string    `json:"bio,omitempty"`
+	Location       string    `json:"location,omitempty"`
+	Website        string    `json:"website,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	VerifiedEmail  bool      `json:"verified_email"`
+	FollowersCount int       `json:"followers_count"`
+	FollowingCount int       `json:"following_count"`
+	PostsCount     int       `json:"posts_count"`
+	IsFollowing    bool      `json:"is_following,omitempty"`
+	IsBlocked      bool      `json:"is_blocked,omitempty"`
+}
+
+// 在文件适当位置添加帮助函数
+
+// respondWithJSON 以JSON格式响应
+func (s *UserServiceImpl) respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(payload)
+}
+
+// respondWithError 以JSON格式响应错误
+func (s *UserServiceImpl) respondWithError(w http.ResponseWriter, code int, message string) {
+	s.respondWithJSON(w, code, ErrorResponse{
+		Error:       getErrorCodeFromStatus(code),
+		Description: message,
+	})
+}
+
+// getErrorCodeFromStatus 从HTTP状态码获取错误代码
+func getErrorCodeFromStatus(statusCode int) string {
+	switch statusCode {
+	case http.StatusBadRequest:
+		return "invalid_request"
+	case http.StatusUnauthorized:
+		return "unauthorized"
+	case http.StatusForbidden:
+		return "forbidden"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusConflict:
+		return "conflict"
+	case http.StatusTooManyRequests:
+		return "rate_limited"
+	default:
+		return "server_error"
+	}
 }
