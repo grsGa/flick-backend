@@ -55,23 +55,23 @@ func main() {
 	r := mux.NewRouter()
 
 	// API 路由
-	r.HandleFunc("/api/v1/recommendations", recommendationService.GetRecommendationsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/recommendations/feedback", recommendationService.RecordFeedbackHandler).Methods("POST")
-	r.HandleFunc("/api/v1/recommendations/viewed", recommendationService.MarkAsViewedHandler).Methods("POST")
-	r.HandleFunc("/api/v1/recommendations/clicked", recommendationService.MarkAsClickedHandler).Methods("POST")
-	
+	r.HandleFunc("recommendations", recommendationService.GetRecommendationsHandler).Methods("GET")
+	r.HandleFunc("recommendations/feedback", recommendationService.RecordFeedbackHandler).Methods("POST")
+	r.HandleFunc("recommendations/viewed", recommendationService.MarkAsViewedHandler).Methods("POST")
+	r.HandleFunc("recommendations/clicked", recommendationService.MarkAsClickedHandler).Methods("POST")
+
 	// 模型相关路由
-	r.HandleFunc("/api/v1/recommendation-models", recommendationService.ListModelsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/recommendation-models", recommendationService.CreateModelHandler).Methods("POST")
-	r.HandleFunc("/api/v1/recommendation-models/{id}", recommendationService.UpdateModelHandler).Methods("PUT")
-	r.HandleFunc("/api/v1/recommendation-models/{id}", recommendationService.DeleteModelHandler).Methods("DELETE")
-	
+	r.HandleFunc("recommendation-models", recommendationService.ListModelsHandler).Methods("GET")
+	r.HandleFunc("recommendation-models", recommendationService.CreateModelHandler).Methods("POST")
+	r.HandleFunc("recommendation-models/{id}", recommendationService.UpdateModelHandler).Methods("PUT")
+	r.HandleFunc("recommendation-models/{id}", recommendationService.DeleteModelHandler).Methods("DELETE")
+
 	// A/B测试相关路由
-	r.HandleFunc("/api/v1/recommendation-abtests", recommendationService.ListABTestsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/recommendation-abtests", recommendationService.CreateABTestHandler).Methods("POST")
-	r.HandleFunc("/api/v1/recommendation-abtests/{id}/metrics", recommendationService.GetABTestMetricsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/recommendation-abtests/{id}", recommendationService.UpdateABTestHandler).Methods("PUT")
-	r.HandleFunc("/api/v1/recommendation-abtests/{id}", recommendationService.DeleteABTestHandler).Methods("DELETE")
+	r.HandleFunc("recommendation-abtests", recommendationService.ListABTestsHandler).Methods("GET")
+	r.HandleFunc("recommendation-abtests", recommendationService.CreateABTestHandler).Methods("POST")
+	r.HandleFunc("recommendation-abtests/{id}/metrics", recommendationService.GetABTestMetricsHandler).Methods("GET")
+	r.HandleFunc("recommendation-abtests/{id}", recommendationService.UpdateABTestHandler).Methods("PUT")
+	r.HandleFunc("recommendation-abtests/{id}", recommendationService.DeleteABTestHandler).Methods("DELETE")
 
 	// 系统健康检查
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
