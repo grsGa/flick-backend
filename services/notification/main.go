@@ -55,11 +55,11 @@ func main() {
 	r := mux.NewRouter()
 
 	// API 路由
-	r.HandleFunc("/api/v1/notifications", notificationService.GetNotificationsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/notifications/{id}", notificationService.GetNotificationHandler).Methods("GET")
-	r.HandleFunc("/api/v1/notifications/{id}/read", notificationService.MarkAsReadHandler).Methods("PUT")
-	r.HandleFunc("/api/v1/notifications/settings", notificationService.GetNotificationSettingsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/notifications/settings", notificationService.UpdateNotificationSettingsHandler).Methods("PUT")
+	r.HandleFunc("notifications", notificationService.GetNotificationsHandler).Methods("GET")
+	r.HandleFunc("notifications/{id}", notificationService.GetNotificationHandler).Methods("GET")
+	r.HandleFunc("notifications/{id}/read", notificationService.MarkAsReadHandler).Methods("PUT")
+	r.HandleFunc("notifications/settings", notificationService.GetNotificationSettingsHandler).Methods("GET")
+	r.HandleFunc("notifications/settings", notificationService.UpdateNotificationSettingsHandler).Methods("PUT")
 
 	// 系统健康检查
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
