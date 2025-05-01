@@ -55,11 +55,11 @@ func main() {
 	r := mux.NewRouter()
 
 	// API 路由
-	r.HandleFunc("/api/v1/interactions", interactionService.CreateInteractionHandler).Methods("POST")
-	r.HandleFunc("/api/v1/interactions", interactionService.ListInteractionsHandler).Methods("GET")
-	r.HandleFunc("/api/v1/interactions/{id}", interactionService.GetInteractionHandler).Methods("GET")
-	r.HandleFunc("/api/v1/interactions/{id}", interactionService.UpdateInteractionHandler).Methods("PUT")
-	r.HandleFunc("/api/v1/interactions/{id}", interactionService.DeleteInteractionHandler).Methods("DELETE")
+	r.HandleFunc("interactions", interactionService.CreateInteractionHandler).Methods("POST")
+	r.HandleFunc("interactions", interactionService.ListInteractionsHandler).Methods("GET")
+	r.HandleFunc("interactions/{id}", interactionService.GetInteractionHandler).Methods("GET")
+	r.HandleFunc("interactions/{id}", interactionService.UpdateInteractionHandler).Methods("PUT")
+	r.HandleFunc("interactions/{id}", interactionService.DeleteInteractionHandler).Methods("DELETE")
 
 	// 系统健康检查
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
