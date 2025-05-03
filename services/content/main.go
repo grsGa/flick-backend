@@ -246,6 +246,9 @@ func main() {
 	// 直接注册X风格API路由，只在api前缀下注册
 	apiRouter.Handle("/{username}/status/{permalink_id}", xStyleGetHandler).Methods("GET")
 
+	// 添加评论公开路由，对应网关中的公开路由
+	r.HandleFunc("/{username}/status/{permalink_id}/comments", contentService.GetPostCommentsHandler).Methods("GET")
+
 	apiRouter.HandleFunc("/{username}/status/{permalink_id}", contentService.UpdatePostByPermalinkHandler).Methods("PUT")
 	apiRouter.HandleFunc("/{username}/status/{permalink_id}", contentService.DeletePostByPermalinkHandler).Methods("DELETE")
 	apiRouter.HandleFunc("/{username}/status/{permalink_id}/photo/{index}", contentService.GetPostMediaByIndexHandler).Methods("GET")
@@ -273,6 +276,38 @@ func main() {
 	})
 	// 只保留一个路由路径，避免重复
 	apiRouter.Handle("/users/{username}/posts", getUserPostsHandler).Methods("GET")
+
+	// 获取当前用户帖子的路由
+	getCurrentUserPostsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("正在处理获取当前用户帖子请求")
+
+		// 从上下文获取用户ID
+		userID := ""
+		if userIDVal := r.Context().Value("user_id"); userIDVal != nil {
+			if id, ok := userIDVal.(string); ok {
+				userID = id
+			}
+		}
+
+		if userID == "" {
+			http.Error(w, "未授权", http.StatusUnauthorized)
+			return
+		}
+
+		logger.Info().Str("user_id", userID).Msg("获取当前用户帖子")
+
+		// 保留原始请求的分页参数，并设置user_id参数
+		query := r.URL.Query()
+		query.Set("user_id", userID) // 添加user_id参数
+		r.URL.RawQuery = query.Encode()
+
+		// 使用新的通过用户ID获取帖子的处理函数
+		contentService.GetUserPostsHandler(w, r)
+	})
+	apiRouter.Handle("/content/user", getCurrentUserPostsHandler).Methods("GET")
 
 	// 系统健康检查 - 无需认证
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
