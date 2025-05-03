@@ -2068,3 +2068,61 @@ func (s *ContentServiceImpl) GetUserPostsByUsernameHandler(w http.ResponseWriter
 		return
 	}
 }
+
+// GetUserPostsHandler 处理获取当前用户帖子列表的请求（通过用户ID）
+func (s *ContentServiceImpl) GetUserPostsHandler(w http.ResponseWriter, r *http.Request) {
+	// 设置内容类型
+	w.Header().Set("Content-Type", "application/json")
+
+	// 从URL参数获取用户ID，这通常是从上下文中设置的
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		// 尝试从上下文获取
+		if ctx := r.Context(); ctx != nil {
+			if id, ok := ctx.Value("user_id").(string); ok && id != "" {
+				userID = id
+			}
+		}
+	}
+
+	if userID == "" {
+		s.logger.Error().Msg("缺少用户ID参数")
+		http.Error(w, "缺少必要的参数", http.StatusBadRequest)
+		return
+	}
+
+	s.logger.Info().Str("user_id", userID).Msg("通过用户ID获取帖子列表")
+
+	// 获取分页参数
+	offset, limit := getPaginationParams(r)
+
+	ctx := r.Context()
+
+	// 直接从数据库获取该用户的帖子
+	posts, total, err := s.repo.GetPostsByUser(ctx, userID, offset, limit)
+	if err != nil {
+		s.logger.Error().Err(err).Str("user_id", userID).Msg("获取用户帖子失败")
+		http.Error(w, "获取帖子失败: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 构建响应
+	resp := struct {
+		Posts []*models.Post `json:"posts"`
+		Total int64          `json:"total"`
+		Page  int            `json:"page"`
+		Size  int            `json:"size"`
+	}{
+		Posts: posts,
+		Total: total,
+		Page:  offset/limit + 1,
+		Size:  limit,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		s.logger.Error().Err(err).Msg("编码响应失败")
+		http.Error(w, "内部服务器错误", http.StatusInternalServerError)
+		return
+	}
+}
