@@ -39,7 +39,7 @@ func AddRoute(router *gin.Engine, method string, path string, handler gin.Handle
 
 // SetupAPIRoutes 配置API路由
 func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
-	// 创建API组 - 不再使用/api/v1前缀
+	// 创建API组
 	api := router.Group("")
 
 	// 创建处理程序实例
@@ -63,12 +63,13 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	// api.GET("/content/posts/:id", contentHandler.GetPostByID)
 
 	// 支持X平台风格的URL结构 - (公开路由)
-	api.GET("/:username/status/:permalink_id", contentHandler.GetPostByPermalink)               // 例如：/api/v1/testuser123/status/185747420474
-	api.GET("/:username/status/:permalink_id/photo/:index", contentHandler.GetPostMediaByIndex) // 例如：/api/v1/testuser123/status/185747420474/photo/1
+	api.GET("/:username/status/:permalink_id", contentHandler.GetPostByPermalink)                      // 例如：/testuser123/status/185747420474
+	api.GET("/:username/status/:permalink_id/photo/:index", contentHandler.GetPostMediaByIndex)        // 例如：/testuser123/status/185747420474/photo/1
+	api.GET("/:username/status/:permalink_id/comments", interactionHandler.GetPostCommentsByPermalink) // 公开获取帖子评论
 
 	// 用户资料公开路由
 	api.GET("/users/profile/:username", userHandler.GetUserProfileByUsername) // 根据用户名获取用户资料
-	//api.GET("/users/:username/posts", contentHandler.GetUserPosts)            // 获取用户的帖子列表(新增)
+	api.GET("/users/:username/posts", contentHandler.GetUserPosts)            // 获取用户的帖子列表
 
 	// <需要认证的路由>
 	authRoutes := api.Group("")
@@ -88,9 +89,10 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 
 	// 内容相关路由 - (X风格URL)
 	// 基础内容功能
-	authRoutes.POST("/content/posts", contentHandler.CreatePost)     // 创建帖子
-	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)      // 获取用户 Feed
-	authRoutes.POST("/content/upload", contentHandler.UploadContent) // 上传内容
+	authRoutes.POST("/content/posts", contentHandler.CreatePost)        // 创建帖子
+	authRoutes.GET("/content/feed", contentHandler.GetUserFeed)         // 获取用户 Feed
+	authRoutes.POST("/content/upload", contentHandler.UploadContent)    // 上传内容
+	authRoutes.GET("/content/user", contentHandler.GetCurrentUserPosts) // 获取当前用户的帖子
 	// 支持X平台风格的需要认证的URL操作
 	authRoutes.PUT("/:username/status/:permalink_id", contentHandler.UpdatePostByPermalink)
 	authRoutes.DELETE("/:username/status/:permalink_id", contentHandler.DeletePostByPermalink)
@@ -99,7 +101,6 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.POST("/:username/status/:permalink_id/like", interactionHandler.LikePostByPermalink)
 	authRoutes.DELETE("/:username/status/:permalink_id/like", interactionHandler.UnlikePostByPermalink)
 	authRoutes.POST("/:username/status/:permalink_id/comments", interactionHandler.CommentOnPostByPermalink)
-	authRoutes.GET("/:username/status/:permalink_id/comments", interactionHandler.GetPostCommentsByPermalink)
 
 	// 帖子保存相关路由 - (X风格URL)
 	authRoutes.POST("/:username/status/:permalink_id/save", contentHandler.SavePostByPermalink)
