@@ -5,6 +5,8 @@ import (
 
 	"net/http"
 
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -67,6 +69,27 @@ func (h *ContentHandler) GetUserPosts(c *gin.Context) {
 		Str("username", username).
 		Str("service", "content").
 		Msg("获取用户帖子请求")
+
+	// 使用基本的转发方法
+	h.HandleRequest(c, "content")
+}
+
+// GetCurrentUserPosts 获取当前登录用户的内容
+func (h *ContentHandler) GetCurrentUserPosts(c *gin.Context) {
+	// 从上下文获取当前用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		h.BaseHandler.RespondWithError(c, http.StatusUnauthorized, "未经授权的请求")
+		return
+	}
+
+	// 记录请求详情
+	log.Info().
+		Str("method", c.Request.Method).
+		Str("path", c.Request.URL.Path).
+		Str("user_id", fmt.Sprintf("%v", userID)).
+		Str("service", "content").
+		Msg("获取当前用户帖子请求")
 
 	// 使用基本的转发方法
 	h.HandleRequest(c, "content")
