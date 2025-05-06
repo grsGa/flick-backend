@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"backend/services/gateway/config"
-	
+
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
@@ -64,13 +66,16 @@ func (h *InteractionHandler) LikePostByPermalink(c *gin.Context) {
 	// 路径形如 /:username/status/:permalink_id/like
 	username := c.Param("username")
 	permalinkID := c.Param("permalink_id")
-	
+
 	log.Info().
 		Str("username", username).
 		Str("permalink_id", permalinkID).
 		Msg("通过永久链接点赞帖子")
-	
-	// 将请求委托给交互服务
+
+	// 修改请求路径为内部格式
+	c.Request.URL.Path = fmt.Sprintf("/posts/%s/like", permalinkID)
+
+	// 转发请求到interaction服务
 	h.HandleRequest(c, "interaction")
 }
 
@@ -79,13 +84,52 @@ func (h *InteractionHandler) UnlikePostByPermalink(c *gin.Context) {
 	// 路径形如 /:username/status/:permalink_id/like
 	username := c.Param("username")
 	permalinkID := c.Param("permalink_id")
-	
+
 	log.Info().
 		Str("username", username).
 		Str("permalink_id", permalinkID).
 		Msg("通过永久链接取消点赞帖子")
-	
-	// 将请求委托给交互服务
+
+	// 修改请求路径为内部格式
+	c.Request.URL.Path = fmt.Sprintf("/posts/%s/like", permalinkID)
+
+	// 转发请求到interaction服务
+	h.HandleRequest(c, "interaction")
+}
+
+// BookmarkPostByPermalink 通过用户名和永久链接ID收藏帖子
+func (h *InteractionHandler) BookmarkPostByPermalink(c *gin.Context) {
+	// 路径形如 /:username/status/:permalink_id/save
+	username := c.Param("username")
+	permalinkID := c.Param("permalink_id")
+
+	log.Info().
+		Str("username", username).
+		Str("permalink_id", permalinkID).
+		Msg("通过永久链接收藏帖子")
+
+	// 修改请求路径为内部格式
+	c.Request.URL.Path = fmt.Sprintf("/posts/%s/save", permalinkID)
+
+	// 转发请求到interaction服务
+	h.HandleRequest(c, "interaction")
+}
+
+// UnbookmarkPostByPermalink 通过用户名和永久链接ID取消收藏帖子
+func (h *InteractionHandler) UnbookmarkPostByPermalink(c *gin.Context) {
+	// 路径形如 /:username/status/:permalink_id/save
+	username := c.Param("username")
+	permalinkID := c.Param("permalink_id")
+
+	log.Info().
+		Str("username", username).
+		Str("permalink_id", permalinkID).
+		Msg("通过永久链接取消收藏帖子")
+
+	// 修改请求路径为内部格式
+	c.Request.URL.Path = fmt.Sprintf("/posts/%s/save", permalinkID)
+
+	// 转发请求到interaction服务
 	h.HandleRequest(c, "interaction")
 }
 
@@ -94,12 +138,12 @@ func (h *InteractionHandler) CommentOnPostByPermalink(c *gin.Context) {
 	// 路径形如 /:username/status/:permalink_id/comments
 	username := c.Param("username")
 	permalinkID := c.Param("permalink_id")
-	
+
 	log.Info().
 		Str("username", username).
 		Str("permalink_id", permalinkID).
 		Msg("通过永久链接评论帖子")
-	
+
 	// 将请求委托给交互服务
 	h.HandleRequest(c, "interaction")
 }
@@ -109,12 +153,12 @@ func (h *InteractionHandler) GetPostCommentsByPermalink(c *gin.Context) {
 	// 路径形如 /:username/status/:permalink_id/comments
 	username := c.Param("username")
 	permalinkID := c.Param("permalink_id")
-	
+
 	log.Info().
 		Str("username", username).
 		Str("permalink_id", permalinkID).
 		Msg("通过永久链接获取帖子评论")
-	
+
 	// 将请求委托给交互服务
 	h.HandleRequest(c, "interaction")
-} 
+}
