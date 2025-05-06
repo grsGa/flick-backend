@@ -205,10 +205,10 @@ type BookmarkCollection struct {
 type InteractionHistory struct {
 	ID         string    `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID     string    `json:"user_id" gorm:"type:uuid;not null;index"`
-	ObjectID   string    `json:"object_id" gorm:"type:uuid;not null;index"`  // 被互动的对象ID（帖子、评论等）
+	ObjectID   string    `json:"object_id" gorm:"type:uuid;not null;index"` // 被互动的对象ID（帖子、评论等）
 	ObjectType string    `json:"object_type" gorm:"size:20;not null;index"` // post, comment, user
 	ActionType string    `json:"action_type" gorm:"size:30;not null;index"` // like, comment, share, etc
-	DetailID   string    `json:"detail_id" gorm:"type:uuid;index"`          // 详情ID（如评论ID）
+	DetailID   *string   `json:"detail_id" gorm:"type:uuid;index"`          // 详情ID（如评论ID）
 	CreatedAt  time.Time `json:"created_at"`
 	User       User      `json:"-" gorm:"foreignKey:UserID"`
 }
