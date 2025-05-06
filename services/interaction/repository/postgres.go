@@ -64,10 +64,10 @@ func (r *PostgresRepository) GetPostLikes(ctx context.Context, postID string, of
 	var total int64
 
 	query := r.db.WithContext(ctx).
-		Table("post_likes").
-		Select("users.*").
-		Joins("JOIN users ON post_likes.user_id = users.id").
-		Where("post_likes.post_id = ?", postID)
+		Table("flick_post_likes").
+		Select("flick_users.*").
+		Joins("JOIN flick_users ON flick_post_likes.user_id = flick_users.id").
+		Where("flick_post_likes.post_id = ?", postID)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -86,10 +86,10 @@ func (r *PostgresRepository) GetUserLikedPosts(ctx context.Context, userID strin
 	var total int64
 
 	query := r.db.WithContext(ctx).
-		Table("post_likes").
-		Select("posts.*").
-		Joins("JOIN posts ON post_likes.post_id = posts.id").
-		Where("post_likes.user_id = ?", userID)
+		Table("flick_post_likes").
+		Select("flick_posts.*").
+		Joins("JOIN flick_posts ON flick_post_likes.post_id = flick_posts.id").
+		Where("flick_post_likes.user_id = ?", userID)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -134,14 +134,14 @@ func (r *PostgresRepository) GetUserBookmarks(ctx context.Context, userID string
 	var total int64
 
 	query := r.db.WithContext(ctx).
-		Table("bookmarks").
-		Select("posts.*").
-		Joins("JOIN posts ON bookmarks.post_id = posts.id").
-		Where("bookmarks.user_id = ?", userID)
+		Table("flick_bookmarks").
+		Select("flick_posts.*").
+		Joins("JOIN flick_posts ON flick_bookmarks.post_id = flick_posts.id").
+		Where("flick_bookmarks.user_id = ?", userID)
 
 	// 如果指定了收藏夹，添加条件
 	if collectionName != "" {
-		query = query.Where("bookmarks.collection_name = ?", collectionName)
+		query = query.Where("flick_bookmarks.collection_name = ?", collectionName)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
