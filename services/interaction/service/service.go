@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/go-redis/redis/v8"
@@ -147,4 +148,38 @@ func (s *InteractionService) UpdateInteractionHandler(w http.ResponseWriter, r *
 func (s *InteractionService) DeleteInteractionHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 	w.Write([]byte("Not implemented"))
+}
+
+// 检查用户是否存在
+func (s *InteractionService) checkUserExists(ctx context.Context, userID string) (bool, error) {
+	db := s.repo.GetDB()
+	if db == nil {
+		return false, errors.New("无法获取数据库连接")
+	}
+
+	var count int64
+	if err := db.WithContext(ctx).Table("flick_users").
+		Where("id = ?", userID).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// 检查帖子是否存在
+func (s *InteractionService) checkPostExists(ctx context.Context, postID string) (bool, error) {
+	db := s.repo.GetDB()
+	if db == nil {
+		return false, errors.New("无法获取数据库连接")
+	}
+
+	var count int64
+	if err := db.WithContext(ctx).Table("flick_posts").
+		Where("id = ?", postID).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
