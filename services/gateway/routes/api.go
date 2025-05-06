@@ -103,8 +103,8 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.POST("/:username/status/:permalink_id/comments", interactionHandler.CommentOnPostByPermalink)
 
 	// 帖子保存相关路由 - (X风格URL)
-	authRoutes.POST("/:username/status/:permalink_id/save", contentHandler.SavePostByPermalink)
-	authRoutes.DELETE("/:username/status/:permalink_id/save", contentHandler.UnsavePostByPermalink)
+	authRoutes.POST("/:username/status/:permalink_id/save", interactionHandler.BookmarkPostByPermalink)
+	authRoutes.DELETE("/:username/status/:permalink_id/save", interactionHandler.UnbookmarkPostByPermalink)
 
 	// (通知相关)
 	authRoutes.GET("/notifications", notificationHandler.GetUserNotifications)
@@ -119,7 +119,15 @@ func SetupAPIRoutes(router *gin.Engine, cfg *config.Config) {
 	authRoutes.GET("/recommendations/for-you", recommendationHandler.GetRecommendations)
 	authRoutes.GET("/recommendations/trending", recommendationHandler.GetTrendingContent)
 
-	// (管理员路由)
+	// 为admin用户名创建特殊路由，直接注册到authRoutes上，使用显式路径
+	// 这样可以避免与管理员路由组冲突
+	authRoutes.POST("/admin/status/:permalink_id/like", interactionHandler.LikePostByPermalink)
+	authRoutes.DELETE("/admin/status/:permalink_id/like", interactionHandler.UnlikePostByPermalink)
+	authRoutes.POST("/admin/status/:permalink_id/save", interactionHandler.BookmarkPostByPermalink)
+	authRoutes.DELETE("/admin/status/:permalink_id/save", interactionHandler.UnbookmarkPostByPermalink)
+	authRoutes.POST("/admin/status/:permalink_id/comments", interactionHandler.CommentOnPostByPermalink)
+
+	// (管理员路由) - 必须在admin用户交互路由之后注册
 	adminRoutes := authRoutes.Group("/admin")
 	adminRoutes.Use(middleware.RoleAuth("admin"))
 
