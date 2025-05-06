@@ -55,11 +55,34 @@ func main() {
 	r := mux.NewRouter()
 
 	// API 路由
-	r.HandleFunc("interactions", interactionService.CreateInteractionHandler).Methods("POST")
-	r.HandleFunc("interactions", interactionService.ListInteractionsHandler).Methods("GET")
-	r.HandleFunc("interactions/{id}", interactionService.GetInteractionHandler).Methods("GET")
-	r.HandleFunc("interactions/{id}", interactionService.UpdateInteractionHandler).Methods("PUT")
-	r.HandleFunc("interactions/{id}", interactionService.DeleteInteractionHandler).Methods("DELETE")
+	r.HandleFunc("/interactions", interactionService.CreateInteractionHandler).Methods("POST")
+	r.HandleFunc("/interactions", interactionService.ListInteractionsHandler).Methods("GET")
+	r.HandleFunc("/interactions/{id}", interactionService.GetInteractionHandler).Methods("GET")
+	r.HandleFunc("/interactions/{id}", interactionService.UpdateInteractionHandler).Methods("PUT")
+	r.HandleFunc("/interactions/{id}", interactionService.DeleteInteractionHandler).Methods("DELETE")
+
+	// 点赞相关路由
+	r.HandleFunc("/posts/{id}/like", interactionService.LikePostHandler).Methods("POST")
+	r.HandleFunc("/posts/{id}/unlike", interactionService.UnlikePostHandler).Methods("POST")
+	r.HandleFunc("/posts/{id}/like", interactionService.UnlikePostHandler).Methods("DELETE")
+	r.HandleFunc("/posts/{id}/likes", interactionService.GetPostLikesHandler).Methods("GET")
+	r.HandleFunc("/posts/{id}/is-liked", interactionService.IsPostLikedHandler).Methods("GET")
+	r.HandleFunc("/users/{id}/liked-posts", interactionService.GetUserLikedPostsHandler).Methods("GET")
+
+	// 特别添加X风格URL的路由，直接处理permalink_id
+	r.HandleFunc("/{username}/status/{permalink_id}/like", interactionService.LikePostHandler).Methods("POST")
+	r.HandleFunc("/{username}/status/{permalink_id}/like", interactionService.UnlikePostHandler).Methods("DELETE")
+	r.HandleFunc("/{username}/status/{permalink_id}/unlike", interactionService.UnlikePostHandler).Methods("POST")
+
+	// 书签/收藏相关路由
+	r.HandleFunc("/posts/{id}/save", interactionService.SavePostHandler).Methods("POST")
+	r.HandleFunc("/posts/{id}/save", interactionService.UnsavePostHandler).Methods("DELETE")
+	r.HandleFunc("/posts/{id}/is-saved", interactionService.IsPostBookmarkedHandler).Methods("GET")
+	r.HandleFunc("/users/{id}/bookmarks", interactionService.GetUserBookmarksHandler).Methods("GET")
+
+	// 特别添加X风格URL的收藏路由
+	r.HandleFunc("/{username}/status/{permalink_id}/save", interactionService.SavePostHandler).Methods("POST")
+	r.HandleFunc("/{username}/status/{permalink_id}/save", interactionService.UnsavePostHandler).Methods("DELETE")
 
 	// 系统健康检查
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
