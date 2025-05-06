@@ -27,6 +27,13 @@ type InteractionRepository interface {
 	CreateBookmarkCollection(ctx context.Context, collection *models.BookmarkCollection) error
 	GetUserBookmarkCollections(ctx context.Context, userID string) ([]*models.BookmarkCollection, error)
 
+	// 帖子计数相关 (新增)
+	IncrementPostLikeCount(ctx context.Context, postID string) error
+	DecrementPostLikeCount(ctx context.Context, postID string) error
+	GetPostLikeCount(ctx context.Context, postID string) (int, error)
+	IncrementPostBookmarkCount(ctx context.Context, postID string) error
+	DecrementPostBookmarkCount(ctx context.Context, postID string) error
+
 	// 评论相关
 	CreateComment(ctx context.Context, comment *models.Comment) error
 	GetCommentByID(ctx context.Context, commentID string) (*models.Comment, error)
@@ -144,10 +151,10 @@ func (r *Repository) GetUserLikedPosts(ctx context.Context, userID string, offse
 	var total int64
 
 	query := r.db.WithContext(ctx).
-		Table("post_likes").
-		Select("posts.*").
-		Joins("JOIN posts ON post_likes.post_id = posts.id").
-		Where("post_likes.user_id = ?", userID)
+		Table("flick_post_likes").
+		Select("flick_posts.*").
+		Joins("JOIN flick_posts ON flick_post_likes.post_id = flick_posts.id").
+		Where("flick_post_likes.user_id = ?", userID)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -357,4 +364,51 @@ func (r *Repository) GetPostInteractionCounts(ctx context.Context, postID string
 // GetUserInteractionCounts 获取用户互动计数
 func (r *Repository) GetUserInteractionCounts(ctx context.Context, userID string) (map[string]int64, error) {
 	return nil, nil
+}
+
+// IncrementPostLikeCount 增加帖子点赞计数
+func (r *Repository) IncrementPostLikeCount(ctx context.Context, postID string) error {
+	return r.db.WithContext(ctx).
+		Table("flick_posts").
+		Where("id = ?", postID).
+		UpdateColumn("like_count", gorm.Expr("like_count + 1")).
+		Error
+}
+
+// DecrementPostLikeCount 减少帖子点赞计数
+func (r *Repository) DecrementPostLikeCount(ctx context.Context, postID string) error {
+	return r.db.WithContext(ctx).
+		Table("flick_posts").
+		Where("id = ?", postID).
+		UpdateColumn("like_count", gorm.Expr("GREATEST(like_count - 1, 0)")).
+		Error
+}
+
+// GetPostLikeCount 获取帖子当前点赞数
+func (r *Repository) GetPostLikeCount(ctx context.Context, postID string) (int, error) {
+	var count int
+	err := r.db.WithContext(ctx).
+		Model(&models.Post{}).
+		Where("id = ?", postID).
+		Select("like_count").
+		First(&count).Error
+	return count, err
+}
+
+// IncrementPostBookmarkCount 增加帖子收藏计数
+func (r *Repository) IncrementPostBookmarkCount(ctx context.Context, postID string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.Post{}).
+		Where("id = ?", postID).
+		UpdateColumn("bookmark_count", gorm.Expr("bookmark_count + 1")).
+		Error
+}
+
+// DecrementPostBookmarkCount 减少帖子收藏计数
+func (r *Repository) DecrementPostBookmarkCount(ctx context.Context, postID string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.Post{}).
+		Where("id = ?", postID).
+		UpdateColumn("bookmark_count", gorm.Expr("GREATEST(bookmark_count - 1, 0)")).
+		Error
 }
