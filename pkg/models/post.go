@@ -4,8 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // PostType 表示帖子类型
@@ -32,7 +33,7 @@ const (
 	PostStatusDeleted   PostStatus = "deleted"
 	PostStatusReported  PostStatus = "reported"
 	PostStatusHidden    PostStatus = "hidden"
-	PostStatusFlagged   PostStatus = "flagged"  // 被标记为不当内容的帖子
+	PostStatusFlagged   PostStatus = "flagged" // 被标记为不当内容的帖子
 )
 
 // MediaFile 表示媒体文件
@@ -130,6 +131,7 @@ type Post struct {
 	LikeCount     int            `json:"like_count" gorm:"default:0"`
 	CommentCount  int            `json:"comment_count" gorm:"default:0"`
 	ShareCount    int            `json:"share_count" gorm:"default:0"`
+	BookmarkCount int            `json:"bookmark_count" gorm:"default:0"` // 收藏数量
 	FeaturedAt    *time.Time     `json:"featured_at"`
 	PublishedAt   *time.Time     `json:"published_at"`
 	CreatedAt     time.Time      `json:"created_at"`
