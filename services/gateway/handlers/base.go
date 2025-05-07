@@ -129,8 +129,6 @@ func (h *BaseHandler) HandleRequest(c *gin.Context, serviceName string) {
 		Str("originalPath", originalPath).
 		Msg("服务URL配置")
 
-	// 不再需要处理/api/v1前缀，直接使用路径
-
 	// 包含查询参数
 	if c.Request.URL.RawQuery != "" {
 		path = path + "?" + c.Request.URL.RawQuery
