@@ -86,7 +86,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// 加载微服务配置
-	// 格式 SERVICE_USER=user-service:http://localhost:8081/api/v1
+	// 格式 SERVICE_USER=user-service:http://localhost:8081/
 	// 服务表示为name:url对
 	for _, env := range os.Environ() {
 		if strings.HasPrefix(env, "SERVICE_") {
