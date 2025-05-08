@@ -4,6 +4,7 @@ import (
 	"backend/services/gateway/config"
 
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -160,5 +161,86 @@ func (h *InteractionHandler) GetPostCommentsByPermalink(c *gin.Context) {
 		Msg("通过永久链接获取帖子评论")
 
 	// 将请求委托给交互服务
+	h.HandleRequest(c, "interaction")
+}
+
+// GetCurrentUserLikedPosts 获取当前用户点赞的帖子列表
+func (h *InteractionHandler) GetCurrentUserLikedPosts(c *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权访问"})
+		return
+	}
+
+	// 将用户ID添加到查询参数
+	query := c.Request.URL.Query()
+	query.Set("user_id", fmt.Sprintf("%v", userID))
+	c.Request.URL.RawQuery = query.Encode()
+
+	// 设置请求路径为内部格式 - 修改为与交互服务匹配的路径格式
+	userIDStr := fmt.Sprintf("%v", userID)
+	c.Request.URL.Path = fmt.Sprintf("/users/%s/liked-posts", userIDStr)
+
+	log.Info().
+		Str("user_id", userIDStr).
+		Str("path", c.Request.URL.Path).
+		Msg("获取用户点赞帖子")
+
+	// 转发请求到interaction服务
+	h.HandleRequest(c, "interaction")
+}
+
+// GetUserLikedPosts 获取用户点赞的帖子列表（简化版的转发）
+func (h *InteractionHandler) GetUserLikedPosts(c *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权访问"})
+		return
+	}
+
+	// 将用户ID添加到查询参数
+	query := c.Request.URL.Query()
+	query.Set("user_id", fmt.Sprintf("%v", userID))
+	c.Request.URL.RawQuery = query.Encode()
+
+	// 保持原始路径不变，直接使用/users/me/liked-posts
+	// 不要修改路径，交互服务已经专门注册了这个路径的处理器
+
+	// 记录详细转发信息
+	log.Info().
+		Str("user_id", fmt.Sprintf("%v", userID)).
+		Str("path", c.Request.URL.Path).
+		Str("method", c.Request.Method).
+		Msg("获取用户点赞帖子 - 正在转发请求")
+
+	// 转发请求到interaction服务
+	h.HandleRequest(c, "interaction")
+}
+
+// GetUserBookmarks 获取当前用户的书签
+func (h *InteractionHandler) GetUserBookmarks(c *gin.Context) {
+	// 获取当前用户ID
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权访问"})
+		return
+	}
+
+	// 将用户ID添加到查询参数
+	query := c.Request.URL.Query()
+	query.Set("user_id", fmt.Sprintf("%v", userID))
+	c.Request.URL.RawQuery = query.Encode()
+
+	// 保持原始路径不变，直接使用/users/me/bookmarks
+	// 记录详细转发信息
+	log.Info().
+		Str("user_id", fmt.Sprintf("%v", userID)).
+		Str("path", c.Request.URL.Path).
+		Str("method", c.Request.Method).
+		Msg("获取用户书签 - 正在转发请求")
+
+	// 转发请求到interaction服务
 	h.HandleRequest(c, "interaction")
 }
