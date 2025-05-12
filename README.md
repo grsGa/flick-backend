@@ -257,4 +257,51 @@ docker build -t flick/gateway-service -f services/gateway/Dockerfile .
 - **MetricsMiddleware**: 收集请求指标，如请求数量和处理时间。
 - **CORSMiddleware**: 处理跨域资源共享，允许前端应用访问API。
 - **RecoveryMiddleware**: 从panic中恢复，防止服务因未处理的错误而崩溃。
-- **ErrorHandlerMiddleware**: 统一处理和格式化错误响应。 
+- **ErrorHandlerMiddleware**: 统一处理和格式化错误响应。
+
+## GraphQL代码生成
+
+本项目使用[gqlgen](https://gqlgen.com/)来生成GraphQL服务器代码。配置文件位于项目根目录的`gqlgen.yml`。
+
+### GraphQL配置说明
+
+- **schema**: GraphQL schema文件的位置，定义了API的结构
+- **resolver**: 解析器的生成配置，包括目录和包名
+- **model**: 生成的模型代码配置
+- **exec**: 生成的可执行schema配置
+
+### 可用的GraphQL命令
+
+在项目根目录下执行以下命令：
+
+```bash
+# 生成GraphQL代码
+make gql 
+
+# 初始化新的GraphQL配置(仅首次设置时使用)
+make gql-init
+
+# 更新GraphQL schema
+make gql-schema
+```
+
+### 开发流程
+
+1. 在`services/user/internal/graphql/schema/`目录中编辑schema文件
+2. 运行`make gql`生成代码
+3. 在`services/user/internal/graphql/resolver/`目录中实现解析器逻辑
+4. 构建并测试服务: `go build ./services/user`
+
+### GraphQL API测试
+
+生成代码后，可以通过GraphQL Playground访问API文档和进行测试，默认地址为：
+
+- 用户服务: http://localhost:8081/playground
+
+### 解决冲突问题
+
+如果生成的代码与已有代码发生冲突，可以：
+
+1. 修改`gqlgen.yml`配置文件
+2. 调整schema定义
+3. 使用自定义解析器代替自动生成的解析器 
