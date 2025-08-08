@@ -158,7 +158,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		DisplayName:  req.DisplayName,
-		LoginMethod:  "local",
+		LoginMethod:  "password",
 		Status:       "active",
 	}
 
