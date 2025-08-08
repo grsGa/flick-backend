@@ -1,68 +1,64 @@
-# 多阶段构建 - 基础构建阶段
-FROM golang:1.24-alpine3.21 AS builder
+# Stage 1: Build the Go applications
+FROM golang:1.24 AS builder
 
-# 设置工作目录
+RUN apt-get update && apt-get install -y git
+
+ENV GOPROXY=https://goproxy.cn,direct
+
 WORKDIR /app
 
-# 安装构建依赖
-RUN apk add --no-cache git ca-certificates tzdata \
-    && update-ca-certificates
-
-# 先复制 go.mod 和 go.sum 文件
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
-# 下载依赖
-RUN go mod download
-
-# 复制源代码
+# Copy the entire backend source code
 COPY . .
 
-# 构建服务 - 根据服务类型选择不同的构建方式
-ARG SERVICE=gateway
-RUN mkdir -p /app/bin && \
-    case $SERVICE in \
-        "gateway") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/gateway ;; \
-        "user") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/user ;; \
-        "content") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/content ;; \
-        "recommendation") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/recommendation ;; \
-        "notification") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/notification ;; \
-        "interaction") \
-            CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /app/bin/service ./services/interaction ;; \
-        *) \
-            echo "Unknown service: $SERVICE" && exit 1 ;; \
-    esac
+# Tidy and vendor dependencies
+RUN go mod tidy
 
-# 生产阶段镜像
-FROM alpine:latest
+# Regenerate protobuf code
+ENV PROTOC_VERSION=3.19.4
+RUN apt-get update && apt-get install -y curl unzip && \
+    curl -L https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip -o /tmp/protoc.zip && \
+    unzip /tmp/protoc.zip -d /usr/local && \
+    rm /tmp/protoc.zip
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
+ENV PATH="$PATH:$(go env GOPATH)/bin"
+RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative services/auth/proto/auth.proto
 
-# 安装运行时依赖
-RUN apk --no-cache add ca-certificates tzdata curl \
-    && update-ca-certificates
+# Remove the conflicting resolver file
+# RUN rm /app/services/gateway/resolver.go
 
-# 创建非root用户
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Build the main binary for each service
+RUN go build -mod=vendor -o /app/gateway ./services/gateway
+RUN go build -mod=vendor -o /app/auth ./services/auth
+RUN go build -mod=vendor -o /app/user ./services/user
+# Add build commands for other services here...
 
-# 设置工作目录
+# Download wait-for-it.sh
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /usr/local/bin/wait-for-it.sh
+RUN chmod +x /usr/local/bin/wait-for-it.sh
+
+# Install grpc_health_probe
+RUN go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.11
+
+# Stage 2: Create the final image
+FROM debian:stable-slim
+
+RUN apt-get update && apt-get install -y bash
+
 WORKDIR /app
 
-# 复制编译好的应用和其他需要的文件
-COPY --from=builder /app/bin/service /app/service
-COPY deploy/docker/health-check.sh /app/health-check.sh
-RUN chmod +x /app/health-check.sh
+# Copy the built binaries and wait-for-it.sh from the builder stage
+COPY --from=builder /app/gateway /app/gateway
+COPY --from=builder /app/auth /app/auth
+COPY --from=builder /app/user /app/user
+COPY --from=builder /usr/local/bin/wait-for-it.sh /usr/local/bin/wait-for-it.sh
+COPY --from=builder /go/bin/grpc-health-probe /usr/local/bin/grpc-health-probe
 
-# 设置用户
-USER appuser
+# The command to run will be specified in the docker-compose.yml
+# Example: CMD ["/app/gateway"]
 
-# 设置环境变量
-ENV GIN_MODE=release
-
-# 暴露端口
-EXPOSE 8080
-
-# 启动应用
-CMD ["/app/service"]
+# The command to run will be specified in the docker-compose.yml
+# Example: CMD ["/app/gateway"]

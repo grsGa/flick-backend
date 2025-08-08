@@ -1,0 +1,477 @@
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"time"
+
+	"backend/services/auth/internal/repository"
+	"backend/services/auth/proto"
+
+	"backend/pkg/config"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
+	"golang.org/x/oauth2/google"
+)
+
+var githubOauthConfig = &oauth2.Config{
+	ClientID:     "your_github_client_id",
+	ClientSecret: "your_github_client_secret",
+	RedirectURL:  "http://localhost:8080/auth/github/callback",
+	Scopes:       []string{"user:email"},
+	Endpoint:     github.Endpoint,
+}
+
+var googleOauthConfig = &oauth2.Config{
+	ClientID:     "your_google_client_id",
+	ClientSecret: "your_google_client_secret",
+	RedirectURL:  "http://localhost:8080/auth/google/callback",
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+	Endpoint:     google.Endpoint,
+}
+
+// authService 认证服务实现
+type authService struct {
+	authRepo repository.AuthRepository
+	cfg      *config.Config
+}
+
+// NewAuthService 创建认证服务实例
+func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config) AuthService {
+	return &authService{
+		authRepo: authRepo,
+		cfg:      cfg,
+	}
+}
+
+// Login 用户登录
+func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+	// 获取用户信息
+	user, err := s.authRepo.GetUserByIdentifier(ctx, req.Identifier)
+	if err != nil {
+		return &proto.LoginResponse{
+			Error: &proto.Error{
+				Code:    401,
+				Message: "Invalid credentials",
+			},
+		}, nil
+	}
+
+	// 验证密码
+	if err := s.authRepo.VerifyPassword(ctx, user.Id, req.Password); err != nil {
+		return &proto.LoginResponse{
+			Error: &proto.Error{
+				Code:    401,
+				Message: "Invalid credentials",
+			},
+		}, nil
+	}
+
+	// 生成JWT令牌
+	accessToken, refreshToken, err := s.generateTokens(user.Id)
+	if err != nil {
+		return &proto.LoginResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to generate tokens: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 更新用户最后登录时间
+	s.authRepo.UpdateUserLoginInfo(ctx, user.Id, time.Now().Format(time.RFC3339))
+
+	return &proto.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // 1小时
+		User:         user,
+	}, nil
+}
+
+// Register 用户注册
+func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+	// 检查用户是否已存在
+	_, err := s.authRepo.GetUserByIdentifier(ctx, req.Email)
+	if err == nil {
+		return &proto.RegisterResponse{
+			Error: &proto.Error{
+				Code:    409,
+				Message: "User with this email already exists",
+			},
+		}, nil
+	}
+
+	// 创建用户对象
+	user := &proto.User{
+		Username:    req.Username,
+		Email:       req.Email,
+		Phone:       req.Phone,
+		DisplayName: req.DisplayName,
+		LoginMethod: req.LoginMethod,
+		Status:      "active",
+		CreatedAt:   time.Now().Format(time.RFC3339),
+		UpdatedAt:   time.Now().Format(time.RFC3339),
+	}
+
+	// 保存用户到数据库
+	createdUser, err := s.authRepo.CreateUser(ctx, user, req.Password)
+	if err != nil {
+		return &proto.RegisterResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to create user: " + err.Error(),
+			},
+		}, err
+	}
+	user.Id = createdUser.Id
+
+	// 生成JWT令牌
+	accessToken, refreshToken, err := s.generateTokens(user.Id)
+	if err != nil {
+		return &proto.RegisterResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to generate tokens: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.RegisterResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // 1小时
+		User:         user,
+	}, nil
+}
+
+// ValidateToken 验证令牌
+func (s *authService) ValidateToken(ctx context.Context, req *proto.ValidateTokenRequest) (*proto.ValidateTokenResponse, error) {
+	// 解析和验证JWT令牌
+	claims, err := s.parseToken(req.Token)
+	if err != nil {
+		return &proto.ValidateTokenResponse{
+			Valid: false,
+			Error: &proto.Error{
+				Code:    401,
+				Message: "Invalid token: " + err.Error(),
+			},
+		}, nil
+	}
+
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return &proto.ValidateTokenResponse{
+			Valid: false,
+			Error: &proto.Error{
+				Code:    401,
+				Message: "Invalid token claims",
+			},
+		}, nil
+	}
+
+	return &proto.ValidateTokenResponse{
+		Valid:  true,
+		UserId: userID,
+	}, nil
+}
+
+// RefreshToken 刷新令牌
+func (s *authService) RefreshToken(ctx context.Context, req *proto.RefreshTokenRequest) (*proto.RefreshTokenResponse, error) {
+	// 获取会话信息
+	session, err := s.authRepo.GetSession(ctx, req.RefreshToken)
+	if err != nil {
+		return &proto.RefreshTokenResponse{
+			Error: &proto.Error{
+				Code:    401,
+				Message: "Invalid refresh token",
+			},
+		}, nil
+	}
+
+	// 生成新的JWT令牌
+	accessToken, newRefreshToken, err := s.generateTokens(session.UserID)
+	if err != nil {
+		return &proto.RefreshTokenResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to generate tokens: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 删除旧会话并创建新会话
+	s.authRepo.DeleteSession(ctx, req.RefreshToken)
+	s.authRepo.CreateSession(ctx, &repository.Session{
+		UserID:       session.UserID,
+		RefreshToken: newRefreshToken,
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour).Format(time.RFC3339), // 7天过期
+		CreatedAt:    time.Now().Format(time.RFC3339),
+	})
+
+	return &proto.RefreshTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // 1小时
+	}, nil
+}
+
+// Logout 登出
+func (s *authService) Logout(ctx context.Context, req *proto.LogoutRequest) (*proto.LogoutResponse, error) {
+	// 删除用户所有会话
+	err := s.authRepo.DeleteUserSessions(ctx, req.UserId)
+	if err != nil {
+		return &proto.LogoutResponse{
+			Success: false,
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to logout: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.LogoutResponse{
+		Success: true,
+	}, nil
+}
+
+// GithubLogin Github登录
+func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginRequest) (*proto.GithubLoginResponse, error) {
+	url := githubOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	return &proto.GithubLoginResponse{
+		RedirectUrl: url,
+	}, nil
+}
+
+// GithubCallback Github回调
+func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallbackRequest) (*proto.GithubCallbackResponse, error) {
+	// Exchange the code for a token
+	token, err := githubOauthConfig.Exchange(ctx, req.Code)
+	if err != nil {
+		return &proto.GithubCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to exchange code: " + err.Error(),
+			},
+		}, err
+	}
+
+	// Get user info from Github
+	client := githubOauthConfig.Client(ctx, token)
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return &proto.GithubCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get user info: " + err.Error(),
+			},
+		}, err
+	}
+	defer resp.Body.Close()
+
+	var githubUser struct {
+		ID    int    `json:"id"`
+		Login string `json:"login"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&githubUser); err != nil {
+		return &proto.GithubCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to decode user info: " + err.Error(),
+			},
+		}, err
+	}
+
+	// Check if user exists
+	user, err := s.authRepo.GetUserByIdentifier(ctx, githubUser.Email)
+	if err != nil {
+		// Create new user
+		user = &proto.User{
+			Username:    githubUser.Login,
+			Email:       githubUser.Email,
+			DisplayName: githubUser.Name,
+			LoginMethod: "github",
+			Status:      "active",
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			UpdatedAt:   time.Now().Format(time.RFC3339),
+		}
+		createdUser, err := s.authRepo.CreateUser(ctx, user, "")
+		if err != nil {
+			return &proto.GithubCallbackResponse{
+				Error: &proto.Error{
+					Code:    500,
+					Message: "Failed to create user: " + err.Error(),
+				},
+			}, err
+		}
+		user = createdUser
+	}
+
+	// Generate JWT tokens
+	accessToken, refreshToken, err := s.generateTokens(user.Id)
+	if err != nil {
+		return &proto.GithubCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to generate tokens: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GithubCallbackResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // 1小时
+		User:         user,
+	}, nil
+}
+
+// GoogleLogin Google登录
+func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginRequest) (*proto.GoogleLoginResponse, error) {
+	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	return &proto.GoogleLoginResponse{
+		RedirectUrl: url,
+	}, nil
+}
+
+// GoogleCallback Google回调
+func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallbackRequest) (*proto.GoogleCallbackResponse, error) {
+	// Exchange the code for a token
+	token, err := googleOauthConfig.Exchange(ctx, req.Code)
+	if err != nil {
+		return &proto.GoogleCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to exchange code: " + err.Error(),
+			},
+		}, err
+	}
+
+	// Get user info from Google
+	client := googleOauthConfig.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return &proto.GoogleCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get user info: " + err.Error(),
+			},
+		}, err
+	}
+	defer resp.Body.Close()
+
+	var googleUser struct {
+		ID    string `json:"id"`
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		return &proto.GoogleCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to decode user info: " + err.Error(),
+			},
+		}, err
+	}
+
+	// Check if user exists
+	user, err := s.authRepo.GetUserByIdentifier(ctx, googleUser.Email)
+	if err != nil {
+		// Create new user
+		user = &proto.User{
+			Username:    googleUser.Email,
+			Email:       googleUser.Email,
+			DisplayName: googleUser.Name,
+			LoginMethod: "google",
+			Status:      "active",
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			UpdatedAt:   time.Now().Format(time.RFC3339),
+		}
+		createdUser, err := s.authRepo.CreateUser(ctx, user, "")
+		if err != nil {
+			return &proto.GoogleCallbackResponse{
+				Error: &proto.Error{
+					Code:    500,
+					Message: "Failed to create user: " + err.Error(),
+				},
+			}, err
+		}
+		user = createdUser
+	}
+
+	// Generate JWT tokens
+	accessToken, refreshToken, err := s.generateTokens(user.Id)
+	if err != nil {
+		return &proto.GoogleCallbackResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to generate tokens: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GoogleCallbackResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    3600, // 1小时
+		User:         user,
+	}, nil
+}
+
+// generateTokens 生成访问令牌和刷新令牌
+func (s *authService) generateTokens(userID string) (accessToken, refreshToken string, err error) {
+	// 生成访问令牌
+	accessClaims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(time.Hour).Unix(), // 1小时过期
+		"iat":     time.Now().Unix(),
+	}
+
+	accessJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessToken, err = accessJwt.SignedString([]byte(s.cfg.JWTSecret)) // 实际项目中应从配置获取
+	if err != nil {
+		return "", "", err
+	}
+
+	// 生成刷新令牌
+	refreshClaims := jwt.MapClaims{
+		"user_id": userID,
+		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(), // 7天过期
+		"iat":     time.Now().Unix(),
+	}
+
+	refreshJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken, err = refreshJwt.SignedString([]byte(s.cfg.JWTSecret)) // 实际项目中应从配置获取
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+// parseToken 解析和验证令牌
+func (s *authService) parseToken(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.cfg.JWTSecret), nil // 实际项目中应从配置获取
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, err
+	}
+
+	return claims, nil
+}

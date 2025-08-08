@@ -1,0 +1,305 @@
+# Authentication related GraphQL types
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+input RegisterInput {
+  username: String!
+  email: String!
+  password: String!
+  displayName: String
+  phone: String
+}
+
+# Common GraphQL types
+
+scalar Upload
+
+# Content related GraphQL types
+
+type Tweet {
+  id: ID!
+  content: String!
+  author: User!
+  createdAt: String!
+  media: [Media!]!
+  interaction: Interaction!
+  comments(first: Int!, after: String): CommentConnection
+}
+
+type Comment {
+  id: ID!
+  content: String!
+  author: User!
+  createdAt: String!
+  interaction: Interaction!
+}
+
+input CreateTweetInput {
+  content: String!
+  mediaIds: [ID!]
+  replyTo: ID
+}
+
+input CreateCommentInput {
+  content: String!
+  tweetId: ID!
+}
+
+type Media {
+  id: ID!
+  url: String!
+  type: MediaType!
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type TweetEdge {
+  node: Tweet!
+  cursor: String!
+}
+
+type TweetConnection {
+  edges: [TweetEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CommentEdge {
+  node: Comment!
+  cursor: String!
+}
+
+type CommentConnection {
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+}
+
+# Interaction related GraphQL types
+
+type Interaction {
+  isLiked: Boolean!
+  isBookmarked: Boolean!
+  isRetweeted: Boolean!
+  likeCount: Int!
+  commentCount: Int!
+  retweetCount: Int!
+}
+
+input LikeTweetInput {
+  tweetId: ID!
+}
+
+input BookmarkTweetInput {
+  tweetId: ID!
+}
+
+input RetweetInput {
+  tweetId: ID!
+}
+
+# Message related GraphQL types
+
+type Conversation {
+  id: ID!
+  participants: [User!]!
+  lastMessage: Message
+  unreadCount: Int!
+  createdAt: String!
+}
+
+type Message {
+  id: ID!
+  conversationId: ID!
+  sender: User!
+  content: String!
+  media: Media
+  read: Boolean!
+  createdAt: String!
+}
+
+input CreateMessageInput {
+  conversationId: ID!
+  content: String!
+  mediaId: ID
+}
+
+input CreateConversationInput {
+  participantIds: [ID!]!
+}
+
+type MessageEdge {
+  node: Message!
+  cursor: String!
+}
+
+type MessageConnection {
+  edges: [MessageEdge!]!
+  pageInfo: PageInfo!
+}
+
+# Notification related GraphQL types
+
+type Notification {
+  id: ID!
+  type: NotificationType!
+  actor: User!
+  entity: NotificationEntity!
+  read: Boolean!
+  createdAt: String!
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  RETWEET
+  BOOKMARK
+}
+
+union NotificationEntity = Tweet | Comment | User
+
+type NotificationEdge {
+  node: Notification!
+  cursor: String!
+}
+
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+}
+
+# Recommendation related GraphQL types
+
+type Recommendation {
+  id: ID!
+  type: RecommendationType!
+  entity: RecommendationEntity!
+  score: Float!
+}
+
+enum RecommendationType {
+  USER
+  TWEET
+  HASHTAG
+}
+
+union RecommendationEntity = User | Tweet | Hashtag
+
+# Search related GraphQL types
+
+type SearchResults {
+  tweets: TweetConnection
+  users: UserConnection
+  hashtags: HashtagConnection
+}
+
+type Hashtag {
+  id: ID!
+  name: String!
+  tweetCount: Int!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UserEdge {
+  node: User!
+  cursor: String!
+}
+
+type HashtagConnection {
+  edges: [HashtagEdge!]!
+  pageInfo: PageInfo!
+}
+
+type HashtagEdge {
+  node: Hashtag!
+  cursor: String!
+}
+
+input SearchInput {
+  query: String!
+  types: [SearchType!]
+  first: Int
+  after: String
+}
+
+enum SearchType {
+  TWEET
+  USER
+  HASHTAG
+}
+
+# User related GraphQL types
+
+type User {
+  id: ID!
+  username: String!
+  displayName: String
+  bio: String
+  avatarUrl: String
+  bannerUrl: String
+  followersCount: Int!
+  followingCount: Int!
+  isFollowing: Boolean
+  isVerified: Boolean
+  createdAt: String!
+}
+
+input UpdateProfileInput {
+  displayName: String
+  bio: String
+  avatarUrl: String
+  bannerUrl: String
+}
+
+type Query {
+  health: String
+  tweet(id: ID!): Tweet
+  userTweets(username: String!, first: Int!, after: String): TweetConnection
+  homeFeed(first: Int!, after: String): TweetConnection
+  notifications(first: Int!, after: String): NotificationConnection
+  conversations: [Conversation!]!
+  conversation(id: ID!): Conversation
+  messages(conversationId: ID!, first: Int!, after: String): MessageConnection
+  search(input: SearchInput!): SearchResults
+  trendingHashtags(first: Int!): [Hashtag!]!
+  recommendedUsers(first: Int!): [User!]!
+  recommendedTweets(first: Int!): TweetConnection
+}
+
+type Mutation {
+  login(input: LoginInput!): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  uploadMedia(file: Upload!): Media!
+  createTweet(input: CreateTweetInput!): Tweet!
+  createComment(input: CreateCommentInput!): Comment!
+  likeTweet(input: LikeTweetInput!): Interaction!
+  unlikeTweet(input: LikeTweetInput!): Interaction!
+  bookmarkTweet(input: BookmarkTweetInput!): Interaction!
+  unbookmarkTweet(input: BookmarkTweetInput!): Interaction!
+  retweet(input: RetweetInput!): Interaction!
+  undoRetweet(input: RetweetInput!): Interaction!
+  createConversation(input: CreateConversationInput!): Conversation!
+  sendMessage(input: CreateMessageInput!): Message!
+  markMessageAsRead(messageId: ID!): Message!
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead: Boolean!
+}

@@ -1,448 +1,129 @@
-version: '3.8'
-
-# 共享网络
 networks:
-  flick-network:
+  flick_network:
     driver: bridge
 
-# 共享卷
-volumes:
-  postgres-data:
-  redis-data:
-  prometheus-data:
-  grafana-data:
-  minio-data:
-
 services:
-  # API网关服务
+  consul:
+    image: consul:1.15
+    container_name: consul
+    ports:
+      - "8500:8500"
+    networks:
+      - flick_network
+    command: "agent -server -bootstrap-expect 1 -ui -client 0.0.0.0"
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: flick
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flick_network
+
   gateway:
     build:
       context: ../../
       dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: gateway
-    image: flick/gateway:latest
-    container_name: flick-gateway
-    restart: unless-stopped
+    container_name: gateway-service
     ports:
       - "8080:8080"
-    env_file:
-      - ../../.env
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_USE_SSL=false
+      - GATEWAY_PORT=8080
+      - CONSUL_AGENT_ADDR=consul:8500
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=flick
+      - POSTGRES_PORT=5432
     depends_on:
-      - postgres
-      - redis
-      - minio
+      consul:
+        condition: service_started
+      postgres:
+        condition: service_started
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
     networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
+      - flick_network
     healthcheck:
-      test: ["CMD", "/app/health-check.sh"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://gateway-service:8080/health"]
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 60s
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/usr/local/bin/wait-for-it.sh", "consul:8500", "-t", "0", "--", "/usr/local/bin/wait-for-it.sh", "auth-service:50053", "-t", "0", "--", "/usr/local/bin/wait-for-it.sh", "user-service:50051", "-t", "0", "--", "/app/gateway"]
 
-  # 用户服务
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    networks:
+      - flick_network
+
+  auth-service:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile
+    container_name: auth-service
+    environment:
+      - AUTH_SERVICE_PORT=50053
+      - CONSUL_AGENT_ADDR=consul:8500
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=flick
+      - POSTGRES_PORT=5432
+    depends_on:
+      - consul
+      - postgres
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50053", "-service=auth-service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - flick_network
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/auth"]
+    restart: always
+
   user-service:
     build:
       context: ../../
       dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: user
-    image: flick/user-service:latest
-    container_name: flick-user-service
-    restart: unless-stopped
-    ports:
-      - "8081:8081"
-    env_file:
-      - ../../.env
+    container_name: user-service
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_USE_SSL=false
-      - MINIO_BUCKET_USER=user-media
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # 内容服务
-  content-service:
-    build:
-      context: ../../
-      dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: content
-    image: flick/content-service:latest
-    container_name: flick-content-service
-    restart: unless-stopped
-    ports:
-      - "8082:8082"
-    env_file:
-      - ../../.env
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_USE_SSL=false
-      - MINIO_BUCKET_CONTENT=content-media
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # 推荐服务
-  recommendation-service:
-    build:
-      context: ../../
-      dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: recommendation
-    image: flick/recommendation-service:latest
-    container_name: flick-recommendation-service
-    restart: unless-stopped
-    ports:
-      - "8085:8085"
-    env_file:
-      - ../../.env
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # 通知服务
-  notification-service:
-    build:
-      context: ../../
-      dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: notification
-    image: flick/notification-service:latest
-    container_name: flick-notification-service
-    restart: unless-stopped
-    ports:
-      - "8084:8084"
-    env_file:
-      - ../../.env
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-          
-  # 交互服务
-  interaction-service:
-    build:
-      context: ../../
-      dockerfile: deploy/docker/Dockerfile
-      args:
-        SERVICE: interaction
-    image: flick/interaction-service:latest
-    container_name: flick-interaction-service
-    restart: unless-stopped
-    ports:
-      - "8083:8083"
-    env_file:
-      - ../../.env
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=flick
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=redis123
-      - LOG_LEVEL=info
-      - METRICS_ENABLED=true
-      - JAEGER_ENDPOINT=http://jaeger:14268/api/traces
-    depends_on:
-      - postgres
-      - redis
-    networks:
-      - flick-network
-    deploy:
-      resources:
-        limits:
-          cpus: '0.3'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # PostgresSQL数据库
-  postgres:
-    image: postgres:14-alpine
-    container_name: flick-postgres
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - USER_SERVICE_PORT=50051
+      - CONSUL_AGENT_ADDR=consul:8500
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=flick
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ../../deploy/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - flick-network
+      - POSTGRES_PORT=5432
+    depends_on:
+      - consul
+      - postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "grpc_health_probe", "-addr=:50051", "-service=user-service"]
       interval: 10s
       timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
-  # Redis缓存
-  redis:
-    image: redis:7-alpine
-    container_name: flick-redis
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    command: redis-server --requirepass redis123
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-      - ../../deploy/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      retries: 5
+      start_period: 60s
     networks:
-      - flick-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redis123", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
+      - flick_network
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/user"]
+    restart: always
 
-  # Prometheus监控
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: flick-prometheus
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    volumes:
-      - ../../deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - flick-network
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-
-  # Grafana仪表盘
-  grafana:
-    image: grafana/grafana:latest
-    container_name: flick-grafana
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ../../deploy/monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
-      - ../../deploy/monitoring/grafana-datasources:/etc/grafana/provisioning/datasources
-    networks:
-      - flick-network
-    depends_on:
-      - prometheus
-
-  # Jaeger分布式追踪
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: flick-jaeger
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    ports:
-      - "16686:16686" # UI
-      - "14268:14268" # Collector HTTP
-    networks:
-      - flick-network
-    environment:
-      - COLLECTOR_ZIPKIN_HTTP_PORT=9411 
-
-  # MinIO对象存储
-  minio:
-    image: minio/minio:latest
-    container_name: flick-minio
-    restart: unless-stopped
-    env_file:
-      - ../../.env
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    command: server --console-address ":9001" /data
-    volumes:
-      - minio-data:/data
-    ports:
-      - "9000:9000"  # API端口
-      - "9001:9001"  # 控制台端口
-    networks:
-      - flick-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 256M
-
-  # 初始化MinIO存储桶
-  minio-init:
-    image: minio/mc:latest
-    container_name: flick-minio-init
-    depends_on:
-      - minio
-    restart: "no"
-    env_file:
-      - ../../.env
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10 &&
-      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin &&
-      /usr/bin/mc mb --ignore-existing myminio/user-media &&
-      /usr/bin/mc mb --ignore-existing myminio/content-media &&
-      /usr/bin/mc anonymous set download myminio/user-media &&
-      /usr/bin/mc anonymous set download myminio/content-media &&
-      exit 0;
-      "
-    networks:
-      - flick-network 
+volumes:
+  postgres_data:

@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package messages;
+option go_package = "./proto";
+
+// MessageService 定义消息服务
+service MessageService {
+  // 创建会话
+  rpc CreateConversation(CreateConversationRequest) returns (CreateConversationResponse);
+  
+  // 获取会话列表
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse);
+  
+  // 获取会话详情
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
+  
+  // 发送消息
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  
+  // 获取消息列表
+  rpc ListMessages(ListMessagesRequest) returns (ListMessagesResponse);
+  
+  // 标记消息为已读
+  rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
+  
+  // 删除会话
+  rpc DeleteConversation(DeleteConversationRequest) returns (DeleteConversationResponse);
+}
+
+// 会话信息
+message Conversation {
+  string id = 1;
+  string user1_id = 2;
+  string user2_id = 3;
+  string last_message = 4;
+  string updated_at = 5;
+  string created_at = 6;
+}
+
+// 消息信息
+message Message {
+  string id = 1;
+  string conversation_id = 2;
+  string sender_id = 3;
+  string content = 4;
+  string media_url = 5;
+  bool is_read = 6;
+  string created_at = 7;
+}
+
+// 创建会话请求
+message CreateConversationRequest {
+  string user1_id = 1;
+  string user2_id = 2;
+}
+
+// 创建会话响应
+message CreateConversationResponse {
+  Conversation conversation = 1;
+  Error error = 2;
+}
+
+// 获取会话列表请求
+message ListConversationsRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取会话列表响应
+message ListConversationsResponse {
+  repeated Conversation conversations = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 获取会话详情请求
+message GetConversationRequest {
+  string conversation_id = 1;
+}
+
+// 获取会话详情响应
+message GetConversationResponse {
+  Conversation conversation = 1;
+  Error error = 2;
+}
+
+// 发送消息请求
+message SendMessageRequest {
+  string conversation_id = 1;
+  string sender_id = 2;
+  string content = 3;
+  string media_url = 4;
+}
+
+// 发送消息响应
+message SendMessageResponse {
+  Message message = 1;
+  Error error = 2;
+}
+
+// 获取消息列表请求
+message ListMessagesRequest {
+  string conversation_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取消息列表响应
+message ListMessagesResponse {
+  repeated Message messages = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 标记消息为已读请求
+message MarkAsReadRequest {
+  string conversation_id = 1;
+  string user_id = 2;
+}
+
+// 标记消息为已读响应
+message MarkAsReadResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 删除会话请求
+message DeleteConversationRequest {
+  string conversation_id = 1;
+}
+
+// 删除会话响应
+message DeleteConversationResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 错误信息
+message Error {
+  int32 code = 1;
+  string message = 2;
+}

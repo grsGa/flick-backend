@@ -2,184 +2,235 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"strconv"
 
-	"backend/services/gateway/config"
-	"backend/services/gateway/middleware"
-	"backend/services/gateway/routes"
+	"backend/pkg/config"
+	"backend/pkg/database"
+	"backend/pkg/discovery"
+	"backend/pkg/logger"
+	"backend/pkg/telemetry"
+	auth_proto "backend/services/auth/proto"
+	"backend/services/gateway/internal/client"
+	"backend/services/gateway/internal/graphql/generated"
+	"backend/services/gateway/internal/graphql/resolver"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/hashicorp/golang-lru/simplelru"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
+// 全局gRPC客户端变量
+var (
+	userServiceClient           client.UserServiceClient
+	contentServiceClient        client.ContentServiceClient
+	authServiceClient           client.AuthServiceClient
+	mediaServiceClient          client.MediaServiceClient
+	messageServiceClient        client.MessageServiceClient
+	notificationServiceClient   client.NotificationServiceClient
+	interactionServiceClient    client.InteractionServiceClient
+	recommendationServiceClient client.RecommendationServiceClient
+	searchServiceClient         client.SearchServiceClient
+	bookmarkServiceClient       client.BookmarkServiceClient
+)
+
+const (
+	serviceName = "gateway-service"
+)
+
+type lruCache struct {
+	*simplelru.LRU
+}
+
+func (l *lruCache) Add(ctx context.Context, key string, value string) {
+	l.LRU.Add(key, value)
+}
+
+func (l *lruCache) Get(ctx context.Context, key string) (string, bool) {
+	val, ok := l.LRU.Get(key)
+	if !ok {
+		return "", false
+	}
+	return val.(string), true
+}
+
 func main() {
-	// 强制刷新所有输出，确保Docker环境中也能看到日志
-	// 这会使日志直接写入文件描述符而不是缓冲
-	defer os.Stdout.Sync()
-	defer os.Stderr.Sync()
-
-	// 配置日志输出 - 使用更可靠的配置方式
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	
-	// 日志输出到标准输出，确保Docker能捕获
-	log.Logger = zerolog.New(os.Stdout).With().
-		Timestamp().
-		Caller().
-		Logger()
-	
-	// 记录启动日志 - 使用fmt直接输出，确保即使zerolog有问题也能看到
-	startMsg := "网关服务初始化中...[" + time.Now().Format(time.RFC3339) + "]"
-	fmt.Println(startMsg)
-	log.Info().Msg(startMsg)
-
-	// 加载配置
-	cfg, err := config.LoadConfig()
+	// Initialize logger
+	logger, err := logger.NewLogger()
 	if err != nil {
-		errMsg := fmt.Sprintf("无法加载配置: %v", err)
-		fmt.Println(errMsg)
-		log.Fatal().Err(err).Msg(errMsg)
-		// 确保Fatal消息能被看到
-		os.Exit(1)
+		log.Fatalf("Failed to create logger: %v", err)
 	}
+	defer logger.Sync()
 
-	// 设置日志级别
-	level, err := zerolog.ParseLevel(cfg.LogLevel)
+	// Initialize tracer
+	tp, err := telemetry.InitTracer(serviceName)
 	if err != nil {
-		log.Warn().Err(err).Msg("无效的日志级别配置，使用默认级别：Info")
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	} else {
-		zerolog.SetGlobalLevel(level)
-		log.Info().Str("level", level.String()).Msg("设置日志级别")
+		logger.Fatal("Failed to init tracer", zap.Error(err))
 	}
-
-	// 初始化路由 - 使用 New() 而不是 Default()
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
-
-	// 手动添加Recovery中间件
-	r.Use(gin.Recovery())
-	
-	// 添加zerolog集成的中间件
-	r.Use(func(c *gin.Context) {
-		start := time.Now()
-		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
-		
-		c.Next()
-		
-		end := time.Now()
-		latency := end.Sub(start)
-		
-		if raw != "" {
-			path = path + "?" + raw
-		}
-		
-		// 使用zerolog记录请求信息
-		logger := log.With().
-			Str("method", c.Request.Method).
-			Str("path", path).
-			Int("status", c.Writer.Status()).
-			Str("ip", c.ClientIP()).
-			Dur("latency", latency).
-			Str("user_agent", c.Request.UserAgent()).
-			Logger()
-		
-		msg := fmt.Sprintf("%s %s %d", c.Request.Method, path, c.Writer.Status())
-		if c.Writer.Status() >= 400 {
-			logger.Warn().Msg(msg)
-		} else {
-			logger.Info().Msg(msg)
-		}
-	})
-
-	// 设置最大multipart表单内存限制，增加到50MB
-	r.MaxMultipartMemory = 50 << 20 // 50MB
-
-	// 设置跨域中间件
-	r.Use(middleware.Cors())
-
-	// 设置请求日志中间件
-	loggerConfig := middleware.DefaultLoggerConfig()
-	loggerConfig.LogRequestBody = true
-	loggerConfig.LogResponseBody = true
-	loggerConfig.MaxBodySize = 10 << 20 // 10MB
-	r.Use(middleware.Logger(loggerConfig))
-
-	// 设置请求ID中间件
-	r.Use(middleware.RequestID())
-
-	// 健康检查路由
-	r.GET("/health", func(c *gin.Context) {
-		log.Info().Msg("健康检查请求")
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"time":   time.Now().Format(time.RFC3339),
-		})
-	})
-
-	// 初始化API路由
-	routes.SetupAPIRoutes(r, cfg)
-
-	// 创建HTTP服务器
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: r,
-	}
-
-	// 服务器启动日志 - 直接输出确保可见
-	serverStartMsg := fmt.Sprintf("服务器启动在 %s 端口", srv.Addr)
-	fmt.Println(serverStartMsg)
-	log.Info().Msg(serverStartMsg)
-
-	// 在后台启动服务器
-	go func() {
-		// 在goroutine内再次输出启动消息，确保在Docker中可见
-		fmt.Println(fmt.Sprintf("HTTP服务正在监听 %s...", srv.Addr))
-		log.Info().Msgf("HTTP服务正在监听 %s...", srv.Addr)
-		
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errMsg := fmt.Sprintf("启动服务器失败: %v", err)
-			fmt.Println(errMsg)
-			log.Fatal().Err(err).Msg(errMsg)
-			// 确保goroutine中的Fatal消息被看到
-			os.Exit(1)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			logger.Error("Failed to shutdown tracer provider", zap.Error(err))
 		}
 	}()
 
-	// 输出等待关闭信号的日志
-	log.Info().Msg("服务器运行中，等待关闭信号...")
-	fmt.Println("服务器运行中，等待关闭信号...")
-
-	// 优雅关闭
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	
-	shutdownMsg := "正在关闭服务器..."
-	log.Info().Msg(shutdownMsg)
-	fmt.Println(shutdownMsg)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		errMsg := fmt.Sprintf("服务器强制关闭: %v", err)
-		fmt.Println(errMsg)
-		log.Fatal().Err(err).Msg(errMsg)
-		os.Exit(1)
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logger.Fatal("Failed to load config", zap.Error(err))
 	}
 
-	// 确保关闭消息被看到
-	closeMsg := "服务器已优雅关闭"
-	log.Info().Msg(closeMsg)
-	fmt.Println(closeMsg)
-	
-	// 强制刷新所有输出流
-	os.Stdout.Sync()
-	os.Stderr.Sync()
+	// Set gin run mode
+	gin.SetMode(gin.ReleaseMode)
+
+	// Initialize Database
+	if err := database.InitDB(cfg, false); err != nil {
+		logger.Fatal("Failed to connect to database", zap.Error(err))
+	}
+
+	// Initialize gRPC clients
+	initGRPCClients()
+
+	// Create Gin engine
+	r := gin.Default()
+
+	// CORS middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	// Setup routes
+	setupRoutes(r)
+
+	port, err := strconv.Atoi(cfg.GatewayPort)
+	if err != nil {
+		logger.Fatal("Invalid port", zap.Error(err))
+	}
+
+	// Service registration
+	discovery.RegisterServiceToConsul(discovery.RegisterOptions{
+		ServiceName:     serviceName,
+		ServicePort:     port,
+		HealthCheckType: "http",
+	})
+
+	logger.Info("Starting gateway service", zap.String("port", cfg.GatewayPort))
+
+	// Start server
+	if err := r.Run(":" + cfg.GatewayPort); err != nil {
+		logger.Fatal("Failed to run gateway service", zap.Error(err))
+	}
+}
+
+// initGRPCClients initializes all gRPC client connections using service discovery.
+func initGRPCClients() {
+	logger := zap.L().Named("grpc_clients")
+
+	discovery, err := client.NewConsulServiceDiscovery()
+	if err != nil {
+		logger.Fatal("Failed to create consul service discovery", zap.Error(err))
+	}
+
+	// A helper function to reduce boilerplate
+	getClient := func(serviceName string) *grpc.ClientConn {
+		conn, err := discovery.GetServiceConn(serviceName)
+		if err != nil {
+			logger.Fatal("Failed to get client connection", zap.String("service", serviceName), zap.Error(err))
+		}
+		return conn
+	}
+
+	// Initialize all service clients
+	userServiceClient = client.NewUserServiceClient(getClient("user-service"))
+	// contentServiceClient = client.NewContentServiceClient(getClient("content-service"))
+	authServiceClient = client.NewAuthServiceClient(getClient("auth-service"))
+	// mediaServiceClient = client.NewMediaServiceClient(getClient("media-service"))
+	// messageServiceClient = client.NewMessageServiceClient(getClient("messages-service"))
+	// notificationServiceClient = client.NewNotificationServiceClient(getClient("notification-service"))
+	// interactionServiceClient = client.NewInteractionServiceClient(getClient("interaction-service"))
+	// recommendationServiceClient = client.NewRecommendationServiceClient(getClient("recommendation-service"))
+	// searchServiceClient = client.NewSearchServiceClient(getClient("search-service"))
+	// bookmarkServiceClient = client.NewBookmarkServiceClient(getClient("bookmark-service"))
+}
+
+func setupRoutes(r *gin.Engine) {
+	// 健康检查端点
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+		})
+	})
+
+	// GraphQL endpoint
+	graphqlPath := "/graphql"
+	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient)}))
+	queryHandler.Use(extension.Introspection{})
+	l, _ := simplelru.NewLRU(100, nil)
+	queryHandler.Use(extension.AutomaticPersistedQuery{
+		Cache: &lruCache{l},
+	})
+
+	// GraphQL路由
+	graphql := r.Group(graphqlPath)
+	{
+		graphql.POST("", func(c *gin.Context) {
+			queryHandler.ServeHTTP(c.Writer, c.Request)
+		})
+	}
+
+	// Playground
+	r.GET("/", func(c *gin.Context) {
+		playground.Handler("GraphQL playground", graphqlPath).ServeHTTP(c.Writer, c.Request)
+	})
+
+	// 其他API路由可以在这里添加
+	auth := r.Group("/auth")
+	{
+		auth.GET("/github/login", func(c *gin.Context) {
+			res, err := authServiceClient.GithubLogin(c, &auth_proto.GithubLoginRequest{})
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			c.Redirect(http.StatusTemporaryRedirect, res.RedirectUrl)
+		})
+
+		auth.GET("/github/callback", func(c *gin.Context) {
+			code := c.Query("code")
+			res, err := authServiceClient.GithubCallback(c, &auth_proto.GithubCallbackRequest{Code: code})
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, res)
+		})
+
+		auth.GET("/google/login", func(c *gin.Context) {
+			res, err := authServiceClient.GoogleLogin(c, &auth_proto.GoogleLoginRequest{})
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			c.Redirect(http.StatusTemporaryRedirect, res.RedirectUrl)
+		})
+
+		auth.GET("/google/callback", func(c *gin.Context) {
+			code := c.Query("code")
+			res, err := authServiceClient.GoogleCallback(c, &auth_proto.GoogleCallbackRequest{Code: code})
+			if err != nil {
+				c.JSON(500, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, res)
+		})
+	}
 }

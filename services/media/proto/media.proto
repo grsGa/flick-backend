@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package media;
+option go_package = "./proto";
+
+// MediaService 定义媒体服务
+service MediaService {
+  // 上传文件
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+  
+  // 获取文件信息
+  rpc GetFile(GetFileRequest) returns (GetFileResponse);
+  
+  // 删除文件
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  
+  // 获取文件列表
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse);
+}
+
+// 文件信息
+message MediaFile {
+  string id = 1;
+  string user_id = 2;
+  string filename = 3;
+  string url = 4;
+  string type = 5;
+  int64 size = 6;
+  string alt_text = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+// 上传文件请求
+message UploadFileRequest {
+  string user_id = 1;
+  bytes file_data = 2;
+  string filename = 3;
+  string type = 4;
+  string alt_text = 5;
+}
+
+// 上传文件响应
+message UploadFileResponse {
+  MediaFile file = 1;
+  Error error = 2;
+}
+
+// 获取文件信息请求
+message GetFileRequest {
+  string file_id = 1;
+}
+
+// 获取文件信息响应
+message GetFileResponse {
+  MediaFile file = 1;
+  Error error = 2;
+}
+
+// 删除文件请求
+message DeleteFileRequest {
+  string file_id = 1;
+}
+
+// 删除文件响应
+message DeleteFileResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 获取文件列表请求
+message ListFilesRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取文件列表响应
+message ListFilesResponse {
+  repeated MediaFile files = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 错误信息
+message Error {
+  int32 code = 1;
+  string message = 2;
+}

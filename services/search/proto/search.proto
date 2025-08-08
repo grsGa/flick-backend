@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package search;
+option go_package = "./proto";
+
+// SearchService 定义搜索服务
+service SearchService {
+  // 搜索内容
+  rpc SearchContent(SearchContentRequest) returns (SearchContentResponse);
+  
+  // 搜索用户
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+  
+  // 搜索标签
+  rpc SearchHashtags(SearchHashtagsRequest) returns (SearchHashtagsResponse);
+}
+
+// 搜索结果项
+message SearchResultItem {
+  string id = 1;
+  string type = 2; // post, user, hashtag
+  string title = 3;
+  string content = 4;
+  string author = 5;
+  string avatar_url = 6;
+  int32 like_count = 7;
+  int32 comment_count = 8;
+  string created_at = 9;
+  repeated string hashtags = 10;
+}
+
+// 搜索内容请求
+message SearchContentRequest {
+  string query = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string sort_by = 4; // relevance, latest, popular
+}
+
+// 搜索内容响应
+message SearchContentResponse {
+  repeated SearchResultItem items = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 搜索用户请求
+message SearchUsersRequest {
+  string query = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 搜索用户响应
+message SearchUsersResponse {
+  repeated SearchResultItem items = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 搜索标签请求
+message SearchHashtagsRequest {
+  string query = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 搜索标签响应
+message SearchHashtagsResponse {
+  repeated SearchResultItem items = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 错误信息
+message Error {
+  int32 code = 1;
+  string message = 2;
+}

@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package content;
+option go_package = "./proto";
+
+// ContentService 定义内容服务
+service ContentService {
+  // 获取内容
+  rpc GetContent(GetContentRequest) returns (GetContentResponse);
+  
+  // 创建内容
+  rpc CreateContent(CreateContentRequest) returns (CreateContentResponse);
+  
+  // 更新内容
+  rpc UpdateContent(UpdateContentRequest) returns (UpdateContentResponse);
+  
+  // 删除内容
+  rpc DeleteContent(DeleteContentRequest) returns (DeleteContentResponse);
+  
+  // 列出内容
+  rpc ListContent(ListContentRequest) returns (ListContentResponse);
+}
+
+// 内容信息
+message Content {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string body = 4;
+  repeated MediaFile media_files = 5;
+  int32 like_count = 6;
+  int32 comment_count = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+// 媒体文件
+message MediaFile {
+  string id = 1;
+  string url = 2;
+  string type = 3; // image, video等
+}
+
+// 获取内容请求
+message GetContentRequest {
+  string content_id = 1;
+}
+
+// 获取内容响应
+message GetContentResponse {
+  Content content = 1;
+  Error error = 2;
+}
+
+// 创建内容请求
+message CreateContentRequest {
+  string user_id = 1;
+  string title = 2;
+  string body = 3;
+  repeated MediaFile media_files = 4;
+}
+
+// 创建内容响应
+message CreateContentResponse {
+  Content content = 1;
+  Error error = 2;
+}
+
+// 更新内容请求
+message UpdateContentRequest {
+  string content_id = 1;
+  string title = 2;
+  string body = 3;
+  repeated MediaFile media_files = 4;
+}
+
+// 更新内容响应
+message UpdateContentResponse {
+  Content content = 1;
+  Error error = 2;
+}
+
+// 删除内容请求
+message DeleteContentRequest {
+  string content_id = 1;
+}
+
+// 删除内容响应
+message DeleteContentResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 列出内容请求
+message ListContentRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 列出内容响应
+message ListContentResponse {
+  repeated Content contents = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 错误信息
+message Error {
+  int32 code = 1;
+  string message = 2;
+}

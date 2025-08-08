@@ -1,0 +1,237 @@
+syntax = "proto3";
+
+package interaction;
+option go_package = "./proto";
+
+// InteractionService 定义互动服务
+service InteractionService {
+  // 创建关注
+  rpc CreateFollow(CreateFollowRequest) returns (CreateFollowResponse);
+  
+  // 删除关注
+  rpc DeleteFollow(DeleteFollowRequest) returns (DeleteFollowResponse);
+  
+  // 检查是否关注
+  rpc IsFollowing(IsFollowingRequest) returns (IsFollowingResponse);
+  
+  // 获取粉丝列表
+  rpc GetFollowers(GetFollowersRequest) returns (GetFollowersResponse);
+  
+  // 获取关注列表
+  rpc GetFollowing(GetFollowingRequest) returns (GetFollowingResponse);
+  
+  // 创建点赞
+  rpc CreateLike(CreateLikeRequest) returns (CreateLikeResponse);
+  
+  // 删除点赞
+  rpc DeleteLike(DeleteLikeRequest) returns (DeleteLikeResponse);
+  
+  // 检查是否点赞
+  rpc IsLiked(IsLikedRequest) returns (IsLikedResponse);
+  
+  // 获取点赞列表
+  rpc GetLikes(GetLikesRequest) returns (GetLikesResponse);
+  
+  // 创建转发
+  rpc CreateRepost(CreateRepostRequest) returns (CreateRepostResponse);
+  
+  // 删除转发
+  rpc DeleteRepost(DeleteRepostRequest) returns (DeleteRepostResponse);
+  
+  // 创建举报
+  rpc CreateReport(CreateReportRequest) returns (CreateReportResponse);
+}
+
+// 关注关系
+message Follow {
+  string id = 1;
+  string follower_id = 2;
+  string followee_id = 3;
+  string created_at = 4;
+}
+
+// 点赞
+message Like {
+  string id = 1;
+  string user_id = 2;
+  string post_id = 3;
+  string created_at = 4;
+}
+
+// 转发
+message Repost {
+  string id = 1;
+  string user_id = 2;
+  string post_id = 3;
+  string comment = 4;
+  string created_at = 5;
+}
+
+// 举报
+message Report {
+  string id = 1;
+  string user_id = 2;
+  string target_id = 3;
+  string target_type = 4;
+  string reason = 5;
+  string created_at = 6;
+}
+
+// 创建关注请求
+message CreateFollowRequest {
+  string follower_id = 1;
+  string followee_id = 2;
+}
+
+// 创建关注响应
+message CreateFollowResponse {
+  Follow follow = 1;
+  Error error = 2;
+}
+
+// 删除关注请求
+message DeleteFollowRequest {
+  string follower_id = 1;
+  string followee_id = 2;
+}
+
+// 删除关注响应
+message DeleteFollowResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 检查是否关注请求
+message IsFollowingRequest {
+  string follower_id = 1;
+  string followee_id = 2;
+}
+
+// 检查是否关注响应
+message IsFollowingResponse {
+  bool is_following = 1;
+  Error error = 2;
+}
+
+// 获取粉丝列表请求
+message GetFollowersRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取粉丝列表响应
+message GetFollowersResponse {
+  repeated Follow followers = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 获取关注列表请求
+message GetFollowingRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取关注列表响应
+message GetFollowingResponse {
+  repeated Follow following = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 创建点赞请求
+message CreateLikeRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// 创建点赞响应
+message CreateLikeResponse {
+  Like like = 1;
+  Error error = 2;
+}
+
+// 删除点赞请求
+message DeleteLikeRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// 删除点赞响应
+message DeleteLikeResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 检查是否点赞请求
+message IsLikedRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// 检查是否点赞响应
+message IsLikedResponse {
+  bool is_liked = 1;
+  Error error = 2;
+}
+
+// 获取点赞列表请求
+message GetLikesRequest {
+  string post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// 获取点赞列表响应
+message GetLikesResponse {
+  repeated Like likes = 1;
+  int32 total = 2;
+  Error error = 3;
+}
+
+// 创建转发请求
+message CreateRepostRequest {
+  string user_id = 1;
+  string post_id = 2;
+  string comment = 3;
+}
+
+// 创建转发响应
+message CreateRepostResponse {
+  Repost repost = 1;
+  Error error = 2;
+}
+
+// 删除转发请求
+message DeleteRepostRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+// 删除转发响应
+message DeleteRepostResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 创建举报请求
+message CreateReportRequest {
+  string user_id = 1;
+  string target_id = 2;
+  string target_type = 3;
+  string reason = 4;
+}
+
+// 创建举报响应
+message CreateReportResponse {
+  Report report = 1;
+  Error error = 2;
+}
+
+// 错误信息
+message Error {
+  int32 code = 1;
+  string message = 2;
+}
