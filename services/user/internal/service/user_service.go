@@ -7,19 +7,23 @@ import (
 	"backend/pkg/config"
 	"backend/services/user/internal/repository"
 	"backend/services/user/proto"
+
+	"go.uber.org/zap"
 )
 
 // userService 用户服务实现
 type userService struct {
 	userRepo repository.UserRepository
 	cfg      *config.Config
+	logger   *zap.Logger
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, cfg *config.Config) UserService {
+func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logger *zap.Logger) UserService {
 	return &userService{
 		userRepo: userRepo,
 		cfg:      cfg,
+		logger:   logger,
 	}
 }
 
@@ -133,6 +137,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 检查用户是否已存在
 	_, err := s.userRepo.GetUserByEmail(ctx, req.Email)
 	if err == nil {
+		s.logger.Warn("Registration failed: user already exists", zap.String("email", req.Email))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    409,
@@ -144,6 +149,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 哈希密码
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
+		s.logger.Error("Failed to hash password during registration", zap.Error(err))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -165,6 +171,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 保存用户
 	err = s.userRepo.CreateUser(ctx, newUser)
 	if err != nil {
+		s.logger.Error("Failed to create user in database", zap.String("username", req.Username), zap.Error(err))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -176,6 +183,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 生成JWT令牌
 	token, err := auth.GenerateJWT(newUser, s.cfg.JWTSecret)
 	if err != nil {
+		s.logger.Error("Failed to generate token after registration", zap.String("userID", newUser.Id), zap.Error(err))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -184,6 +192,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 		}, err
 	}
 
+	s.logger.Info("User registered successfully", zap.String("username", newUser.Username), zap.String("userID", newUser.Id))
 	return &proto.RegisterResponse{
 		Token: token,
 		User:  newUser,
@@ -192,23 +201,14 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 
 // Login 用户登录
 func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
-	// 获取用户信息
-	user, err := s.userRepo.GetUserByEmail(ctx, req.Email)
+	// 用户认证
+	user, err := s.userRepo.Authenticate(ctx, req.Identifier, req.Password)
 	if err != nil {
+		s.logger.Warn("Authentication failed for identifier", zap.String("identifier", req.Identifier), zap.Error(err))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    401,
 				Message: "Authentication failed: " + err.Error(),
-			},
-		}, err
-	}
-
-	// 验证密码
-	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-		return &proto.LoginResponse{
-			Error: &proto.Error{
-				Code:    401,
-				Message: "Authentication failed: invalid credentials",
 			},
 		}, nil
 	}
@@ -216,6 +216,7 @@ func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	// 生成JWT令牌
 	token, err := auth.GenerateJWT(user, s.cfg.JWTSecret)
 	if err != nil {
+		s.logger.Error("Failed to generate token after login", zap.String("userID", user.Id), zap.Error(err))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -224,6 +225,7 @@ func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		}, err
 	}
 
+	s.logger.Info("User logged in successfully", zap.String("username", user.Username), zap.String("userID", user.Id))
 	return &proto.LoginResponse{
 		Token: token,
 		User:  user,

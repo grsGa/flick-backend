@@ -1,15 +1,17 @@
 package main
 
 import (
-	"log"
 	"strconv"
 
 	"backend/pkg/config"
 	"backend/pkg/database"
 	"backend/pkg/discovery"
+	"backend/pkg/logger"
 	"backend/services/user/internal/repository"
 	"backend/services/user/internal/server"
 	"backend/services/user/internal/service"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -17,29 +19,38 @@ const (
 )
 
 func main() {
+	// Initialize logger
+	appLogger, err := logger.NewLogger()
+	if err != nil {
+		// Fallback to standard logger if zap fails
+		zap.S().Fatalf("Failed to create logger: %v", err)
+	}
+	zap.ReplaceGlobals(appLogger)
+	defer appLogger.Sync()
+
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		zap.S().Fatalf("Failed to load config: %v", err)
 	}
 
 	// Initialize Database
 	if err := database.InitDB(cfg, false); err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		zap.S().Fatalf("Failed to connect to database: %v", err)
 	}
 
 	// 初始化仓库
 	userRepo := repository.NewUserRepository()
 
 	// 初始化服务
-	userService := service.NewUserService(userRepo, cfg)
+	userService := service.NewUserService(userRepo, cfg, appLogger)
 
 	// 初始化服务端
 	grpcServer := server.NewGRPCServer(userService)
 
 	port, err := strconv.Atoi(cfg.UserServicePort)
 	if err != nil {
-		log.Fatalf("Invalid port: %v", err)
+		zap.S().Fatalf("Invalid port: %v", err)
 	}
 
 	// Service registration
@@ -49,9 +60,9 @@ func main() {
 		HealthCheckType: "grpc",
 	})
 
-	log.Printf("Starting user service on port %d", port)
+	zap.S().Infof("Starting user service on port %d", port)
 
 	if err := grpcServer.Run(cfg.UserServicePort); err != nil {
-		log.Fatalf("Failed to run user service: %v", err)
+		zap.S().Fatalf("Failed to run user service: %v", err)
 	}
 }

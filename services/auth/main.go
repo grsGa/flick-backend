@@ -54,7 +54,7 @@ func main() {
 	authRepo := repository.NewAuthRepository()
 
 	// Initialize service
-	authService := service.NewAuthService(authRepo, cfg)
+	authService := service.NewAuthService(authRepo, cfg, logger)
 
 	// Initialize server
 	grpcServer := server.NewGRPCServer(authService)

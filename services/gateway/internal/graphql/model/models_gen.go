@@ -107,8 +107,9 @@ type LikeTweetInput struct {
 }
 
 type LoginInput struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username *string `json:"username,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Password string  `json:"password"`
 }
 
 type Media struct {

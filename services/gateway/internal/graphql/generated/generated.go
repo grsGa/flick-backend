@@ -253,7 +253,6 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error)
 	Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error)
-	UploadMedia(ctx context.Context, file graphql.Upload) (*model.Media, error)
 	CreateTweet(ctx context.Context, input model.CreateTweetInput) (*model.Tweet, error)
 	CreateComment(ctx context.Context, input model.CreateCommentInput) (*model.Comment, error)
 	LikeTweet(ctx context.Context, input model.LikeTweetInput) (*model.Interaction, error)
@@ -262,11 +261,12 @@ type MutationResolver interface {
 	UnbookmarkTweet(ctx context.Context, input model.BookmarkTweetInput) (*model.Interaction, error)
 	Retweet(ctx context.Context, input model.RetweetInput) (*model.Interaction, error)
 	UndoRetweet(ctx context.Context, input model.RetweetInput) (*model.Interaction, error)
+	MarkNotificationAsRead(ctx context.Context, id string) (*model.Notification, error)
+	MarkAllNotificationsAsRead(ctx context.Context) (bool, error)
 	CreateConversation(ctx context.Context, input model.CreateConversationInput) (*model.Conversation, error)
 	SendMessage(ctx context.Context, input model.CreateMessageInput) (*model.Message, error)
 	MarkMessageAsRead(ctx context.Context, messageID string) (*model.Message, error)
-	MarkNotificationAsRead(ctx context.Context, id string) (*model.Notification, error)
-	MarkAllNotificationsAsRead(ctx context.Context) (bool, error)
+	UploadMedia(ctx context.Context, file graphql.Upload) (*model.Media, error)
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*string, error)
@@ -1374,7 +1374,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/schema.graphqls", Input: `# Authentication related GraphQL types
+	{Name: "../../../../../../frontend/src/graphql/auth.graphql", Input: `# Authentication related GraphQL types
 
 type AuthPayload {
   token: String!
@@ -1382,7 +1382,8 @@ type AuthPayload {
 }
 
 input LoginInput {
-  username: String!
+  username: String
+  email: String
   password: String!
 }
 
@@ -1393,12 +1394,12 @@ input RegisterInput {
   displayName: String
   phone: String
 }
-
-# Common GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/common.graphql", Input: `# Common GraphQL types
 
 scalar Upload
-
-# Content related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/content.graphql", Input: `# Content related GraphQL types
 
 type Tweet {
   id: ID!
@@ -1464,8 +1465,8 @@ type CommentConnection {
   edges: [CommentEdge!]!
   pageInfo: PageInfo!
 }
-
-# Interaction related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/interaction.graphql", Input: `# Interaction related GraphQL types
 
 type Interaction {
   isLiked: Boolean!
@@ -1487,8 +1488,8 @@ input BookmarkTweetInput {
 input RetweetInput {
   tweetId: ID!
 }
-
-# Message related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/message.graphql", Input: `# Message related GraphQL types
 
 type Conversation {
   id: ID!
@@ -1527,8 +1528,8 @@ type MessageConnection {
   edges: [MessageEdge!]!
   pageInfo: PageInfo!
 }
-
-# Notification related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/notification.graphql", Input: `# Notification related GraphQL types
 
 type Notification {
   id: ID!
@@ -1558,8 +1559,8 @@ type NotificationConnection {
   edges: [NotificationEdge!]!
   pageInfo: PageInfo!
 }
-
-# Recommendation related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/recommendation.graphql", Input: `# Recommendation related GraphQL types
 
 type Recommendation {
   id: ID!
@@ -1575,8 +1576,59 @@ enum RecommendationType {
 }
 
 union RecommendationEntity = User | Tweet | Hashtag
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/schema.graphql", Input: `# GraphQL Schema
 
-# Search related GraphQL types
+type Query {
+  health: String
+  tweet(id: ID!): Tweet
+  userTweets(username: String!, first: Int!, after: String): TweetConnection
+  homeFeed(first: Int!, after: String): TweetConnection
+  notifications(first: Int!, after: String): NotificationConnection
+  conversations: [Conversation!]!
+  conversation(id: ID!): Conversation
+  messages(conversationId: ID!, first: Int!, after: String): MessageConnection
+  search(input: SearchInput!): SearchResults
+  trendingHashtags(first: Int!): [Hashtag!]!
+  recommendedUsers(first: Int!): [User!]!
+  recommendedTweets(first: Int!): TweetConnection
+}
+
+type Mutation {
+  # Auth mutations
+  login(input: LoginInput!): AuthPayload!
+  register(input: RegisterInput!): AuthPayload!
+  
+  # Content mutations
+  createTweet(input: CreateTweetInput!): Tweet!
+  createComment(input: CreateCommentInput!): Comment!
+  
+  # Interaction mutations
+  likeTweet(input: LikeTweetInput!): Interaction!
+  unlikeTweet(input: LikeTweetInput!): Interaction!
+  bookmarkTweet(input: BookmarkTweetInput!): Interaction!
+  unbookmarkTweet(input: BookmarkTweetInput!): Interaction!
+  retweet(input: RetweetInput!): Interaction!
+  undoRetweet(input: RetweetInput!): Interaction!
+  
+  # Notification mutations
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead: Boolean!
+  
+  # Message mutations
+  createConversation(input: CreateConversationInput!): Conversation!
+  sendMessage(input: CreateMessageInput!): Message!
+  markMessageAsRead(messageId: ID!): Message!
+  
+  # Media mutations
+  uploadMedia(file: Upload!): Media!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/search.graphql", Input: `# Search related GraphQL types
 
 type SearchResults {
   tweets: TweetConnection
@@ -1622,8 +1674,8 @@ enum SearchType {
   USER
   HASHTAG
 }
-
-# User related GraphQL types
+`, BuiltIn: false},
+	{Name: "../../../../../../frontend/src/graphql/user.graphql", Input: `# User related GraphQL types
 
 type User {
   id: ID!
@@ -1644,42 +1696,7 @@ input UpdateProfileInput {
   bio: String
   avatarUrl: String
   bannerUrl: String
-}
-
-type Query {
-  health: String
-  tweet(id: ID!): Tweet
-  userTweets(username: String!, first: Int!, after: String): TweetConnection
-  homeFeed(first: Int!, after: String): TweetConnection
-  notifications(first: Int!, after: String): NotificationConnection
-  conversations: [Conversation!]!
-  conversation(id: ID!): Conversation
-  messages(conversationId: ID!, first: Int!, after: String): MessageConnection
-  search(input: SearchInput!): SearchResults
-  trendingHashtags(first: Int!): [Hashtag!]!
-  recommendedUsers(first: Int!): [User!]!
-  recommendedTweets(first: Int!): TweetConnection
-}
-
-type Mutation {
-  login(input: LoginInput!): AuthPayload!
-  register(input: RegisterInput!): AuthPayload!
-  uploadMedia(file: Upload!): Media!
-  createTweet(input: CreateTweetInput!): Tweet!
-  createComment(input: CreateCommentInput!): Comment!
-  likeTweet(input: LikeTweetInput!): Interaction!
-  unlikeTweet(input: LikeTweetInput!): Interaction!
-  bookmarkTweet(input: BookmarkTweetInput!): Interaction!
-  unbookmarkTweet(input: BookmarkTweetInput!): Interaction!
-  retweet(input: RetweetInput!): Interaction!
-  undoRetweet(input: RetweetInput!): Interaction!
-  createConversation(input: CreateConversationInput!): Conversation!
-  sendMessage(input: CreateMessageInput!): Message!
-  markMessageAsRead(messageId: ID!): Message!
-  markNotificationAsRead(id: ID!): Notification!
-  markAllNotificationsAsRead: Boolean!
-}
-`, BuiltIn: false},
+}`, BuiltIn: false},
 	{Name: "../../../federation/directives.graphql", Input: `
 	directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
 	directive @requires(fields: _FieldSet!) on FIELD_DEFINITION
@@ -4303,69 +4320,6 @@ func (ec *executionContext) fieldContext_Mutation_register(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_uploadMedia(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UploadMedia(rctx, fc.Args["file"].(graphql.Upload))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Media)
-	fc.Result = res
-	return ec.marshalNMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Media_id(ctx, field)
-			case "url":
-				return ec.fieldContext_Media_url(ctx, field)
-			case "type":
-				return ec.fieldContext_Media_type(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_uploadMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_createTweet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createTweet(ctx, field)
 	if err != nil {
@@ -4918,6 +4872,119 @@ func (ec *executionContext) fieldContext_Mutation_undoRetweet(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_markNotificationAsRead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_markNotificationAsRead(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().MarkNotificationAsRead(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markNotificationAsRead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Notification_id(ctx, field)
+			case "type":
+				return ec.fieldContext_Notification_type(ctx, field)
+			case "actor":
+				return ec.fieldContext_Notification_actor(ctx, field)
+			case "entity":
+				return ec.fieldContext_Notification_entity(ctx, field)
+			case "read":
+				return ec.fieldContext_Notification_read(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Notification_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Notification", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markNotificationAsRead_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_markAllNotificationsAsRead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_markAllNotificationsAsRead(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().MarkAllNotificationsAsRead(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markAllNotificationsAsRead(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createConversation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createConversation(ctx, field)
 	if err != nil {
@@ -5127,8 +5194,8 @@ func (ec *executionContext) fieldContext_Mutation_markMessageAsRead(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_markNotificationAsRead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_markNotificationAsRead(ctx, field)
+func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_uploadMedia(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5141,7 +5208,7 @@ func (ec *executionContext) _Mutation_markNotificationAsRead(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().MarkNotificationAsRead(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Mutation().UploadMedia(rctx, fc.Args["file"].(graphql.Upload))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5153,12 +5220,12 @@ func (ec *executionContext) _Mutation_markNotificationAsRead(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Notification)
+	res := resTmp.(*model.Media)
 	fc.Result = res
-	return ec.marshalNNotification2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_markNotificationAsRead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -5167,19 +5234,13 @@ func (ec *executionContext) fieldContext_Mutation_markNotificationAsRead(ctx con
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Notification_id(ctx, field)
+				return ec.fieldContext_Media_id(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
 			case "type":
-				return ec.fieldContext_Notification_type(ctx, field)
-			case "actor":
-				return ec.fieldContext_Notification_actor(ctx, field)
-			case "entity":
-				return ec.fieldContext_Notification_entity(ctx, field)
-			case "read":
-				return ec.fieldContext_Notification_read(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Notification_createdAt(ctx, field)
+				return ec.fieldContext_Media_type(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Notification", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
 	}
 	defer func() {
@@ -5189,53 +5250,9 @@ func (ec *executionContext) fieldContext_Mutation_markNotificationAsRead(ctx con
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_markNotificationAsRead_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_uploadMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_markAllNotificationsAsRead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_markAllNotificationsAsRead(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().MarkAllNotificationsAsRead(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_markAllNotificationsAsRead(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
 	}
 	return fc, nil
 }
@@ -10478,7 +10495,7 @@ func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"username", "password"}
+	fieldsInOrder := [...]string{"username", "email", "password"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10487,11 +10504,18 @@ func (ec *executionContext) unmarshalInputLoginInput(ctx context.Context, obj an
 		switch k {
 		case "username":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Username = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
 		case "password":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -11435,13 +11459,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "uploadMedia":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_uploadMedia(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "createTweet":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createTweet(ctx, field)
@@ -11498,6 +11515,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "markNotificationAsRead":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markNotificationAsRead(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markAllNotificationsAsRead":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markAllNotificationsAsRead(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createConversation":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createConversation(ctx, field)
@@ -11519,16 +11550,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "markNotificationAsRead":
+		case "uploadMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_markNotificationAsRead(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "markAllNotificationsAsRead":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_markAllNotificationsAsRead(ctx, field)
+				return ec._Mutation_uploadMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"backend/pkg/config"
 	"backend/services/auth/internal/repository"
 	"backend/services/auth/proto"
 
-	"backend/pkg/config"
-
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
@@ -36,21 +36,25 @@ var googleOauthConfig = &oauth2.Config{
 type authService struct {
 	authRepo repository.AuthRepository
 	cfg      *config.Config
+	logger   *zap.Logger
 }
 
 // NewAuthService 创建认证服务实例
-func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config) AuthService {
+func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logger *zap.Logger) AuthService {
 	return &authService{
 		authRepo: authRepo,
 		cfg:      cfg,
+		logger:   logger,
 	}
 }
 
 // Login 用户登录
 func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+	s.logger.Info("Login attempt", zap.String("identifier", req.Identifier))
 	// 获取用户信息
 	user, err := s.authRepo.GetUserByIdentifier(ctx, req.Identifier)
 	if err != nil {
+		s.logger.Warn("Login failed: user not found", zap.String("identifier", req.Identifier), zap.Error(err))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    401,
@@ -61,6 +65,7 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 
 	// 验证密码
 	if err := s.authRepo.VerifyPassword(ctx, user.Id, req.Password); err != nil {
+		s.logger.Warn("Login failed: invalid password", zap.String("userID", user.Id), zap.String("identifier", req.Identifier))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    401,
@@ -72,6 +77,7 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	// 生成JWT令牌
 	accessToken, refreshToken, err := s.generateTokens(user.Id)
 	if err != nil {
+		s.logger.Error("Failed to generate tokens during login", zap.String("userID", user.Id), zap.Error(err))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -83,6 +89,7 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	// 更新用户最后登录时间
 	s.authRepo.UpdateUserLoginInfo(ctx, user.Id, time.Now().Format(time.RFC3339))
 
+	s.logger.Info("User logged in successfully", zap.String("userID", user.Id))
 	return &proto.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -94,9 +101,11 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 
 // Register 用户注册
 func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+	s.logger.Info("Registration attempt", zap.String("email", req.Email), zap.String("username", req.Username))
 	// 检查用户是否已存在
 	_, err := s.authRepo.GetUserByIdentifier(ctx, req.Email)
 	if err == nil {
+		s.logger.Warn("Registration failed: user already exists", zap.String("email", req.Email))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    409,
@@ -120,6 +129,7 @@ func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 保存用户到数据库
 	createdUser, err := s.authRepo.CreateUser(ctx, user, req.Password)
 	if err != nil {
+		s.logger.Error("Failed to create user during registration", zap.String("email", req.Email), zap.Error(err))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -132,6 +142,7 @@ func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) 
 	// 生成JWT令牌
 	accessToken, refreshToken, err := s.generateTokens(user.Id)
 	if err != nil {
+		s.logger.Error("Failed to generate tokens after registration", zap.String("userID", user.Id), zap.Error(err))
 		return &proto.RegisterResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -140,6 +151,7 @@ func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) 
 		}, err
 	}
 
+	s.logger.Info("User registered successfully", zap.String("userID", user.Id))
 	return &proto.RegisterResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -242,6 +254,7 @@ func (s *authService) Logout(ctx context.Context, req *proto.LogoutRequest) (*pr
 
 // GithubLogin Github登录
 func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginRequest) (*proto.GithubLoginResponse, error) {
+	s.logger.Info("Initiating GitHub login flow")
 	url := githubOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GithubLoginResponse{
 		RedirectUrl: url,
@@ -250,9 +263,11 @@ func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginReq
 
 // GithubCallback Github回调
 func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallbackRequest) (*proto.GithubCallbackResponse, error) {
+	s.logger.Info("Received GitHub callback")
 	// Exchange the code for a token
 	token, err := githubOauthConfig.Exchange(ctx, req.Code)
 	if err != nil {
+		s.logger.Error("GitHub OAuth code exchange failed", zap.Error(err))
 		return &proto.GithubCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -261,10 +276,12 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 		}, err
 	}
 
+	s.logger.Info("GitHub token exchanged successfully")
 	// Get user info from Github
 	client := githubOauthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
+		s.logger.Error("Failed to get user info from GitHub", zap.Error(err))
 		return &proto.GithubCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -281,6 +298,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 		Name  string `json:"name"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&githubUser); err != nil {
+		s.logger.Error("Failed to decode user info from GitHub", zap.Error(err))
 		return &proto.GithubCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -288,10 +306,12 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 			},
 		}, err
 	}
+	s.logger.Info("GitHub user info decoded", zap.String("githubUser", githubUser.Login), zap.String("email", githubUser.Email))
 
 	// Check if user exists
 	user, err := s.authRepo.GetUserByIdentifier(ctx, githubUser.Email)
 	if err != nil {
+		s.logger.Info("User not found, creating new user from GitHub login", zap.String("email", githubUser.Email))
 		// Create new user
 		user = &proto.User{
 			Username:    githubUser.Login,
@@ -304,6 +324,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 		}
 		createdUser, err := s.authRepo.CreateUser(ctx, user, "")
 		if err != nil {
+			s.logger.Error("Failed to create user from GitHub login", zap.String("email", githubUser.Email), zap.Error(err))
 			return &proto.GithubCallbackResponse{
 				Error: &proto.Error{
 					Code:    500,
@@ -312,11 +333,15 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 			}, err
 		}
 		user = createdUser
+		s.logger.Info("New user created from GitHub login", zap.String("userID", user.Id))
+	} else {
+		s.logger.Info("User found for GitHub login", zap.String("userID", user.Id))
 	}
 
 	// Generate JWT tokens
 	accessToken, refreshToken, err := s.generateTokens(user.Id)
 	if err != nil {
+		s.logger.Error("Failed to generate tokens for GitHub user", zap.String("userID", user.Id), zap.Error(err))
 		return &proto.GithubCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -325,6 +350,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 		}, err
 	}
 
+	s.logger.Info("Tokens generated successfully for GitHub user", zap.String("userID", user.Id))
 	return &proto.GithubCallbackResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -336,6 +362,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 
 // GoogleLogin Google登录
 func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginRequest) (*proto.GoogleLoginResponse, error) {
+	s.logger.Info("Initiating Google login flow")
 	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GoogleLoginResponse{
 		RedirectUrl: url,
@@ -344,9 +371,11 @@ func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginReq
 
 // GoogleCallback Google回调
 func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallbackRequest) (*proto.GoogleCallbackResponse, error) {
+	s.logger.Info("Received Google callback")
 	// Exchange the code for a token
 	token, err := googleOauthConfig.Exchange(ctx, req.Code)
 	if err != nil {
+		s.logger.Error("Google OAuth code exchange failed", zap.Error(err))
 		return &proto.GoogleCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -355,10 +384,12 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 		}, err
 	}
 
+	s.logger.Info("Google token exchanged successfully")
 	// Get user info from Google
 	client := googleOauthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
+		s.logger.Error("Failed to get user info from Google", zap.Error(err))
 		return &proto.GoogleCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -374,6 +405,7 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 		Name  string `json:"name"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		s.logger.Error("Failed to decode user info from Google", zap.Error(err))
 		return &proto.GoogleCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -381,10 +413,12 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 			},
 		}, err
 	}
+	s.logger.Info("Google user info decoded", zap.String("email", googleUser.Email))
 
 	// Check if user exists
 	user, err := s.authRepo.GetUserByIdentifier(ctx, googleUser.Email)
 	if err != nil {
+		s.logger.Info("User not found, creating new user from Google login", zap.String("email", googleUser.Email))
 		// Create new user
 		user = &proto.User{
 			Username:    googleUser.Email,
@@ -397,6 +431,7 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 		}
 		createdUser, err := s.authRepo.CreateUser(ctx, user, "")
 		if err != nil {
+			s.logger.Error("Failed to create user from Google login", zap.String("email", googleUser.Email), zap.Error(err))
 			return &proto.GoogleCallbackResponse{
 				Error: &proto.Error{
 					Code:    500,
@@ -405,11 +440,15 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 			}, err
 		}
 		user = createdUser
+		s.logger.Info("New user created from Google login", zap.String("userID", user.Id))
+	} else {
+		s.logger.Info("User found for Google login", zap.String("userID", user.Id))
 	}
 
 	// Generate JWT tokens
 	accessToken, refreshToken, err := s.generateTokens(user.Id)
 	if err != nil {
+		s.logger.Error("Failed to generate tokens for Google user", zap.String("userID", user.Id), zap.Error(err))
 		return &proto.GoogleCallbackResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -418,6 +457,7 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 		}, err
 	}
 
+	s.logger.Info("Tokens generated successfully for Google user", zap.String("userID", user.Id))
 	return &proto.GoogleCallbackResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

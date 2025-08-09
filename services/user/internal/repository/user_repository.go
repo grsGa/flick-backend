@@ -116,6 +116,13 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 // GetUserByEmail 根据邮箱获取用户
 func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*proto.User, error) {
 	var user models.User
+	// Log the email parameter
+	println("GetUserByEmail: email =", email)
+	// Log the generated SQL query
+	sql := r.db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return tx.Where("email = ? AND deleted_at IS NULL", email).First(&user)
+	})
+	println("GetUserByEmail: sql =", sql)
 	if err := r.db.Where("email = ? AND deleted_at IS NULL", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
@@ -130,9 +137,10 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*pro
 func (r *userRepository) Authenticate(ctx context.Context, identifier, password string) (*proto.User, error) {
 	var user models.User
 
-	// 根据用户名、邮箱或手机号查找用户
-	if err := r.db.Where("(username = ? OR email = ? OR phone = ?) AND deleted_at IS NULL", identifier, identifier, identifier).First(&user).Error; err != nil {
+	// 根据用户名或邮箱查找用户
+	if err := r.db.Where("username = ? OR email = ?", identifier, identifier).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 为了安全起见，不区分是用户不存在还是密码错误
 			return nil, errors.New("invalid credentials")
 		}
 		return nil, err

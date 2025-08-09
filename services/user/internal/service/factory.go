@@ -3,13 +3,16 @@ package service
 import (
 	"backend/pkg/config"
 	"backend/services/user/internal/repository"
+
+	"go.uber.org/zap"
 )
 
 // NewUserServiceFactory 创建用户服务工厂
-func NewUserServiceFactory(userRepo repository.UserRepository, cfg *config.Config) UserServiceFactory {
+func NewUserServiceFactory(userRepo repository.UserRepository, cfg *config.Config, logger *zap.Logger) UserServiceFactory {
 	return &userServiceFactory{
 		userRepo: userRepo,
 		cfg:      cfg,
+		logger:   logger,
 	}
 }
 
@@ -22,9 +25,10 @@ type UserServiceFactory interface {
 type userServiceFactory struct {
 	userRepo repository.UserRepository
 	cfg      *config.Config
+	logger   *zap.Logger
 }
 
 // Create 创建用户服务实例
 func (f *userServiceFactory) Create() UserService {
-	return NewUserService(f.userRepo, f.cfg)
+	return NewUserService(f.userRepo, f.cfg, f.logger)
 }
