@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"backend/pkg/config"
@@ -208,10 +211,15 @@ func setupRoutes(r *gin.Engine) {
 			code := c.Query("code")
 			res, err := authServiceClient.GithubCallback(c, &auth_proto.GithubCallbackRequest{Code: code})
 			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
+				// Redirect to an error page on the frontend
+				c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/login?error=github_failed")
 				return
 			}
-			c.JSON(http.StatusOK, res)
+
+			// On success, redirect to a frontend callback page with the token and user info
+			userJSON, _ := json.Marshal(res.User)
+			redirectURL := fmt.Sprintf("http://localhost:3000/auth/callback?token=%s&user=%s", res.AccessToken, url.QueryEscape(string(userJSON)))
+			c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		})
 
 		auth.GET("/google/login", func(c *gin.Context) {
@@ -227,10 +235,15 @@ func setupRoutes(r *gin.Engine) {
 			code := c.Query("code")
 			res, err := authServiceClient.GoogleCallback(c, &auth_proto.GoogleCallbackRequest{Code: code})
 			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
+				// Redirect to an error page on the frontend
+				c.Redirect(http.StatusTemporaryRedirect, "http://localhost:3000/login?error=google_failed")
 				return
 			}
-			c.JSON(http.StatusOK, res)
+
+			// On success, redirect to a frontend callback page with the token and user info
+			userJSON, _ := json.Marshal(res.User)
+			redirectURL := fmt.Sprintf("http://localhost:3000/auth/callback?token=%s&user=%s", res.AccessToken, url.QueryEscape(string(userJSON)))
+			c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		})
 	}
 }
