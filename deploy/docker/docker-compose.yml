@@ -74,6 +74,8 @@ services:
       context: ../../
       dockerfile: deploy/docker/Dockerfile
     container_name: auth-service
+    volumes:
+      - ../../.ca:/etc/ssl/certs/custom
     environment:
       - AUTH_SERVICE_PORT=50053
       - CONSUL_AGENT_ADDR=consul:8500

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"backend/pkg/config"
+	"backend/pkg/httpclient"
 	"backend/services/auth/internal/repository"
 	"backend/services/auth/proto"
 
@@ -16,35 +17,47 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-var githubOauthConfig = &oauth2.Config{
-	ClientID:     "your_github_client_id",
-	ClientSecret: "your_github_client_secret",
-	RedirectURL:  "http://localhost:8080/auth/github/callback",
-	Scopes:       []string{"user:email"},
-	Endpoint:     github.Endpoint,
-}
-
-var googleOauthConfig = &oauth2.Config{
-	ClientID:     "your_google_client_id",
-	ClientSecret: "your_google_client_secret",
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
-	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
-	Endpoint:     google.Endpoint,
-}
-
 // authService 认证服务实现
 type authService struct {
-	authRepo repository.AuthRepository
-	cfg      *config.Config
-	logger   *zap.Logger
+	authRepo          repository.AuthRepository
+	cfg               *config.Config
+	logger            *zap.Logger
+	githubOauthConfig *oauth2.Config
+	googleOauthConfig *oauth2.Config
 }
 
 // NewAuthService 创建认证服务实例
 func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logger *zap.Logger) AuthService {
+	// Validate that required OAuth configuration is present.
+	if cfg.GoogleClientID == "" || cfg.GoogleClientSecret == "" || cfg.GoogleRedirectURL == "" {
+		logger.Fatal("Google OAuth configuration is incomplete. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URL")
+	}
+	if cfg.GithubClientID == "" || cfg.GithubClientSecret == "" || cfg.GithubRedirectURL == "" {
+		logger.Fatal("GitHub OAuth configuration is incomplete. Please check environment variables: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URL")
+	}
+
+	githubOauthConfig := &oauth2.Config{
+		ClientID:     cfg.GithubClientID,
+		ClientSecret: cfg.GithubClientSecret,
+		RedirectURL:  cfg.GithubRedirectURL,
+		Scopes:       []string{"user:email"},
+		Endpoint:     github.Endpoint,
+	}
+
+	googleOauthConfig := &oauth2.Config{
+		ClientID:     cfg.GoogleClientID,
+		ClientSecret: cfg.GoogleClientSecret,
+		RedirectURL:  cfg.GoogleRedirectURL,
+		Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"},
+		Endpoint:     google.Endpoint,
+	}
+
 	return &authService{
-		authRepo: authRepo,
-		cfg:      cfg,
-		logger:   logger,
+		authRepo:          authRepo,
+		cfg:               cfg,
+		logger:            logger,
+		githubOauthConfig: githubOauthConfig,
+		googleOauthConfig: googleOauthConfig,
 	}
 }
 
@@ -255,7 +268,7 @@ func (s *authService) Logout(ctx context.Context, req *proto.LogoutRequest) (*pr
 // GithubLogin Github登录
 func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginRequest) (*proto.GithubLoginResponse, error) {
 	s.logger.Info("Initiating GitHub login flow")
-	url := githubOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	url := s.githubOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GithubLoginResponse{
 		RedirectUrl: url,
 	}, nil
@@ -264,8 +277,13 @@ func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginReq
 // GithubCallback Github回调
 func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallbackRequest) (*proto.GithubCallbackResponse, error) {
 	s.logger.Info("Received GitHub callback")
+
+	// Use the configurable HTTP client
+	httpClient := httpclient.NewConfigurableClient(s.cfg.CustomCaCertPath)
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+
 	// Exchange the code for a token
-	token, err := githubOauthConfig.Exchange(ctx, req.Code)
+	token, err := s.githubOauthConfig.Exchange(ctx, req.Code)
 	if err != nil {
 		s.logger.Error("GitHub OAuth code exchange failed", zap.Error(err))
 		return &proto.GithubCallbackResponse{
@@ -278,7 +296,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 
 	s.logger.Info("GitHub token exchanged successfully")
 	// Get user info from Github
-	client := githubOauthConfig.Client(ctx, token)
+	client := s.githubOauthConfig.Client(ctx, token)
 	resp, err := client.Get("https://api.github.com/user")
 	if err != nil {
 		s.logger.Error("Failed to get user info from GitHub", zap.Error(err))
@@ -363,7 +381,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 // GoogleLogin Google登录
 func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginRequest) (*proto.GoogleLoginResponse, error) {
 	s.logger.Info("Initiating Google login flow")
-	url := googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	url := s.googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GoogleLoginResponse{
 		RedirectUrl: url,
 	}, nil
@@ -372,8 +390,13 @@ func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginReq
 // GoogleCallback Google回调
 func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallbackRequest) (*proto.GoogleCallbackResponse, error) {
 	s.logger.Info("Received Google callback")
+
+	// Use the configurable HTTP client
+	httpClient := httpclient.NewConfigurableClient(s.cfg.CustomCaCertPath)
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+
 	// Exchange the code for a token
-	token, err := googleOauthConfig.Exchange(ctx, req.Code)
+	token, err := s.googleOauthConfig.Exchange(ctx, req.Code)
 	if err != nil {
 		s.logger.Error("Google OAuth code exchange failed", zap.Error(err))
 		return &proto.GoogleCallbackResponse{
@@ -386,7 +409,7 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 
 	s.logger.Info("Google token exchanged successfully")
 	// Get user info from Google
-	client := googleOauthConfig.Client(ctx, token)
+	client := s.googleOauthConfig.Client(ctx, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
 		s.logger.Error("Failed to get user info from Google", zap.Error(err))
