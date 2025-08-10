@@ -167,7 +167,12 @@ func (r *queryResolver) Tweet(ctx context.Context, id string) (*model.Tweet, err
 
 // UserTweets is the resolver for the userTweets field.
 func (r *queryResolver) UserTweets(ctx context.Context, username string, first int, after *string) (*model.TweetConnection, error) {
-	panic(fmt.Errorf("not implemented: UserTweets - userTweets"))
+	// Mock implementation: returns an empty list of tweets.
+	// Replace with a call to the content service when it's implemented.
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // HomeFeed is the resolver for the homeFeed field.
@@ -284,6 +289,33 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 			HasNextPage: res.PageInfo.HasNextPage,
 			EndCursor:   &res.PageInfo.EndCursor,
 		},
+	}, nil
+}
+
+// UserReplies is the resolver for the userReplies field.
+func (r *queryResolver) UserReplies(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
+	// Mock implementation
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
+}
+
+// UserMedia is the resolver for the userMedia field.
+func (r *queryResolver) UserMedia(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
+	// Mock implementation
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
+}
+
+// UserLikes is the resolver for the userLikes field.
+func (r *queryResolver) UserLikes(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
+	// Mock implementation
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
 	}, nil
 }
 
