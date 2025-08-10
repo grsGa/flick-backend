@@ -24,4 +24,10 @@ type UserService interface {
 
 	// DeleteUser 删除用户
 	DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error)
+
+	// GetFollowers 获取关注者
+	GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error)
+
+	// GetFollowing 获取正在关注
+	GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error)
 }

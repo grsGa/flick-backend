@@ -274,6 +274,42 @@ func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	}, nil
 }
 
+// GetFollowers 获取关注者
+func (s *userService) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
+	users, pageInfo, err := s.userRepo.GetFollowers(ctx, req.UserId, int(req.First), req.After)
+	if err != nil {
+		return &proto.GetFollowersResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get followers: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetFollowersResponse{
+		Users:    users,
+		PageInfo: pageInfo,
+	}, nil
+}
+
+// GetFollowing 获取正在关注
+func (s *userService) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
+	users, pageInfo, err := s.userRepo.GetFollowing(ctx, req.UserId, int(req.First), req.After)
+	if err != nil {
+		return &proto.GetFollowingResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get following: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetFollowingResponse{
+		Users:    users,
+		PageInfo: pageInfo,
+	}, nil
+}
+
 // validateEmailDomain checks if the email domain is in the blocklist.
 func (s *userService) validateEmailDomain(email string) error {
 	parts := strings.Split(email, "@")

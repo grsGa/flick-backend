@@ -215,6 +215,78 @@ func (r *queryResolver) RecommendedTweets(ctx context.Context, first int) (*mode
 	panic(fmt.Errorf("not implemented: RecommendedTweets - recommendedTweets"))
 }
 
+// Followers is the resolver for the followers field.
+func (r *queryResolver) Followers(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
+	afterStr := ""
+	if after != nil {
+		afterStr = *after
+	}
+
+	res, err := r.UserServiceClient.GetFollowers(ctx, &user_proto.GetFollowersRequest{
+		UserId: userID,
+		First:  int32(first),
+		After:  afterStr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	edges := make([]model.UserEdge, len(res.Users))
+	for i, u := range res.Users {
+		edges[i] = model.UserEdge{
+			Node:   r.userProtoToGql(u),
+			Cursor: u.Id, // Assuming ID is the cursor
+		}
+	}
+
+	return &model.UserConnection{
+		Edges: edges,
+		PageInfo: &model.PageInfo{
+			HasNextPage: res.PageInfo.HasNextPage,
+			EndCursor:   &res.PageInfo.EndCursor,
+		},
+	}, nil
+}
+
+// Following is the resolver for the following field.
+func (r *queryResolver) Following(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
+	afterStr := ""
+	if after != nil {
+		afterStr = *after
+	}
+
+	res, err := r.UserServiceClient.GetFollowing(ctx, &user_proto.GetFollowingRequest{
+		UserId: userID,
+		First:  int32(first),
+		After:  afterStr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	edges := make([]model.UserEdge, len(res.Users))
+	for i, u := range res.Users {
+		edges[i] = model.UserEdge{
+			Node:   r.userProtoToGql(u),
+			Cursor: u.Id, // Assuming ID is the cursor
+		}
+	}
+
+	return &model.UserConnection{
+		Edges: edges,
+		PageInfo: &model.PageInfo{
+			HasNextPage: res.PageInfo.HasNextPage,
+			EndCursor:   &res.PageInfo.EndCursor,
+		},
+	}, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 

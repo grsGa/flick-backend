@@ -49,6 +49,14 @@ func (c *userServiceClient) DeleteUser(ctx context.Context, in *user_proto.Delet
 	return c.client.DeleteUser(ctx, in)
 }
 
+func (c *userServiceClient) GetFollowers(ctx context.Context, in *user_proto.GetFollowersRequest, opts ...interface{}) (*user_proto.GetFollowersResponse, error) {
+	return c.client.GetFollowers(ctx, in)
+}
+
+func (c *userServiceClient) GetFollowing(ctx context.Context, in *user_proto.GetFollowingRequest, opts ...interface{}) (*user_proto.GetFollowingResponse, error) {
+	return c.client.GetFollowing(ctx, in)
+}
+
 // Register 用户注册
 func (c *userServiceClient) Register(ctx context.Context, in *user_proto.RegisterRequest, opts ...interface{}) (*user_proto.RegisterResponse, error) {
 	return c.client.Register(ctx, in)

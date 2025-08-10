@@ -22,6 +22,12 @@ service UserService {
   
   // 删除用户
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+
+  // 获取关注者
+  rpc GetFollowers(GetFollowersRequest) returns (GetFollowersResponse);
+
+  // 获取正在关注
+  rpc GetFollowing(GetFollowingRequest) returns (GetFollowingResponse);
 }
 
 // 用户信息
@@ -130,4 +136,38 @@ message LoginResponse {
 message Error {
   int32 code = 1;
   string message = 2;
+}
+
+// 获取关注者请求
+message GetFollowersRequest {
+  string user_id = 1;
+  int32 first = 2;
+  string after = 3;
+}
+
+// 获取关注者响应
+message GetFollowersResponse {
+  repeated User users = 1;
+  PageInfo page_info = 2;
+  Error error = 3;
+}
+
+// 获取正在关注请求
+message GetFollowingRequest {
+  string user_id = 1;
+  int32 first = 2;
+  string after = 3;
+}
+
+// 获取正在关注响应
+message GetFollowingResponse {
+  repeated User users = 1;
+  PageInfo page_info = 2;
+  Error error = 3;
+}
+
+// 分页信息
+message PageInfo {
+  bool has_next_page = 1;
+  string end_cursor = 2;
 }

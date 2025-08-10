@@ -27,4 +27,10 @@ type UserRepository interface {
 
 	// Authenticate 用户认证
 	Authenticate(ctx context.Context, identifier, password string) (*proto.User, error)
+
+	// GetFollowers 获取关注者
+	GetFollowers(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error)
+
+	// GetFollowing 获取正在关注
+	GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error)
 }

@@ -266,3 +266,77 @@ func toString(s *string) string {
 	}
 	return *s
 }
+
+// GetFollowers 获取关注者
+func (r *userRepository) GetFollowers(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
+	// This is a mock implementation as the database schema for followers is not defined.
+	// In a real application, you would query a followers/following join table.
+	var users []*models.User
+	db := r.db.Limit(first)
+
+	// Mocking cursor-based pagination
+	if after != "" {
+		// In a real implementation, 'after' would be an ID or a timestamp
+		db = db.Where("id > ?", after)
+	}
+
+	if err := db.Find(&users).Error; err != nil {
+		return nil, nil, err
+	}
+
+	pbUsers := make([]*proto.User, len(users))
+	for i, u := range users {
+		pbUsers[i] = r.modelToProto(u)
+	}
+
+	var endCursor string
+	if len(users) > 0 {
+		endCursor = users[len(users)-1].ID
+	}
+
+	// Mock hasNextPage logic
+	var count int64
+	r.db.Model(&models.User{}).Where("id > ?", endCursor).Count(&count)
+	hasNextPage := count > 0
+
+	pageInfo := &proto.PageInfo{
+		HasNextPage: hasNextPage,
+		EndCursor:   endCursor,
+	}
+
+	return pbUsers, pageInfo, nil
+}
+
+// GetFollowing 获取正在关注
+func (r *userRepository) GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
+	// This is a mock implementation.
+	var users []*models.User
+	db := r.db.Limit(first)
+	if after != "" {
+		db = db.Where("id > ?", after)
+	}
+	if err := db.Find(&users).Error; err != nil {
+		return nil, nil, err
+	}
+
+	pbUsers := make([]*proto.User, len(users))
+	for i, u := range users {
+		pbUsers[i] = r.modelToProto(u)
+	}
+
+	var endCursor string
+	if len(users) > 0 {
+		endCursor = users[len(users)-1].ID
+	}
+
+	var count int64
+	r.db.Model(&models.User{}).Where("id > ?", endCursor).Count(&count)
+	hasNextPage := count > 0
+
+	pageInfo := &proto.PageInfo{
+		HasNextPage: hasNextPage,
+		EndCursor:   endCursor,
+	}
+
+	return pbUsers, pageInfo, nil
+}

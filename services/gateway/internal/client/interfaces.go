@@ -34,6 +34,12 @@ type UserServiceClient interface {
 
 	// DeleteUser 删除用户
 	DeleteUser(ctx context.Context, in *user_proto.DeleteUserRequest, opts ...interface{}) (*user_proto.DeleteUserResponse, error)
+
+	// GetFollowers 获取关注者
+	GetFollowers(ctx context.Context, in *user_proto.GetFollowersRequest, opts ...interface{}) (*user_proto.GetFollowersResponse, error)
+
+	// GetFollowing 获取正在关注
+	GetFollowing(ctx context.Context, in *user_proto.GetFollowingRequest, opts ...interface{}) (*user_proto.GetFollowingResponse, error)
 }
 
 // ContentServiceClient 定义内容服务客户端接口

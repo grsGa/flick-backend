@@ -55,6 +55,16 @@ func (s *grpcServer) Login(ctx context.Context, req *proto.LoginRequest) (*proto
 	return s.userService.Login(ctx, req)
 }
 
+// GetFollowers 实现获取关注者接口
+func (s *grpcServer) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
+	return s.userService.GetFollowers(ctx, req)
+}
+
+// GetFollowing 实现获取正在关注接口
+func (s *grpcServer) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
+	return s.userService.GetFollowing(ctx, req)
+}
+
 // Run 启动gRPC服务
 func (s *grpcServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
