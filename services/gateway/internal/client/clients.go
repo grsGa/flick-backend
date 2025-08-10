@@ -34,6 +34,11 @@ func (c *userServiceClient) GetUser(ctx context.Context, in *user_proto.GetUserR
 	return c.client.GetUser(ctx, in)
 }
 
+// GetUserByUsername 获取用户
+func (c *userServiceClient) GetUserByUsername(ctx context.Context, in *user_proto.GetUserByUsernameRequest, opts ...interface{}) (*user_proto.GetUserResponse, error) {
+	return c.client.GetUserByUsername(ctx, in)
+}
+
 // UpdateUser 更新用户
 func (c *userServiceClient) UpdateUser(ctx context.Context, in *user_proto.UpdateUserRequest, opts ...interface{}) (*user_proto.UpdateUserResponse, error) {
 	return c.client.UpdateUser(ctx, in)

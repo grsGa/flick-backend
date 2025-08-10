@@ -26,6 +26,9 @@ type UserServiceClient interface {
 	// GetUser 获取用户
 	GetUser(ctx context.Context, in *user_proto.GetUserRequest, opts ...interface{}) (*user_proto.GetUserResponse, error)
 
+	// GetUserByUsername 获取用户
+	GetUserByUsername(ctx context.Context, in *user_proto.GetUserByUsernameRequest, opts ...interface{}) (*user_proto.GetUserResponse, error)
+
 	// UpdateUser 更新用户
 	UpdateUser(ctx context.Context, in *user_proto.UpdateUserRequest, opts ...interface{}) (*user_proto.UpdateUserResponse, error)
 

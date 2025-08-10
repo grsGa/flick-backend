@@ -160,7 +160,7 @@ message User {
   string email = 4;
   string phone = 5;
   string avatar_url = 6;
-  string cover_url = 7;
+  string banner_url = 7;
   string bio = 8;
   string location = 9;
   string website_url = 10;
@@ -171,6 +171,10 @@ message User {
   string status = 15;
   string created_at = 16;
   string updated_at = 17;
+  int32 followers_count = 18;
+  int32 following_count = 19;
+  bool is_following = 20;
+  bool is_verified = 21;
 }
 
 // 错误信息

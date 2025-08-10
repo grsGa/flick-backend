@@ -30,6 +30,11 @@ func (s *grpcServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*p
 	return s.userService.GetUser(ctx, req)
 }
 
+// GetUserByUsername 实现根据用户名获取用户接口
+func (s *grpcServer) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
+	return s.userService.GetUserByUsername(ctx, req)
+}
+
 // UpdateUser 实现更新用户接口
 func (s *grpcServer) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
 	return s.userService.UpdateUser(ctx, req)

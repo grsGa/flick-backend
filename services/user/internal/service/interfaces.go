@@ -16,6 +16,9 @@ type UserService interface {
 	// GetUser 获取用户信息
 	GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error)
 
+	// GetUserByUsername 根据用户名获取用户信息
+	GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error)
+
 	// UpdateUser 更新用户
 	UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error)
 

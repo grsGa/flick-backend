@@ -24,12 +24,23 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	displayName := user.DisplayName
 	avatarUrl := user.AvatarUrl
 	bio := user.Bio
+	bannerUrl := user.BannerUrl
+	isFollowing := user.IsFollowing
+	isVerified := user.IsVerified
+	followersCount := int(user.FollowersCount)
+	followingCount := int(user.FollowingCount)
+
 	return &model.User{
-		ID:          user.Id,
-		Username:    user.Username,
-		DisplayName: &displayName,
-		AvatarURL:   &avatarUrl,
-		Bio:         &bio,
-		CreatedAt:   user.CreatedAt,
+		ID:             user.Id,
+		Username:       user.Username,
+		DisplayName:    &displayName,
+		AvatarURL:      &avatarUrl,
+		Bio:            &bio,
+		BannerURL:      &bannerUrl,
+		FollowersCount: followersCount,
+		FollowingCount: followingCount,
+		IsFollowing:    &isFollowing,
+		IsVerified:     &isVerified,
+		CreatedAt:      user.CreatedAt,
 	}
 }

@@ -184,6 +184,7 @@ type ComplexityRoot struct {
 		Search             func(childComplexity int, input model.SearchInput) int
 		TrendingHashtags   func(childComplexity int, first int) int
 		Tweet              func(childComplexity int, id string) int
+		UserByUsername     func(childComplexity int, username string) int
 		UserTweets         func(childComplexity int, username string, first int, after *string) int
 		__resolve__service func(childComplexity int) int
 	}
@@ -270,6 +271,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*string, error)
+	UserByUsername(ctx context.Context, username string) (*model.User, error)
 	Tweet(ctx context.Context, id string) (*model.Tweet, error)
 	UserTweets(ctx context.Context, username string, first int, after *string) (*model.TweetConnection, error)
 	HomeFeed(ctx context.Context, first int, after *string) (*model.TweetConnection, error)
@@ -996,6 +998,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Tweet(childComplexity, args["id"].(string)), true
 
+	case "Query.userByUsername":
+		if e.complexity.Query.UserByUsername == nil {
+			break
+		}
+
+		args, err := ec.field_Query_userByUsername_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UserByUsername(childComplexity, args["username"].(string)), true
+
 	case "Query.userTweets":
 		if e.complexity.Query.UserTweets == nil {
 			break
@@ -1581,6 +1595,7 @@ union RecommendationEntity = User | Tweet | Hashtag
 
 type Query {
   health: String
+  userByUsername(username: String!): User
   tweet(id: ID!): Tweet
   userTweets(username: String!, first: Int!, after: String): TweetConnection
   homeFeed(first: Int!, after: String): TweetConnection
@@ -1627,7 +1642,8 @@ type Mutation {
 schema {
   query: Query
   mutation: Mutation
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 	{Name: "../../../../../../frontend/src/graphql/search.graphql", Input: `# Search related GraphQL types
 
 type SearchResults {
@@ -2014,6 +2030,17 @@ func (ec *executionContext) field_Query_tweet_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_userByUsername_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "username", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["username"] = arg0
 	return args, nil
 }
 
@@ -5869,6 +5896,82 @@ func (ec *executionContext) fieldContext_Query_health(_ context.Context, field g
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_userByUsername(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_userByUsername(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UserByUsername(rctx, fc.Args["username"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_userByUsername(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "displayName":
+				return ec.fieldContext_User_displayName(ctx, field)
+			case "bio":
+				return ec.fieldContext_User_bio(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "bannerUrl":
+				return ec.fieldContext_User_bannerUrl(ctx, field)
+			case "followersCount":
+				return ec.fieldContext_User_followersCount(ctx, field)
+			case "followingCount":
+				return ec.fieldContext_User_followingCount(ctx, field)
+			case "isFollowing":
+				return ec.fieldContext_User_isFollowing(ctx, field)
+			case "isVerified":
+				return ec.fieldContext_User_isVerified(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_userByUsername_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -11811,6 +11914,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "userByUsername":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_userByUsername(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "tweet":
 			field := field
 
@@ -14248,6 +14370,13 @@ func (ec *executionContext) marshalOTweetConnection2ᚖbackendᚋservicesᚋgate
 		return graphql.Null
 	}
 	return ec._TweetConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUserConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {

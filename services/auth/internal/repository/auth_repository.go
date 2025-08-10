@@ -90,8 +90,8 @@ func (r *authRepository) CreateUser(ctx context.Context, user *proto.User, passw
 		u.Phone = &user.Phone
 	}
 
-	if user.CoverUrl != "" {
-		u.CoverURL = &user.CoverUrl
+	if user.BannerUrl != "" {
+		u.BannerURL = &user.BannerUrl
 	}
 
 	if user.Bio != "" {
@@ -171,6 +171,10 @@ func (r *authRepository) modelToProto(user *models.User) *proto.User {
 		Bio:             toString(user.Bio),
 		Location:        toString(user.Location),
 		WebsiteUrl:      toString(user.WebsiteURL),
+		FollowersCount:  int32(user.FollowersCount),
+		FollowingCount:  int32(user.FollowingCount),
+		IsFollowing:     user.IsFollowing,
+		IsVerified:      user.IsVerified,
 		IsEmailVerified: user.IsEmailVerified,
 		IsPhoneVerified: user.IsPhoneVerified,
 		LoginMethod:     user.LoginMethod,
@@ -183,8 +187,8 @@ func (r *authRepository) modelToProto(user *models.User) *proto.User {
 		pbUser.Phone = *user.Phone
 	}
 
-	if user.CoverURL != nil {
-		pbUser.CoverUrl = *user.CoverURL
+	if user.BannerURL != nil {
+		pbUser.BannerUrl = *user.BannerURL
 	}
 
 	if user.LastLoginAt != nil {

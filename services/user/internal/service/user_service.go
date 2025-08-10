@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"backend/pkg/auth"
 	"backend/pkg/config"
@@ -10,6 +12,16 @@ import (
 
 	"go.uber.org/zap"
 )
+
+// List of blocked email domains to prevent temporary email registrations.
+// In a real-world application, this should be managed via a config file or database.
+var blockedEmailDomains = map[string]struct{}{
+	"mailinator.com":    {},
+	"temp-mail.org":     {},
+	"10minutemail.com":  {},
+	"guerrillamail.com": {},
+	"yopmail.com":       {},
+}
 
 // userService 用户服务实现
 type userService struct {
@@ -37,6 +49,25 @@ func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*
 				Message: "Failed to get user: " + err.Error(),
 			},
 		}, err
+	}
+
+	return &proto.GetUserResponse{
+		User: user,
+	}, nil
+}
+
+// GetUserByUsername implements the gRPC method.
+func (s *userService) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
+	s.logger.Info("Fetching user by username", zap.String("username", req.Username))
+	user, err := s.userRepo.GetUserByUsername(ctx, req.Username)
+	if err != nil {
+		s.logger.Warn("Failed to get user by username", zap.String("username", req.Username), zap.Error(err))
+		return &proto.GetUserResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "User not found: " + err.Error(),
+			},
+		}, nil // Return nil error to client, error details are in the response message
 	}
 
 	return &proto.GetUserResponse{
@@ -78,8 +109,8 @@ func (s *userService) UpdateUser(ctx context.Context, req *proto.UpdateUserReque
 		existingUser.AvatarUrl = req.AvatarUrl
 	}
 
-	if req.CoverUrl != "" {
-		existingUser.CoverUrl = req.CoverUrl
+	if req.BannerUrl != "" {
+		existingUser.BannerUrl = req.BannerUrl
 	}
 
 	if req.Bio != "" {
@@ -134,6 +165,17 @@ func (s *userService) DeleteUser(ctx context.Context, req *proto.DeleteUserReque
 
 // Register 用户注册
 func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+	// Validate email domain against the blocklist
+	if err := s.validateEmailDomain(req.Email); err != nil {
+		s.logger.Warn("Registration blocked for disposable email", zap.String("email", req.Email), zap.Error(err))
+		return &proto.RegisterResponse{
+			Error: &proto.Error{
+				Code:    400, // Bad Request
+				Message: err.Error(),
+			},
+		}, nil
+	}
+
 	// 检查用户是否已存在
 	_, err := s.userRepo.GetUserByEmail(ctx, req.Email)
 	if err == nil {
@@ -230,4 +272,17 @@ func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		Token: token,
 		User:  user,
 	}, nil
+}
+
+// validateEmailDomain checks if the email domain is in the blocklist.
+func (s *userService) validateEmailDomain(email string) error {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return errors.New("invalid email format")
+	}
+	domain := parts[1]
+	if _, blocked := blockedEmailDomains[strings.ToLower(domain)]; blocked {
+		return errors.New("registration with this email provider is not allowed")
+	}
+	return nil
 }

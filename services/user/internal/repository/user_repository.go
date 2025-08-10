@@ -69,8 +69,8 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *proto.User) error
 		updates["avatar_url"] = user.AvatarUrl
 	}
 
-	if user.CoverUrl != "" {
-		updates["cover_url"] = user.CoverUrl
+	if user.BannerUrl != "" {
+		updates["banner_url"] = user.BannerUrl
 	}
 
 	if user.Bio != "" {
@@ -168,6 +168,10 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 		Bio:             toString(user.Bio),
 		Location:        toString(user.Location),
 		WebsiteUrl:      toString(user.WebsiteURL),
+		FollowersCount:  int32(user.FollowersCount),
+		FollowingCount:  int32(user.FollowingCount),
+		IsFollowing:     user.IsFollowing,
+		IsVerified:      user.IsVerified,
 		IsEmailVerified: user.IsEmailVerified,
 		IsPhoneVerified: user.IsPhoneVerified,
 		LoginMethod:     user.LoginMethod,
@@ -180,8 +184,8 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 		pbUser.Phone = *user.Phone
 	}
 
-	if user.CoverURL != nil {
-		pbUser.CoverUrl = *user.CoverURL
+	if user.BannerURL != nil {
+		pbUser.BannerUrl = *user.BannerURL
 	}
 
 	if user.LastLoginAt != nil {
@@ -200,6 +204,10 @@ func (r *userRepository) protoToModel(user *proto.User) *models.User {
 		Email:           user.Email,
 		PasswordHash:    user.PasswordHash,
 		AvatarURL:       user.AvatarUrl,
+		FollowersCount:  int(user.FollowersCount),
+		FollowingCount:  int(user.FollowingCount),
+		IsFollowing:     user.IsFollowing,
+		IsVerified:      user.IsVerified,
 		IsEmailVerified: user.IsEmailVerified,
 		IsPhoneVerified: user.IsPhoneVerified,
 		LoginMethod:     user.LoginMethod,
@@ -214,8 +222,8 @@ func (r *userRepository) protoToModel(user *proto.User) *models.User {
 		modelUser.PasswordHash = user.PasswordHash
 	}
 
-	if user.CoverUrl != "" {
-		modelUser.CoverURL = &user.CoverUrl
+	if user.BannerUrl != "" {
+		modelUser.BannerURL = &user.BannerUrl
 	}
 
 	if user.Bio != "" {

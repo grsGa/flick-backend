@@ -145,6 +145,21 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 	return &health, nil
 }
 
+// UserByUsername is the resolver for the userByUsername field.
+func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
+	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
+		Username: username,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	return r.userProtoToGql(res.User), nil
+}
+
 // Tweet is the resolver for the tweet field.
 func (r *queryResolver) Tweet(ctx context.Context, id string) (*model.Tweet, error) {
 	panic(fmt.Errorf("not implemented: Tweet - tweet"))
