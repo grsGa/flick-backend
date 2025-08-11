@@ -33,4 +33,10 @@ type UserRepository interface {
 
 	// GetFollowing 获取正在关注
 	GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error)
+
+	// FollowUser 关注用户
+	FollowUser(ctx context.Context, followerID, followingID string) error
+
+	// UnfollowUser 取消关注用户
+	UnfollowUser(ctx context.Context, followerID, followingID string) error
 }

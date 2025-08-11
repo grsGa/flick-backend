@@ -310,6 +310,106 @@ func (s *userService) GetFollowing(ctx context.Context, req *proto.GetFollowingR
 	}, nil
 }
 
+// UpdateProfile 更新个人资料
+func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
+	// 首先获取现有用户信息
+	existingUser, err := s.userRepo.GetUserByID(ctx, req.UserId)
+	if err != nil {
+		return &proto.UpdateProfileResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "User not found: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 更新用户字段
+	if req.DisplayName != nil {
+		existingUser.DisplayName = *req.DisplayName
+	}
+
+	if req.Bio != nil {
+		existingUser.Bio = *req.Bio
+	}
+
+	if req.AvatarUrl != nil {
+		existingUser.AvatarUrl = *req.AvatarUrl
+	}
+
+	if req.BannerUrl != nil {
+		existingUser.BannerUrl = *req.BannerUrl
+	}
+
+	// 保存更新
+	err = s.userRepo.UpdateUser(ctx, existingUser)
+	if err != nil {
+		return &proto.UpdateProfileResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to update profile: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.UpdateProfileResponse{
+		User: existingUser,
+	}, nil
+}
+
+// FollowUser 关注用户
+func (s *userService) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
+	err := s.userRepo.FollowUser(ctx, req.FollowerId, req.FollowingId)
+	if err != nil {
+		return &proto.FollowUserResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to follow user: " + err.Error(),
+			},
+		}, err
+	}
+
+	user, err := s.userRepo.GetUserByID(ctx, req.FollowingId)
+	if err != nil {
+		return &proto.FollowUserResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "Failed to get user: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.FollowUserResponse{
+		User: user,
+	}, nil
+}
+
+// UnfollowUser 取消关注用户
+func (s *userService) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
+	err := s.userRepo.UnfollowUser(ctx, req.FollowerId, req.FollowingId)
+	if err != nil {
+		return &proto.UnfollowUserResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to unfollow user: " + err.Error(),
+			},
+		}, err
+	}
+
+	user, err := s.userRepo.GetUserByID(ctx, req.FollowingId)
+	if err != nil {
+		return &proto.UnfollowUserResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "Failed to get user: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.UnfollowUserResponse{
+		User: user,
+	}, nil
+}
+
 // validateEmailDomain checks if the email domain is in the blocklist.
 func (s *userService) validateEmailDomain(email string) error {
 	parts := strings.Split(email, "@")

@@ -269,15 +269,13 @@ func toString(s *string) string {
 
 // GetFollowers 获取关注者
 func (r *userRepository) GetFollowers(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
-	// This is a mock implementation as the database schema for followers is not defined.
-	// In a real application, you would query a followers/following join table.
 	var users []*models.User
-	db := r.db.Limit(first)
+	db := r.db.Joins("JOIN follows ON follows.follower_id = users.id").
+		Where("follows.followee_id = ?", userID).
+		Limit(first)
 
-	// Mocking cursor-based pagination
 	if after != "" {
-		// In a real implementation, 'after' would be an ID or a timestamp
-		db = db.Where("id > ?", after)
+		db = db.Where("users.id > ?", after)
 	}
 
 	if err := db.Find(&users).Error; err != nil {
@@ -294,9 +292,10 @@ func (r *userRepository) GetFollowers(ctx context.Context, userID string, first 
 		endCursor = users[len(users)-1].ID
 	}
 
-	// Mock hasNextPage logic
 	var count int64
-	r.db.Model(&models.User{}).Where("id > ?", endCursor).Count(&count)
+	r.db.Model(&models.User{}).Joins("JOIN follows ON follows.follower_id = users.id").
+		Where("follows.followee_id = ? AND users.id > ?", userID, endCursor).
+		Count(&count)
 	hasNextPage := count > 0
 
 	pageInfo := &proto.PageInfo{
@@ -309,12 +308,15 @@ func (r *userRepository) GetFollowers(ctx context.Context, userID string, first 
 
 // GetFollowing 获取正在关注
 func (r *userRepository) GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
-	// This is a mock implementation.
 	var users []*models.User
-	db := r.db.Limit(first)
+	db := r.db.Joins("JOIN follows ON follows.followee_id = users.id").
+		Where("follows.follower_id = ?", userID).
+		Limit(first)
+
 	if after != "" {
-		db = db.Where("id > ?", after)
+		db = db.Where("users.id > ?", after)
 	}
+
 	if err := db.Find(&users).Error; err != nil {
 		return nil, nil, err
 	}
@@ -330,7 +332,9 @@ func (r *userRepository) GetFollowing(ctx context.Context, userID string, first 
 	}
 
 	var count int64
-	r.db.Model(&models.User{}).Where("id > ?", endCursor).Count(&count)
+	r.db.Model(&models.User{}).Joins("JOIN follows ON follows.followee_id = users.id").
+		Where("follows.follower_id = ? AND users.id > ?", userID, endCursor).
+		Count(&count)
 	hasNextPage := count > 0
 
 	pageInfo := &proto.PageInfo{
@@ -339,4 +343,18 @@ func (r *userRepository) GetFollowing(ctx context.Context, userID string, first 
 	}
 
 	return pbUsers, pageInfo, nil
+}
+
+// FollowUser 关注用户
+func (r *userRepository) FollowUser(ctx context.Context, followerID, followingID string) error {
+	follow := models.Follow{
+		FollowerID: followerID,
+		FolloweeID: followingID,
+	}
+	return r.db.Create(&follow).Error
+}
+
+// UnfollowUser 取消关注用户
+func (r *userRepository) UnfollowUser(ctx context.Context, followerID, followingID string) error {
+	return r.db.Where("follower_id = ? AND followee_id = ?", followerID, followingID).Delete(&models.Follow{}).Error
 }

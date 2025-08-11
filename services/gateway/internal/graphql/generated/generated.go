@@ -134,6 +134,7 @@ type ComplexityRoot struct {
 		CreateComment              func(childComplexity int, input model.CreateCommentInput) int
 		CreateConversation         func(childComplexity int, input model.CreateConversationInput) int
 		CreateTweet                func(childComplexity int, input model.CreateTweetInput) int
+		FollowUser                 func(childComplexity int, userID string) int
 		LikeTweet                  func(childComplexity int, input model.LikeTweetInput) int
 		Login                      func(childComplexity int, input model.LoginInput) int
 		MarkAllNotificationsAsRead func(childComplexity int) int
@@ -144,7 +145,9 @@ type ComplexityRoot struct {
 		SendMessage                func(childComplexity int, input model.CreateMessageInput) int
 		UnbookmarkTweet            func(childComplexity int, input model.BookmarkTweetInput) int
 		UndoRetweet                func(childComplexity int, input model.RetweetInput) int
+		UnfollowUser               func(childComplexity int, userID string) int
 		UnlikeTweet                func(childComplexity int, input model.LikeTweetInput) int
+		UpdateProfile              func(childComplexity int, input model.UpdateProfileInput) int
 		UploadMedia                func(childComplexity int, file graphql.Upload) int
 	}
 
@@ -273,6 +276,9 @@ type MutationResolver interface {
 	SendMessage(ctx context.Context, input model.CreateMessageInput) (*model.Message, error)
 	MarkMessageAsRead(ctx context.Context, messageID string) (*model.Message, error)
 	UploadMedia(ctx context.Context, file graphql.Upload) (*model.Media, error)
+	UpdateProfile(ctx context.Context, input model.UpdateProfileInput) (*model.User, error)
+	FollowUser(ctx context.Context, userID string) (*model.User, error)
+	UnfollowUser(ctx context.Context, userID string) (*model.User, error)
 }
 type QueryResolver interface {
 	Health(ctx context.Context) (*string, error)
@@ -663,6 +669,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.CreateTweet(childComplexity, args["input"].(model.CreateTweetInput)), true
 
+	case "Mutation.followUser":
+		if e.complexity.Mutation.FollowUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_followUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.FollowUser(childComplexity, args["userId"].(string)), true
+
 	case "Mutation.likeTweet":
 		if e.complexity.Mutation.LikeTweet == nil {
 			break
@@ -778,6 +796,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UndoRetweet(childComplexity, args["input"].(model.RetweetInput)), true
 
+	case "Mutation.unfollowUser":
+		if e.complexity.Mutation.UnfollowUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unfollowUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnfollowUser(childComplexity, args["userId"].(string)), true
+
 	case "Mutation.unlikeTweet":
 		if e.complexity.Mutation.UnlikeTweet == nil {
 			break
@@ -789,6 +819,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UnlikeTweet(childComplexity, args["input"].(model.LikeTweetInput)), true
+
+	case "Mutation.updateProfile":
+		if e.complexity.Mutation.UpdateProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProfile_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProfile(childComplexity, args["input"].(model.UpdateProfileInput)), true
 
 	case "Mutation.uploadMedia":
 		if e.complexity.Mutation.UploadMedia == nil {
@@ -1712,6 +1754,11 @@ type Mutation {
   
   # Media mutations
   uploadMedia(file: Upload!): Media!
+  
+  # User mutations
+  updateProfile(input: UpdateProfileInput!): User!
+  followUser(userId: ID!): User!
+  unfollowUser(userId: ID!): User!
 }
 
 schema {
@@ -1858,6 +1905,17 @@ func (ec *executionContext) field_Mutation_createTweet_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_followUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_likeTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1957,10 +2015,32 @@ func (ec *executionContext) field_Mutation_undoRetweet_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_unfollowUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_unlikeTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNLikeTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProfileInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput)
 	if err != nil {
 		return nil, err
 	}
@@ -5459,6 +5539,243 @@ func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_uploadMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateProfile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateProfile(rctx, fc.Args["input"].(model.UpdateProfileInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "displayName":
+				return ec.fieldContext_User_displayName(ctx, field)
+			case "bio":
+				return ec.fieldContext_User_bio(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "bannerUrl":
+				return ec.fieldContext_User_bannerUrl(ctx, field)
+			case "followersCount":
+				return ec.fieldContext_User_followersCount(ctx, field)
+			case "followingCount":
+				return ec.fieldContext_User_followingCount(ctx, field)
+			case "isFollowing":
+				return ec.fieldContext_User_isFollowing(ctx, field)
+			case "isVerified":
+				return ec.fieldContext_User_isVerified(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_followUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_followUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().FollowUser(rctx, fc.Args["userId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_followUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "displayName":
+				return ec.fieldContext_User_displayName(ctx, field)
+			case "bio":
+				return ec.fieldContext_User_bio(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "bannerUrl":
+				return ec.fieldContext_User_bannerUrl(ctx, field)
+			case "followersCount":
+				return ec.fieldContext_User_followersCount(ctx, field)
+			case "followingCount":
+				return ec.fieldContext_User_followingCount(ctx, field)
+			case "isFollowing":
+				return ec.fieldContext_User_isFollowing(ctx, field)
+			case "isVerified":
+				return ec.fieldContext_User_isVerified(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_followUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unfollowUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_unfollowUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnfollowUser(rctx, fc.Args["userId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unfollowUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "displayName":
+				return ec.fieldContext_User_displayName(ctx, field)
+			case "bio":
+				return ec.fieldContext_User_bio(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "bannerUrl":
+				return ec.fieldContext_User_bannerUrl(ctx, field)
+			case "followersCount":
+				return ec.fieldContext_User_followersCount(ctx, field)
+			case "followingCount":
+				return ec.fieldContext_User_followingCount(ctx, field)
+			case "isFollowing":
+				return ec.fieldContext_User_isFollowing(ctx, field)
+			case "isVerified":
+				return ec.fieldContext_User_isVerified(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unfollowUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12131,6 +12448,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateProfile":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateProfile(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "followUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_followUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "unfollowUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unfollowUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14274,6 +14612,11 @@ func (ec *executionContext) marshalNTweetEdge2ᚕbackendᚋservicesᚋgatewayᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUpdateProfileInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput(ctx context.Context, v any) (model.UpdateProfileInput, error) {
+	res, err := ec.unmarshalInputUpdateProfileInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {

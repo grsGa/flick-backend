@@ -65,6 +65,21 @@ func (s *grpcServer) GetFollowing(ctx context.Context, req *proto.GetFollowingRe
 	return s.userService.GetFollowing(ctx, req)
 }
 
+// UpdateProfile 实现更新个人资料接口
+func (s *grpcServer) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
+	return s.userService.UpdateProfile(ctx, req)
+}
+
+// FollowUser 实现关注用户接口
+func (s *grpcServer) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
+	return s.userService.FollowUser(ctx, req)
+}
+
+// UnfollowUser 实现取消关注用户接口
+func (s *grpcServer) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
+	return s.userService.UnfollowUser(ctx, req)
+}
+
 // Run 启动gRPC服务
 func (s *grpcServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)

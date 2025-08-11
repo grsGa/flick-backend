@@ -40,6 +40,15 @@ type UserServiceClient interface {
 
 	// GetFollowing 获取正在关注
 	GetFollowing(ctx context.Context, in *user_proto.GetFollowingRequest, opts ...interface{}) (*user_proto.GetFollowingResponse, error)
+
+	// UpdateProfile 更新个人资料
+	UpdateProfile(ctx context.Context, in *user_proto.UpdateProfileRequest, opts ...interface{}) (*user_proto.UpdateProfileResponse, error)
+
+	// FollowUser 关注用户
+	FollowUser(ctx context.Context, in *user_proto.FollowUserRequest, opts ...interface{}) (*user_proto.FollowUserResponse, error)
+
+	// UnfollowUser 取消关注用户
+	UnfollowUser(ctx context.Context, in *user_proto.UnfollowUserRequest, opts ...interface{}) (*user_proto.UnfollowUserResponse, error)
 }
 
 // ContentServiceClient 定义内容服务客户端接口

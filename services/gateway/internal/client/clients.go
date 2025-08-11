@@ -67,6 +67,21 @@ func (c *userServiceClient) Login(ctx context.Context, in *user_proto.LoginReque
 	return c.client.Login(ctx, in)
 }
 
+// UpdateProfile 更新个人资料
+func (c *userServiceClient) UpdateProfile(ctx context.Context, in *user_proto.UpdateProfileRequest, opts ...interface{}) (*user_proto.UpdateProfileResponse, error) {
+	return c.client.UpdateProfile(ctx, in)
+}
+
+// FollowUser 关注用户
+func (c *userServiceClient) FollowUser(ctx context.Context, in *user_proto.FollowUserRequest, opts ...interface{}) (*user_proto.FollowUserResponse, error) {
+	return c.client.FollowUser(ctx, in)
+}
+
+// UnfollowUser 取消关注用户
+func (c *userServiceClient) UnfollowUser(ctx context.Context, in *user_proto.UnfollowUserRequest, opts ...interface{}) (*user_proto.UnfollowUserResponse, error) {
+	return c.client.UnfollowUser(ctx, in)
+}
+
 // contentServiceClient 内容服务gRPC客户端实现
 type contentServiceClient struct {
 	client content_proto.ContentServiceClient

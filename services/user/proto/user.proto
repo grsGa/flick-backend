@@ -28,6 +28,15 @@ service UserService {
 
   // 获取正在关注
   rpc GetFollowing(GetFollowingRequest) returns (GetFollowingResponse);
+
+  // 更新个人资料
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+
+  // 关注用户
+  rpc FollowUser(FollowUserRequest) returns (FollowUserResponse);
+
+  // 取消关注用户
+  rpc UnfollowUser(UnfollowUserRequest) returns (UnfollowUserResponse);
 }
 
 // 用户信息
@@ -170,4 +179,43 @@ message GetFollowingResponse {
 message PageInfo {
   bool has_next_page = 1;
   string end_cursor = 2;
+}
+
+// 更新个人资料请求
+message UpdateProfileRequest {
+  string user_id = 1;
+  optional string display_name = 2;
+  optional string bio = 3;
+  optional string avatar_url = 4;
+  optional string banner_url = 5;
+}
+
+// 更新个人资料响应
+message UpdateProfileResponse {
+  User user = 1;
+  Error error = 2;
+}
+
+// 关注用户请求
+message FollowUserRequest {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+// 关注用户响应
+message FollowUserResponse {
+  User user = 1;
+  Error error = 2;
+}
+
+// 取消关注用户请求
+message UnfollowUserRequest {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+// 取消关注用户响应
+message UnfollowUserResponse {
+  User user = 1;
+  Error error = 2;
 }

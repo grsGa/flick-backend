@@ -30,4 +30,13 @@ type UserService interface {
 
 	// GetFollowing 获取正在关注
 	GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error)
+
+	// UpdateProfile 更新个人资料
+	UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error)
+
+	// FollowUser 关注用户
+	FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error)
+
+	// UnfollowUser 取消关注用户
+	UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error)
 }

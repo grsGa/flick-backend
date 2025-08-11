@@ -38,6 +38,12 @@ type UserServiceClient interface {
 	GetFollowers(ctx context.Context, in *GetFollowersRequest, opts ...grpc.CallOption) (*GetFollowersResponse, error)
 	// 获取正在关注
 	GetFollowing(ctx context.Context, in *GetFollowingRequest, opts ...grpc.CallOption) (*GetFollowingResponse, error)
+	// 更新个人资料
+	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error)
+	// 关注用户
+	FollowUser(ctx context.Context, in *FollowUserRequest, opts ...grpc.CallOption) (*FollowUserResponse, error)
+	// 取消关注用户
+	UnfollowUser(ctx context.Context, in *UnfollowUserRequest, opts ...grpc.CallOption) (*UnfollowUserResponse, error)
 }
 
 type userServiceClient struct {
@@ -120,6 +126,33 @@ func (c *userServiceClient) GetFollowing(ctx context.Context, in *GetFollowingRe
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error) {
+	out := new(UpdateProfileResponse)
+	err := c.cc.Invoke(ctx, "/user.UserService/UpdateProfile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FollowUser(ctx context.Context, in *FollowUserRequest, opts ...grpc.CallOption) (*FollowUserResponse, error) {
+	out := new(FollowUserResponse)
+	err := c.cc.Invoke(ctx, "/user.UserService/FollowUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UnfollowUser(ctx context.Context, in *UnfollowUserRequest, opts ...grpc.CallOption) (*UnfollowUserResponse, error) {
+	out := new(UnfollowUserResponse)
+	err := c.cc.Invoke(ctx, "/user.UserService/UnfollowUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
@@ -140,6 +173,12 @@ type UserServiceServer interface {
 	GetFollowers(context.Context, *GetFollowersRequest) (*GetFollowersResponse, error)
 	// 获取正在关注
 	GetFollowing(context.Context, *GetFollowingRequest) (*GetFollowingResponse, error)
+	// 更新个人资料
+	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
+	// 关注用户
+	FollowUser(context.Context, *FollowUserRequest) (*FollowUserResponse, error)
+	// 取消关注用户
+	UnfollowUser(context.Context, *UnfollowUserRequest) (*UnfollowUserResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -170,6 +209,15 @@ func (UnimplementedUserServiceServer) GetFollowers(context.Context, *GetFollower
 }
 func (UnimplementedUserServiceServer) GetFollowing(context.Context, *GetFollowingRequest) (*GetFollowingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFollowing not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfile not implemented")
+}
+func (UnimplementedUserServiceServer) FollowUser(context.Context, *FollowUserRequest) (*FollowUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FollowUser not implemented")
+}
+func (UnimplementedUserServiceServer) UnfollowUser(context.Context, *UnfollowUserRequest) (*UnfollowUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnfollowUser not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -328,6 +376,60 @@ func _UserService_GetFollowing_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.UserService/UpdateProfile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateProfile(ctx, req.(*UpdateProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FollowUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.UserService/FollowUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FollowUser(ctx, req.(*FollowUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UnfollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnfollowUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UnfollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.UserService/UnfollowUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UnfollowUser(ctx, req.(*UnfollowUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -366,6 +468,18 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetFollowing",
 			Handler:    _UserService_GetFollowing_Handler,
+		},
+		{
+			MethodName: "UpdateProfile",
+			Handler:    _UserService_UpdateProfile_Handler,
+		},
+		{
+			MethodName: "FollowUser",
+			Handler:    _UserService_FollowUser_Handler,
+		},
+		{
+			MethodName: "UnfollowUser",
+			Handler:    _UserService_UnfollowUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

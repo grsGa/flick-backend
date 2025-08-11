@@ -139,6 +139,72 @@ func (r *mutationResolver) UploadMedia(ctx context.Context, file graphql.Upload)
 	panic(fmt.Errorf("not implemented: UploadMedia - uploadMedia"))
 }
 
+// UpdateProfile is the resolver for the updateProfile field.
+func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.UpdateProfileInput) (*model.User, error) {
+	userID, ok := ctx.Value("user_id").(string)
+	if !ok {
+		return nil, errors.New("unauthorized")
+	}
+
+	res, err := r.UserServiceClient.UpdateProfile(ctx, &user_proto.UpdateProfileRequest{
+		UserId:      userID,
+		DisplayName: input.DisplayName,
+		Bio:         input.Bio,
+		AvatarUrl:   input.AvatarURL,
+		BannerUrl:   input.BannerURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	return r.userProtoToGql(res.User), nil
+}
+
+// FollowUser is the resolver for the followUser field.
+func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*model.User, error) {
+	followerID, ok := ctx.Value("user_id").(string)
+	if !ok {
+		return nil, errors.New("unauthorized")
+	}
+
+	res, err := r.UserServiceClient.FollowUser(ctx, &user_proto.FollowUserRequest{
+		FollowerId:  followerID,
+		FollowingId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	return r.userProtoToGql(res.User), nil
+}
+
+// UnfollowUser is the resolver for the unfollowUser field.
+func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*model.User, error) {
+	followerID, ok := ctx.Value("user_id").(string)
+	if !ok {
+		return nil, errors.New("unauthorized")
+	}
+
+	res, err := r.UserServiceClient.UnfollowUser(ctx, &user_proto.UnfollowUserRequest{
+		FollowerId:  followerID,
+		FollowingId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	return r.userProtoToGql(res.User), nil
+}
+
 // Health is the resolver for the health field.
 func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 	health := "ok"
