@@ -227,6 +227,8 @@ type TweetEdge struct {
 type UpdateProfileInput struct {
 	DisplayName *string `json:"displayName,omitempty"`
 	Bio         *string `json:"bio,omitempty"`
+	Location    *string `json:"location,omitempty"`
+	Website     *string `json:"website,omitempty"`
 	AvatarURL   *string `json:"avatarUrl,omitempty"`
 	BannerURL   *string `json:"bannerUrl,omitempty"`
 }

@@ -1832,6 +1832,8 @@ type User {
 input UpdateProfileInput {
   displayName: String
   bio: String
+  location: String
+  website: String
   avatarUrl: String
   bannerUrl: String
 }
@@ -11557,7 +11559,7 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"displayName", "bio", "avatarUrl", "bannerUrl"}
+	fieldsInOrder := [...]string{"displayName", "bio", "location", "website", "avatarUrl", "bannerUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -11578,6 +11580,20 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 				return it, err
 			}
 			it.Bio = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "website":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("website"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Website = data
 		case "avatarUrl":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarUrl"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)

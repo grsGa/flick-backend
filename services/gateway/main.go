@@ -18,6 +18,7 @@ import (
 	"backend/services/gateway/internal/client"
 	"backend/services/gateway/internal/graphql/generated"
 	"backend/services/gateway/internal/graphql/resolver"
+	"backend/services/gateway/internal/middleware"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -111,6 +112,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// Auth middleware
+	r.Use(middleware.AuthMiddleware(cfg))
+
 	// Setup routes
 	setupRoutes(r)
 
@@ -177,18 +181,21 @@ func setupRoutes(r *gin.Engine) {
 	graphqlPath := "/graphql"
 	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient)}))
 	queryHandler.Use(extension.Introspection{})
-	l, _ := simplelru.NewLRU(100, nil)
-	queryHandler.Use(extension.AutomaticPersistedQuery{
-		Cache: &lruCache{l},
-	})
 
 	// GraphQL路由
 	graphql := r.Group(graphqlPath)
 	{
 		graphql.POST("", func(c *gin.Context) {
+			// The middleware already added the claims to the request context.
+			// gqlgen will automatically pick it up.
 			queryHandler.ServeHTTP(c.Writer, c.Request)
 		})
 	}
+
+	l, _ := simplelru.NewLRU(100, nil)
+	queryHandler.Use(extension.AutomaticPersistedQuery{
+		Cache: &lruCache{l},
+	})
 
 	// Playground
 	r.GET("/", func(c *gin.Context) {
