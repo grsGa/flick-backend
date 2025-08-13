@@ -254,6 +254,8 @@ type User {
   username: String!
   displayName: String
   bio: String
+  location: String
+  website: String
   avatarUrl: String
   bannerUrl: String
   followersCount: Int!
@@ -266,6 +268,8 @@ type User {
 input UpdateProfileInput {
   displayName: String
   bio: String
+  location: String
+  website: String
   avatarUrl: String
   bannerUrl: String
 }
@@ -302,4 +306,7 @@ type Mutation {
   markMessageAsRead(messageId: ID!): Message!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead: Boolean!
+  updateProfile(input: UpdateProfileInput!): User!
+  followUser(userID: String!): User!
+  unfollowUser(userID: String!): User!
 }

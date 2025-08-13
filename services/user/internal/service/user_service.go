@@ -332,6 +332,14 @@ func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfil
 		existingUser.Bio = *req.Bio
 	}
 
+	if req.Location != nil {
+		existingUser.Location = *req.Location
+	}
+
+	if req.Website != nil {
+		existingUser.WebsiteUrl = *req.Website
+	}
+
 	if req.AvatarUrl != nil {
 		existingUser.AvatarUrl = *req.AvatarUrl
 	}

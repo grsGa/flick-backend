@@ -7,6 +7,7 @@ package resolver
 import (
 	"backend/services/gateway/internal/graphql/generated"
 	"backend/services/gateway/internal/graphql/model"
+	"backend/services/gateway/internal/middleware"
 	user_proto "backend/services/user/proto"
 	"context"
 	"errors"
@@ -141,22 +142,36 @@ func (r *mutationResolver) UploadMedia(ctx context.Context, file graphql.Upload)
 
 // UpdateProfile is the resolver for the updateProfile field.
 func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.UpdateProfileInput) (*model.User, error) {
-	userID, ok := ctx.Value("user_id").(string)
-	if !ok {
+	// Gateway log: GraphQL mutation received
+	fmt.Printf("[Gateway] UpdateProfile mutation received\n")
+
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		fmt.Printf("[Gateway] UpdateProfile unauthorized: no user claims\n")
 		return nil, errors.New("unauthorized")
 	}
+	userID := claims.UserID
 
-	res, err := r.UserServiceClient.UpdateProfile(ctx, &user_proto.UpdateProfileRequest{
+	req := &user_proto.UpdateProfileRequest{
 		UserId:      userID,
 		DisplayName: input.DisplayName,
 		Bio:         input.Bio,
+		Location:    input.Location,
+		Website:     input.Website,
 		AvatarUrl:   input.AvatarURL,
 		BannerUrl:   input.BannerURL,
-	})
+	}
+
+	// Gateway log: Calling user service
+	fmt.Printf("[Gateway] Calling user-service UpdateProfile for userID: %s\n", userID)
+
+	res, err := r.UserServiceClient.UpdateProfile(ctx, req)
 	if err != nil {
+		fmt.Printf("[Gateway] User-service call failed: %v\n", err)
 		return nil, err
 	}
 	if res.Error != nil {
+		fmt.Printf("[Gateway] User-service returned error: %s\n", res.Error.Message)
 		return nil, errors.New(res.Error.Message)
 	}
 
@@ -165,10 +180,11 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 
 // FollowUser is the resolver for the followUser field.
 func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*model.User, error) {
-	followerID, ok := ctx.Value("user_id").(string)
-	if !ok {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
 		return nil, errors.New("unauthorized")
 	}
+	followerID := claims.UserID
 
 	res, err := r.UserServiceClient.FollowUser(ctx, &user_proto.FollowUserRequest{
 		FollowerId:  followerID,
@@ -186,10 +202,11 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 
 // UnfollowUser is the resolver for the unfollowUser field.
 func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*model.User, error) {
-	followerID, ok := ctx.Value("user_id").(string)
-	if !ok {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
 		return nil, errors.New("unauthorized")
 	}
+	followerID := claims.UserID
 
 	res, err := r.UserServiceClient.UnfollowUser(ctx, &user_proto.UnfollowUserRequest{
 		FollowerId:  followerID,
@@ -213,21 +230,29 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 
 // UserByUsername is the resolver for the userByUsername field.
 func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] UserByUsername query received for: %s\n", username)
+
 	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
 		Username: username,
 	})
 	if err != nil {
+		fmt.Printf("[Gateway] User-service call failed: %v\n", err)
 		return nil, err
 	}
 	if res.Error != nil {
+		fmt.Printf("[Gateway] User-service returned error: %s\n", res.Error.Message)
 		return nil, errors.New(res.Error.Message)
 	}
 
+	fmt.Printf("[Gateway] UserByUsername resolved successfully\n")
 	return r.userProtoToGql(res.User), nil
 }
 
 // Tweet is the resolver for the tweet field.
 func (r *queryResolver) Tweet(ctx context.Context, id string) (*model.Tweet, error) {
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] Tweet query received for: %s\n", id)
 	panic(fmt.Errorf("not implemented: Tweet - tweet"))
 }
 
@@ -278,7 +303,9 @@ func (r *queryResolver) TrendingHashtags(ctx context.Context, first int) ([]mode
 
 // RecommendedUsers is the resolver for the recommendedUsers field.
 func (r *queryResolver) RecommendedUsers(ctx context.Context, first int) ([]model.User, error) {
-	panic(fmt.Errorf("not implemented: RecommendedUsers - recommendedUsers"))
+	// TODO: Implement actual recommendation logic
+	// For now, return empty list to prevent panic and allow frontend to work
+	return []model.User{}, nil
 }
 
 // RecommendedTweets is the resolver for the recommendedTweets field.
@@ -288,101 +315,27 @@ func (r *queryResolver) RecommendedTweets(ctx context.Context, first int) (*mode
 
 // Followers is the resolver for the followers field.
 func (r *queryResolver) Followers(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
-	afterStr := ""
-	if after != nil {
-		afterStr = *after
-	}
-
-	res, err := r.UserServiceClient.GetFollowers(ctx, &user_proto.GetFollowersRequest{
-		UserId: userID,
-		First:  int32(first),
-		After:  afterStr,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if res.Error != nil {
-		return nil, errors.New(res.Error.Message)
-	}
-
-	edges := make([]model.UserEdge, len(res.Users))
-	for i, u := range res.Users {
-		edges[i] = model.UserEdge{
-			Node:   r.userProtoToGql(u),
-			Cursor: u.Id, // Assuming ID is the cursor
-		}
-	}
-
-	return &model.UserConnection{
-		Edges: edges,
-		PageInfo: &model.PageInfo{
-			HasNextPage: res.PageInfo.HasNextPage,
-			EndCursor:   &res.PageInfo.EndCursor,
-		},
-	}, nil
+	panic(fmt.Errorf("not implemented: Followers - followers"))
 }
 
 // Following is the resolver for the following field.
 func (r *queryResolver) Following(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
-	afterStr := ""
-	if after != nil {
-		afterStr = *after
-	}
-
-	res, err := r.UserServiceClient.GetFollowing(ctx, &user_proto.GetFollowingRequest{
-		UserId: userID,
-		First:  int32(first),
-		After:  afterStr,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if res.Error != nil {
-		return nil, errors.New(res.Error.Message)
-	}
-
-	edges := make([]model.UserEdge, len(res.Users))
-	for i, u := range res.Users {
-		edges[i] = model.UserEdge{
-			Node:   r.userProtoToGql(u),
-			Cursor: u.Id, // Assuming ID is the cursor
-		}
-	}
-
-	return &model.UserConnection{
-		Edges: edges,
-		PageInfo: &model.PageInfo{
-			HasNextPage: res.PageInfo.HasNextPage,
-			EndCursor:   &res.PageInfo.EndCursor,
-		},
-	}, nil
+	panic(fmt.Errorf("not implemented: Following - following"))
 }
 
 // UserReplies is the resolver for the userReplies field.
 func (r *queryResolver) UserReplies(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	// Mock implementation
-	return &model.TweetConnection{
-		Edges:    []model.TweetEdge{},
-		PageInfo: &model.PageInfo{HasNextPage: false},
-	}, nil
+	panic(fmt.Errorf("not implemented: UserReplies - userReplies"))
 }
 
 // UserMedia is the resolver for the userMedia field.
 func (r *queryResolver) UserMedia(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	// Mock implementation
-	return &model.TweetConnection{
-		Edges:    []model.TweetEdge{},
-		PageInfo: &model.PageInfo{HasNextPage: false},
-	}, nil
+	panic(fmt.Errorf("not implemented: UserMedia - userMedia"))
 }
 
 // UserLikes is the resolver for the userLikes field.
 func (r *queryResolver) UserLikes(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	// Mock implementation
-	return &model.TweetConnection{
-		Edges:    []model.TweetEdge{},
-		PageInfo: &model.PageInfo{HasNextPage: false},
-	}, nil
+	panic(fmt.Errorf("not implemented: UserLikes - userLikes"))
 }
 
 // Mutation returns generated.MutationResolver implementation.

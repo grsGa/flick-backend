@@ -24,6 +24,8 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	displayName := user.DisplayName
 	avatarUrl := user.AvatarUrl
 	bio := user.Bio
+	location := user.Location
+	website := user.WebsiteUrl
 	bannerUrl := user.BannerUrl
 	isFollowing := user.IsFollowing
 	isVerified := user.IsVerified
@@ -36,6 +38,8 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 		DisplayName:    &displayName,
 		AvatarURL:      &avatarUrl,
 		Bio:            &bio,
+		Location:       &location,
+		Website:        &website,
 		BannerURL:      &bannerUrl,
 		FollowersCount: followersCount,
 		FollowingCount: followingCount,

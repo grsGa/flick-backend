@@ -186,8 +186,10 @@ message UpdateProfileRequest {
   string user_id = 1;
   optional string display_name = 2;
   optional string bio = 3;
-  optional string avatar_url = 4;
-  optional string banner_url = 5;
+  optional string location = 4;
+  optional string website = 5;
+  optional string avatar_url = 6;
+  optional string banner_url = 7;
 }
 
 // 更新个人资料响应
