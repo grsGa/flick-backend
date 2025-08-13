@@ -315,12 +315,28 @@ func (r *queryResolver) RecommendedTweets(ctx context.Context, first int) (*mode
 
 // Followers is the resolver for the followers field.
 func (r *queryResolver) Followers(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
-	panic(fmt.Errorf("not implemented: Followers - followers"))
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] Followers query received for userID: %s\n", userID)
+
+	// TODO: Implement actual followers logic with user service
+	// For now, return empty connection to prevent 404 and allow frontend to work
+	return &model.UserConnection{
+		Edges:    []model.UserEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // Following is the resolver for the following field.
 func (r *queryResolver) Following(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
-	panic(fmt.Errorf("not implemented: Following - following"))
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] Following query received for userID: %s\n", userID)
+
+	// TODO: Implement actual following logic with user service
+	// For now, return empty connection to prevent 404 and allow frontend to work
+	return &model.UserConnection{
+		Edges:    []model.UserEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // UserReplies is the resolver for the userReplies field.
