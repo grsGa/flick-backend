@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"backend/services/user/proto"
+	"github.com/flick/backend/services/user/proto"
 
 	"github.com/dgrijalva/jwt-go"
 )

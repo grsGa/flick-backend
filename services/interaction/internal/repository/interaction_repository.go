@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"backend/pkg/database"
-	"backend/pkg/models"
-	"backend/services/interaction/proto"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/models"
+	"github.com/flick/backend/services/interaction/proto"
 
 	"gorm.io/gorm"
 )

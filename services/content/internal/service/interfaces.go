@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"backend/services/content/proto"
+	"github.com/flick/backend/services/content/proto"
 )
 
 // ContentService 定义内容服务接口

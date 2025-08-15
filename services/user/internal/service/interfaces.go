@@ -1,8 +1,9 @@
 package service
 
 import (
-	"backend/services/user/proto"
 	"context"
+
+	"github.com/flick/backend/services/user/proto"
 )
 
 // UserService 定义用户服务接口

@@ -5,8 +5,8 @@ import (
 	"net"
 	
 	"google.golang.org/grpc"
-	"backend/services/content/internal/service"
-	"backend/services/content/proto"
+	"github.com/flick/backend/services/content/internal/service"
+	"github.com/flick/backend/services/content/proto"
 )
 
 // grpcServer gRPC服务实现

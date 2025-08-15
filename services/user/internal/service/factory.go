@@ -1,8 +1,8 @@
 package service
 
 import (
-	"backend/pkg/config"
-	"backend/services/user/internal/repository"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/services/user/internal/repository"
 
 	"go.uber.org/zap"
 )

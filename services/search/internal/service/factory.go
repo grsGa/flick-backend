@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/search/internal/repository"
+	"github.com/flick/backend/services/search/internal/repository"
 )
 
 // NewSearchServiceFactory 创建搜索服务工厂

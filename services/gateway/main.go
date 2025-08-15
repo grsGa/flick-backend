@@ -9,16 +9,16 @@ import (
 	"net/url"
 	"strconv"
 
-	"backend/pkg/config"
-	"backend/pkg/database"
-	"backend/pkg/discovery"
-	"backend/pkg/logger"
-	"backend/pkg/telemetry"
-	auth_proto "backend/services/auth/proto"
-	"backend/services/gateway/internal/client"
-	"backend/services/gateway/internal/graphql/generated"
-	"backend/services/gateway/internal/graphql/resolver"
-	"backend/services/gateway/internal/middleware"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/discovery"
+	"github.com/flick/backend/pkg/logger"
+	"github.com/flick/backend/pkg/telemetry"
+	auth_proto "github.com/flick/backend/services/auth/proto"
+	"github.com/flick/backend/services/gateway/internal/client"
+	"github.com/flick/backend/services/gateway/internal/graphql/generated"
+	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
+	"github.com/flick/backend/services/gateway/internal/middleware"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -41,7 +41,6 @@ var (
 	interactionServiceClient    client.InteractionServiceClient
 	recommendationServiceClient client.RecommendationServiceClient
 	searchServiceClient         client.SearchServiceClient
-	bookmarkServiceClient       client.BookmarkServiceClient
 )
 
 const (
@@ -166,7 +165,7 @@ func initGRPCClients() {
 	// interactionServiceClient = client.NewInteractionServiceClient(getClient("interaction-service"))
 	// recommendationServiceClient = client.NewRecommendationServiceClient(getClient("recommendation-service"))
 	// searchServiceClient = client.NewSearchServiceClient(getClient("search-service"))
-	// bookmarkServiceClient = client.NewBookmarkServiceClient(getClient("bookmark-service"))
+
 }
 
 func setupRoutes(r *gin.Engine) {

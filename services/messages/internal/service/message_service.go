@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"time"
-	
+
+	"github.com/flick/backend/services/messages/internal/repository"
+	"github.com/flick/backend/services/messages/proto"
 	"github.com/google/uuid"
-	"backend/services/messages/internal/repository"
-	"backend/services/messages/proto"
 )
 
 // messageService 消息服务实现
@@ -31,7 +31,7 @@ func (s *messageService) CreateConversation(ctx context.Context, req *proto.Crea
 		CreatedAt: time.Now().Format(time.RFC3339),
 		UpdatedAt: time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.messageRepo.CreateConversation(ctx, conversation)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *messageService) CreateConversation(ctx context.Context, req *proto.Crea
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateConversationResponse{
 		Conversation: conversation,
 	}, nil
@@ -59,7 +59,7 @@ func (s *messageService) ListConversations(ctx context.Context, req *proto.ListC
 			},
 		}, err
 	}
-	
+
 	return &proto.ListConversationsResponse{
 		Conversations: conversations,
 		Total:         total,
@@ -77,7 +77,7 @@ func (s *messageService) GetConversation(ctx context.Context, req *proto.GetConv
 			},
 		}, err
 	}
-	
+
 	return &proto.GetConversationResponse{
 		Conversation: conversation,
 	}, nil
@@ -95,7 +95,7 @@ func (s *messageService) SendMessage(ctx context.Context, req *proto.SendMessage
 		IsRead:         false,
 		CreatedAt:      time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.messageRepo.CreateMessage(ctx, message)
 	if err != nil {
@@ -106,10 +106,10 @@ func (s *messageService) SendMessage(ctx context.Context, req *proto.SendMessage
 			},
 		}, err
 	}
-	
+
 	// 更新会话的最后消息
 	s.messageRepo.UpdateConversationLastMessage(ctx, req.ConversationId, req.Content)
-	
+
 	return &proto.SendMessageResponse{
 		Message: message,
 	}, nil
@@ -126,7 +126,7 @@ func (s *messageService) ListMessages(ctx context.Context, req *proto.ListMessag
 			},
 		}, err
 	}
-	
+
 	return &proto.ListMessagesResponse{
 		Messages: messages,
 		Total:    total,
@@ -145,7 +145,7 @@ func (s *messageService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRe
 			},
 		}, err
 	}
-	
+
 	return &proto.MarkAsReadResponse{
 		Success: true,
 	}, nil
@@ -163,7 +163,7 @@ func (s *messageService) DeleteConversation(ctx context.Context, req *proto.Dele
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteConversationResponse{
 		Success: true,
 	}, nil

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"backend/services/content/proto"
+	"github.com/flick/backend/services/content/proto"
 )
 
 // ContentRepository 定义内容仓储接口

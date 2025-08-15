@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"time"
-	
+
+	"github.com/flick/backend/services/notification/internal/repository"
+	"github.com/flick/backend/services/notification/proto"
 	"github.com/google/uuid"
-	"backend/services/notification/internal/repository"
-	"backend/services/notification/proto"
 )
 
 // notificationService 通知服务实现
@@ -25,17 +25,17 @@ func NewNotificationService(notificationRepo repository.NotificationRepository) 
 func (s *notificationService) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.CreateNotificationResponse, error) {
 	// 创建通知对象
 	notification := &proto.Notification{
-		Id:          uuid.New().String(),
-		ReceiverId:  req.ReceiverId,
-		ActorId:     req.ActorId,
-		ActionType:  req.ActionType,
-		TargetType:  req.TargetType,
-		TargetId:    req.TargetId,
-		Content:     req.Content,
-		IsRead:      false,
-		CreatedAt:   time.Now().Format(time.RFC3339),
+		Id:         uuid.New().String(),
+		ReceiverId: req.ReceiverId,
+		ActorId:    req.ActorId,
+		ActionType: req.ActionType,
+		TargetType: req.TargetType,
+		TargetId:   req.TargetId,
+		Content:    req.Content,
+		IsRead:     false,
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.notificationRepo.CreateNotification(ctx, notification)
 	if err != nil {
@@ -46,7 +46,7 @@ func (s *notificationService) CreateNotification(ctx context.Context, req *proto
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateNotificationResponse{
 		Notification: notification,
 	}, nil
@@ -63,7 +63,7 @@ func (s *notificationService) ListNotifications(ctx context.Context, req *proto.
 			},
 		}, err
 	}
-	
+
 	return &proto.ListNotificationsResponse{
 		Notifications: notifications,
 		Total:         total,
@@ -82,7 +82,7 @@ func (s *notificationService) MarkAsRead(ctx context.Context, req *proto.MarkAsR
 			},
 		}, err
 	}
-	
+
 	return &proto.MarkAsReadResponse{
 		Success: true,
 	}, nil
@@ -99,7 +99,7 @@ func (s *notificationService) MarkAllAsRead(ctx context.Context, req *proto.Mark
 			},
 		}, err
 	}
-	
+
 	return &proto.MarkAllAsReadResponse{
 		MarkedCount: count,
 	}, nil
@@ -117,7 +117,7 @@ func (s *notificationService) DeleteNotification(ctx context.Context, req *proto
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteNotificationResponse{
 		Success: true,
 	}, nil
@@ -134,7 +134,7 @@ func (s *notificationService) GetUnreadCount(ctx context.Context, req *proto.Get
 			},
 		}, err
 	}
-	
+
 	return &proto.GetUnreadCountResponse{
 		Count: count,
 	}, nil

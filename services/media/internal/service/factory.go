@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/media/internal/repository"
+	"github.com/flick/backend/services/media/internal/repository"
 )
 
 // NewMediaServiceFactory 创建媒体服务工厂

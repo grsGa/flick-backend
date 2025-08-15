@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"time"
-	
+
+	"github.com/flick/backend/services/media/internal/repository"
+	"github.com/flick/backend/services/media/proto"
 	"github.com/google/uuid"
-	"backend/services/media/internal/repository"
-	"backend/services/media/proto"
 )
 
 // mediaService 媒体服务实现
@@ -25,7 +25,7 @@ func NewMediaService(mediaRepo repository.MediaRepository) MediaService {
 func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
 	// 生成文件ID
 	fileID := uuid.New().String()
-	
+
 	// 保存文件到存储
 	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData)
 	if err != nil {
@@ -36,7 +36,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 			},
 		}, err
 	}
-	
+
 	// 创建文件记录
 	file := &proto.MediaFile{
 		Id:        fileID,
@@ -49,12 +49,12 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		CreatedAt: time.Now().Format(time.RFC3339),
 		UpdatedAt: time.Now().Format(time.RFC3339),
 	}
-	
+
 	err = s.mediaRepo.CreateFile(ctx, file)
 	if err != nil {
 		// 如果创建记录失败，尝试删除已保存的文件
 		s.mediaRepo.DeleteFileFromStorage(ctx, url)
-		
+
 		return &proto.UploadFileResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -62,7 +62,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 			},
 		}, err
 	}
-	
+
 	return &proto.UploadFileResponse{
 		File: file,
 	}, nil
@@ -79,7 +79,7 @@ func (s *mediaService) GetFile(ctx context.Context, req *proto.GetFileRequest) (
 			},
 		}, err
 	}
-	
+
 	return &proto.GetFileResponse{
 		File: file,
 	}, nil
@@ -98,7 +98,7 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 			},
 		}, err
 	}
-	
+
 	// 从存储中删除文件
 	err = s.mediaRepo.DeleteFileFromStorage(ctx, file.Url)
 	if err != nil {
@@ -110,7 +110,7 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 			},
 		}, err
 	}
-	
+
 	// 删除文件记录
 	err = s.mediaRepo.DeleteFile(ctx, req.FileId)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteFileResponse{
 		Success: true,
 	}, nil
@@ -139,7 +139,7 @@ func (s *mediaService) ListFiles(ctx context.Context, req *proto.ListFilesReques
 			},
 		}, err
 	}
-	
+
 	return &proto.ListFilesResponse{
 		Files: files,
 		Total: total,

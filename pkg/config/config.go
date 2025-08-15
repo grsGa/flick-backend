@@ -19,7 +19,6 @@ type Config struct {
 	InteractionSvcPort    string `mapstructure:"INTERACTION_SERVICE_PORT"`
 	RecommendationSvcPort string `mapstructure:"RECOMMENDATION_SERVICE_PORT"`
 	SearchServicePort     string `mapstructure:"SEARCH_SERVICE_PORT"`
-	BookmarkServicePort   string `mapstructure:"BOOKMARK_SERVICE_PORT"`
 
 	ConsulAgentAddr string `mapstructure:"CONSUL_AGENT_ADDR"`
 
@@ -31,11 +30,14 @@ type Config struct {
 
 	GithubClientID     string `mapstructure:"GITHUB_CLIENT_ID"`
 	GithubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET"`
+	GithubRedirectURL  string `mapstructure:"GITHUB_REDIRECT_URL"`
 
 	GoogleClientID     string `mapstructure:"GOOGLE_CLIENT_ID"`
 	GoogleClientSecret string `mapstructure:"GOOGLE_CLIENT_SECRET"`
+	GoogleRedirectURL  string `mapstructure:"GOOGLE_REDIRECT_URL"`
 
-	JWTSecret string `mapstructure:"JWT_SECRET"`
+	JWTSecret        string `mapstructure:"JWT_SECRET"`
+	CustomCaCertPath string `mapstructure:"CUSTOM_CA_CERT_PATH"`
 }
 
 // LoadConfig loads the configuration from environment variables.
@@ -48,8 +50,14 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("AUTH_SERVICE_PORT", "50053")
 	viper.SetDefault("USER_SERVICE_PORT", "50051")
 	// ... set defaults for other services
-	viper.SetDefault("GOOGLE_CLIENT_ID", "29310918760-nbaemcllg41b7r9g9dbi3mvfvmvmt59f.apps.googleusercontent.com")
-	viper.SetDefault("GOOGLE_CLIENT_SECRET", "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")
+
+	// OAuth defaults - these should be overridden by environment variables
+	viper.SetDefault("GOOGLE_CLIENT_ID", "")
+	viper.SetDefault("GOOGLE_CLIENT_SECRET", "")
+	viper.SetDefault("GOOGLE_REDIRECT_URL", "")
+	viper.SetDefault("GITHUB_CLIENT_ID", "")
+	viper.SetDefault("GITHUB_CLIENT_SECRET", "")
+	viper.SetDefault("GITHUB_REDIRECT_URL", "")
 
 	// Database defaults
 	viper.SetDefault("POSTGRES_HOST", "postgres")

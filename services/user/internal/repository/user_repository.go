@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"backend/pkg/auth"
-	"backend/pkg/database"
-	"backend/pkg/models"
-	"backend/services/user/proto"
+	"github.com/flick/backend/pkg/auth"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/models"
+	"github.com/flick/backend/services/user/proto"
 
 	"gorm.io/gorm"
 )

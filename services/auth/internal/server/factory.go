@@ -1,7 +1,7 @@
 package server
 
 import (
-	"backend/services/auth/internal/service"
+	"github.com/flick/backend/services/auth/internal/service"
 )
 
 // NewGRPCServerFactory 创建gRPC服务工厂

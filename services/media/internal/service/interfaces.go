@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"backend/services/media/proto"
+	"github.com/flick/backend/services/media/proto"
 )
 
 // MediaService 定义媒体服务接口

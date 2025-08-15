@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"backend/pkg/auth"
-	"backend/pkg/config"
+	"github.com/flick/backend/pkg/auth"
+	"github.com/flick/backend/pkg/config"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"backend/services/recommendation/internal/repository"
-	"backend/services/recommendation/proto"
+	"github.com/flick/backend/services/recommendation/internal/repository"
+	"github.com/flick/backend/services/recommendation/proto"
 )
 
 // recommendationService 推荐服务实现

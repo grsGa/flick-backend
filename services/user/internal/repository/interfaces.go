@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"backend/services/user/proto"
 	"context"
+
+	"github.com/flick/backend/services/user/proto"
 )
 
 // UserRepository 定义用户仓储接口

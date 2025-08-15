@@ -5,8 +5,8 @@ import (
 	"time"
 	
 	"github.com/google/uuid"
-	"backend/services/content/internal/repository"
-	"backend/services/content/proto"
+	"github.com/flick/backend/services/content/internal/repository"
+	"github.com/flick/backend/services/content/proto"
 )
 
 // contentService 内容服务实现

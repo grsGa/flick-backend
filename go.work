@@ -1,0 +1,24 @@
+go 1.24
+
+use (
+	./pkg
+	./services/auth
+	./services/auth/proto
+	./services/content
+	./services/content/proto
+	./services/gateway
+	./services/interaction
+	./services/interaction/proto
+	./services/media
+	./services/media/proto
+	./services/messages
+	./services/messages/proto
+	./services/notification
+	./services/notification/proto
+	./services/recommendation
+	./services/recommendation/proto
+	./services/search
+	./services/search/proto
+	./services/user
+	./services/user/proto
+)

@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"backend/services/auth/proto"
 	"context"
+
+	"github.com/flick/backend/services/auth/proto"
 )
 
 // AuthRepository 定义认证仓储接口

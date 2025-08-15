@@ -3,11 +3,11 @@ package repository
 import (
 	"context"
 	"time"
-	
+
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/models"
+	"github.com/flick/backend/services/recommendation/proto"
 	"gorm.io/gorm"
-	"backend/pkg/database"
-	"backend/pkg/models"
-	"backend/services/recommendation/proto"
 )
 
 // recommendationRepository 推荐仓储实现
@@ -25,7 +25,7 @@ func NewRecommendationRepository() RecommendationRepository {
 // GetRecommendations 获取推荐内容
 func (r *recommendationRepository) GetRecommendations(ctx context.Context, userID string, limit int32) ([]*proto.RecommendationItem, error) {
 	var feedItems []models.FeedItem
-	
+
 	// 简化实现：直接从feed_items表获取推荐内容
 	// 实际推荐算法会更复杂，可能涉及协同过滤、内容推荐等
 	if err := r.db.Where("user_id = ?", userID).
@@ -34,7 +34,7 @@ func (r *recommendationRepository) GetRecommendations(ctx context.Context, userI
 		Find(&feedItems).Error; err != nil {
 		return nil, err
 	}
-	
+
 	items := make([]*proto.RecommendationItem, len(feedItems))
 	for i, item := range feedItems {
 		items[i] = &proto.RecommendationItem{
@@ -45,7 +45,7 @@ func (r *recommendationRepository) GetRecommendations(ctx context.Context, userI
 			CreatedAt: item.CreatedAt.Format(time.RFC3339),
 		}
 	}
-	
+
 	return items, nil
 }
 

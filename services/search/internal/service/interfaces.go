@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"backend/services/search/proto"
+	"github.com/flick/backend/services/search/proto"
 )
 
 // SearchService 定义搜索服务接口

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/content/internal/repository"
+	"github.com/flick/backend/services/content/internal/repository"
 )
 
 // NewContentServiceFactory 创建内容服务工厂

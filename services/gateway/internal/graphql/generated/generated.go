@@ -3,7 +3,6 @@
 package generated
 
 import (
-	"backend/services/gateway/internal/graphql/model"
 	"bytes"
 	"context"
 	"errors"
@@ -15,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/99designs/gqlgen/plugin/federation/fedruntime"
+	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -317,7 +317,7 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
-func (e *executableSchema) Complexity(ctx context.Context, typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
+func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]any) (int, bool) {
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
@@ -628,7 +628,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_bookmarkTweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_bookmarkTweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -640,7 +640,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_createComment_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_createComment_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -652,7 +652,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_createConversation_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_createConversation_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -664,7 +664,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_createTweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_createTweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -676,7 +676,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_followUser_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_followUser_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -688,7 +688,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_likeTweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_likeTweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -700,7 +700,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_login_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -719,7 +719,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_markMessageAsRead_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_markMessageAsRead_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -731,7 +731,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_markNotificationAsRead_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_markNotificationAsRead_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -743,7 +743,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_register_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_register_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -755,7 +755,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_retweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_retweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -767,7 +767,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_sendMessage_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_sendMessage_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -779,7 +779,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_unbookmarkTweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_unbookmarkTweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -791,7 +791,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_undoRetweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_undoRetweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -803,7 +803,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_unfollowUser_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_unfollowUser_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -815,7 +815,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_unlikeTweet_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_unlikeTweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -827,7 +827,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_updateProfile_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_updateProfile_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -839,7 +839,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Mutation_uploadMedia_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_uploadMedia_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -935,7 +935,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_conversation_args(ctx, rawArgs)
+		args, err := ec.field_Query_conversation_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -954,7 +954,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_followers_args(ctx, rawArgs)
+		args, err := ec.field_Query_followers_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -966,7 +966,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_following_args(ctx, rawArgs)
+		args, err := ec.field_Query_following_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -985,7 +985,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_homeFeed_args(ctx, rawArgs)
+		args, err := ec.field_Query_homeFeed_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -997,7 +997,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_messages_args(ctx, rawArgs)
+		args, err := ec.field_Query_messages_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1009,7 +1009,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_notifications_args(ctx, rawArgs)
+		args, err := ec.field_Query_notifications_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1021,7 +1021,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_recommendedTweets_args(ctx, rawArgs)
+		args, err := ec.field_Query_recommendedTweets_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1033,7 +1033,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_recommendedUsers_args(ctx, rawArgs)
+		args, err := ec.field_Query_recommendedUsers_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1045,7 +1045,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_search_args(ctx, rawArgs)
+		args, err := ec.field_Query_search_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1057,7 +1057,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_trendingHashtags_args(ctx, rawArgs)
+		args, err := ec.field_Query_trendingHashtags_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1069,7 +1069,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_tweet_args(ctx, rawArgs)
+		args, err := ec.field_Query_tweet_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1081,7 +1081,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_userByUsername_args(ctx, rawArgs)
+		args, err := ec.field_Query_userByUsername_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1093,7 +1093,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_userLikes_args(ctx, rawArgs)
+		args, err := ec.field_Query_userLikes_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1105,7 +1105,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_userMedia_args(ctx, rawArgs)
+		args, err := ec.field_Query_userMedia_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1117,7 +1117,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_userReplies_args(ctx, rawArgs)
+		args, err := ec.field_Query_userReplies_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1129,7 +1129,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Query_userTweets_args(ctx, rawArgs)
+		args, err := ec.field_Query_userTweets_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1204,7 +1204,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		args, err := ec.field_Tweet_comments_args(ctx, rawArgs)
+		args, err := ec.field_Tweet_comments_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -1884,526 +1884,1676 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_bookmarkTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNBookmarkTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput)
+	arg0, err := ec.field_Mutation_bookmarkTweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_bookmarkTweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.BookmarkTweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.BookmarkTweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNBookmarkTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.BookmarkTweetInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createComment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateCommentInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateCommentInput)
+	arg0, err := ec.field_Mutation_createComment_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_createComment_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateCommentInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.CreateCommentInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateCommentInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateCommentInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateCommentInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createConversation_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateConversationInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateConversationInput)
+	arg0, err := ec.field_Mutation_createConversation_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_createConversation_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateConversationInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.CreateConversationInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateConversationInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateConversationInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateConversationInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_createTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateTweetInput)
+	arg0, err := ec.field_Mutation_createTweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_createTweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateTweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.CreateTweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateTweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateTweetInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_followUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Mutation_followUser_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_followUser_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_likeTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNLikeTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput)
+	arg0, err := ec.field_Mutation_likeTweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_likeTweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.LikeTweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.LikeTweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNLikeTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.LikeTweetInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNLoginInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLoginInput)
+	arg0, err := ec.field_Mutation_login_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_login_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.LoginInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.LoginInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNLoginInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLoginInput(ctx, tmp)
+	}
+
+	var zeroVal model.LoginInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_markMessageAsRead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "messageId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Mutation_markMessageAsRead_argsMessageID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["messageId"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_markMessageAsRead_argsMessageID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["messageId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("messageId"))
+	if tmp, ok := rawArgs["messageId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_markNotificationAsRead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	arg0, err := ec.field_Mutation_markNotificationAsRead_argsID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_markNotificationAsRead_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_register_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRegisterInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRegisterInput)
+	arg0, err := ec.field_Mutation_register_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_register_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RegisterInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.RegisterInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRegisterInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRegisterInput(ctx, tmp)
+	}
+
+	var zeroVal model.RegisterInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_retweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRetweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput)
+	arg0, err := ec.field_Mutation_retweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_retweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RetweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.RetweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRetweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.RetweetInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_sendMessage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateMessageInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateMessageInput)
+	arg0, err := ec.field_Mutation_sendMessage_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_sendMessage_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateMessageInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.CreateMessageInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateMessageInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateMessageInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateMessageInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_unbookmarkTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNBookmarkTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput)
+	arg0, err := ec.field_Mutation_unbookmarkTweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_unbookmarkTweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.BookmarkTweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.BookmarkTweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNBookmarkTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.BookmarkTweetInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_undoRetweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNRetweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput)
+	arg0, err := ec.field_Mutation_undoRetweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_undoRetweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RetweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.RetweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRetweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.RetweetInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_unfollowUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Mutation_unfollowUser_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_unfollowUser_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_unlikeTweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNLikeTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput)
+	arg0, err := ec.field_Mutation_unlikeTweet_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Mutation_unlikeTweet_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.LikeTweetInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.LikeTweetInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNLikeTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput(ctx, tmp)
+	}
+
+	var zeroVal model.LikeTweetInput
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_updateProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateProfileInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput)
+	arg0, err := ec.field_Mutation_updateProfile_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_updateProfile_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateProfileInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.UpdateProfileInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateProfileInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateProfileInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_uploadMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	arg0, err := ec.field_Mutation_uploadMedia_argsFile(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["file"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Mutation_uploadMedia_argsFile(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (graphql.Upload, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["file"]
+	if !ok {
+		var zeroVal graphql.Upload
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+	if tmp, ok := rawArgs["file"]; ok {
+		return ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, tmp)
+	}
+
+	var zeroVal graphql.Upload
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name", ec.unmarshalNString2string)
+	arg0, err := ec.field_Query___type_argsName(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["name"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query___type_argsName(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["name"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_conversation_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_conversation_argsID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query_conversation_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_followers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_followers_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_followers_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_followers_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_followers_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_followers_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_followers_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_following_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_following_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_following_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_following_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_following_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_following_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_following_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_homeFeed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Query_homeFeed_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg1, err := ec.field_Query_homeFeed_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg1
 	return args, nil
 }
+func (ec *executionContext) field_Query_homeFeed_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_homeFeed_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_messages_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "conversationId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_messages_argsConversationID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["conversationId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_messages_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_messages_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
 }
+func (ec *executionContext) field_Query_messages_argsConversationID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["conversationId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("conversationId"))
+	if tmp, ok := rawArgs["conversationId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_messages_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_messages_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_notifications_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Query_notifications_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg1, err := ec.field_Query_notifications_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg1
 	return args, nil
 }
+func (ec *executionContext) field_Query_notifications_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_notifications_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_recommendedTweets_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Query_recommendedTweets_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_recommendedTweets_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_recommendedUsers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Query_recommendedUsers_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query_recommendedUsers_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_search_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSearchInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchInput)
+	arg0, err := ec.field_Query_search_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query_search_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SearchInput, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["input"]
+	if !ok {
+		var zeroVal model.SearchInput
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSearchInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchInput(ctx, tmp)
+	}
+
+	var zeroVal model.SearchInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_trendingHashtags_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Query_trendingHashtags_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query_trendingHashtags_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_tweet_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_tweet_argsID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["id"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field_Query_tweet_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["id"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Query_userByUsername_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "username", ec.unmarshalNString2string)
+	arg0, err := ec.field_Query_userByUsername_argsUsername(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["username"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field_Query_userByUsername_argsUsername(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["username"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["username"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_userLikes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_userLikes_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_userLikes_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_userLikes_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_userLikes_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userLikes_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userLikes_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_userMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_userMedia_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_userMedia_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_userMedia_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_userMedia_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userMedia_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userMedia_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_userReplies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	arg0, err := ec.field_Query_userReplies_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_userReplies_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_userReplies_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
+}
+func (ec *executionContext) field_Query_userReplies_argsUserID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["userId"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+	if tmp, ok := rawArgs["userId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userReplies_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userReplies_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Query_userTweets_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "username", ec.unmarshalNString2string)
+	arg0, err := ec.field_Query_userTweets_argsUsername(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["username"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg1, err := ec.field_Query_userTweets_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg2, err := ec.field_Query_userTweets_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg2
 	return args, nil
 }
+func (ec *executionContext) field_Query_userTweets_argsUsername(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["username"]
+	if !ok {
+		var zeroVal string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["username"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userTweets_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_userTweets_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Tweet_comments_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	arg0, err := ec.field_Tweet_comments_argsFirst(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["first"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	arg1, err := ec.field_Tweet_comments_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["after"] = arg1
 	return args, nil
 }
-
-func (ec *executionContext) field___Directive_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "includeDeprecated", ec.unmarshalOBoolean2ᚖbool)
-	if err != nil {
-		return nil, err
+func (ec *executionContext) field_Tweet_comments_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["first"]
+	if !ok {
+		var zeroVal int
+		return zeroVal, nil
 	}
-	args["includeDeprecated"] = arg0
-	return args, nil
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalNInt2int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
 }
 
-func (ec *executionContext) field___Field_args_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "includeDeprecated", ec.unmarshalOBoolean2ᚖbool)
-	if err != nil {
-		return nil, err
+func (ec *executionContext) field_Tweet_comments_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["after"]
+	if !ok {
+		var zeroVal *string
+		return zeroVal, nil
 	}
-	args["includeDeprecated"] = arg0
-	return args, nil
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
 }
 
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "includeDeprecated", ec.unmarshalOBoolean2bool)
+	arg0, err := ec.field___Type_enumValues_argsIncludeDeprecated(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["includeDeprecated"] = arg0
 	return args, nil
 }
+func (ec *executionContext) field___Type_enumValues_argsIncludeDeprecated(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["includeDeprecated"]
+	if !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		return ec.unmarshalOBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "includeDeprecated", ec.unmarshalOBoolean2bool)
+	arg0, err := ec.field___Type_fields_argsIncludeDeprecated(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["includeDeprecated"] = arg0
 	return args, nil
+}
+func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	// We won't call the directive if the argument is null.
+	// Set call_argument_directives_with_null to true to call directives
+	// even if the argument is null.
+	_, ok := rawArgs["includeDeprecated"]
+	if !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		return ec.unmarshalOBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
 }
 
 // endregion ***************************** args.gotpl *****************************
@@ -2486,7 +3636,7 @@ func (ec *executionContext) _AuthPayload_user(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2646,7 +3796,7 @@ func (ec *executionContext) _Comment_author(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2762,7 +3912,7 @@ func (ec *executionContext) _Comment_interaction(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_interaction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2820,7 +3970,7 @@ func (ec *executionContext) _CommentConnection_edges(ctx context.Context, field 
 	}
 	res := resTmp.([]model.CommentEdge)
 	fc.Result = res
-	return ec.marshalNCommentEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNCommentEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_CommentConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2870,7 +4020,7 @@ func (ec *executionContext) _CommentConnection_pageInfo(ctx context.Context, fie
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_CommentConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2920,7 +4070,7 @@ func (ec *executionContext) _CommentEdge_node(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_CommentEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3064,7 +4214,7 @@ func (ec *executionContext) _Conversation_participants(ctx context.Context, fiel
 	}
 	res := resTmp.([]model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Conversation_participants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3133,7 +4283,7 @@ func (ec *executionContext) _Conversation_lastMessage(ctx context.Context, field
 	}
 	res := resTmp.(*model.Message)
 	fc.Result = res
-	return ec.marshalOMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
+	return ec.marshalOMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Conversation_lastMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3413,7 +4563,7 @@ func (ec *executionContext) _HashtagConnection_edges(ctx context.Context, field 
 	}
 	res := resTmp.([]model.HashtagEdge)
 	fc.Result = res
-	return ec.marshalNHashtagEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNHashtagEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_HashtagConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3463,7 +4613,7 @@ func (ec *executionContext) _HashtagConnection_pageInfo(ctx context.Context, fie
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_HashtagConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3513,7 +4663,7 @@ func (ec *executionContext) _HashtagEdge_node(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Hashtag)
 	fc.Result = res
-	return ec.marshalNHashtag2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx, field.Selections, res)
+	return ec.marshalNHashtag2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_HashtagEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3961,7 +5111,7 @@ func (ec *executionContext) _Media_type(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.(model.MediaType)
 	fc.Result = res
-	return ec.marshalNMediaType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx, field.Selections, res)
+	return ec.marshalNMediaType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Media_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4093,7 +5243,7 @@ func (ec *executionContext) _Message_sender(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Message_sender(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4206,7 +5356,7 @@ func (ec *executionContext) _Message_media(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.(*model.Media)
 	fc.Result = res
-	return ec.marshalOMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalOMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Message_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4346,7 +5496,7 @@ func (ec *executionContext) _MessageConnection_edges(ctx context.Context, field 
 	}
 	res := resTmp.([]model.MessageEdge)
 	fc.Result = res
-	return ec.marshalNMessageEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNMessageEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MessageConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4396,7 +5546,7 @@ func (ec *executionContext) _MessageConnection_pageInfo(ctx context.Context, fie
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MessageConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4446,7 +5596,7 @@ func (ec *executionContext) _MessageEdge_node(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Message)
 	fc.Result = res
-	return ec.marshalNMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
+	return ec.marshalNMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MessageEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4550,7 +5700,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.AuthPayload)
 	fc.Result = res
-	return ec.marshalNAuthPayload2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx, field.Selections, res)
+	return ec.marshalNAuthPayload2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4611,7 +5761,7 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.AuthPayload)
 	fc.Result = res
-	return ec.marshalNAuthPayload2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx, field.Selections, res)
+	return ec.marshalNAuthPayload2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_register(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4672,7 +5822,7 @@ func (ec *executionContext) _Mutation_createTweet(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Tweet)
 	fc.Result = res
-	return ec.marshalNTweet2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
+	return ec.marshalNTweet2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createTweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4743,7 +5893,7 @@ func (ec *executionContext) _Mutation_createComment(ctx context.Context, field g
 	}
 	res := resTmp.(*model.Comment)
 	fc.Result = res
-	return ec.marshalNComment2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx, field.Selections, res)
+	return ec.marshalNComment2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createComment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4810,7 +5960,7 @@ func (ec *executionContext) _Mutation_likeTweet(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_likeTweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4879,7 +6029,7 @@ func (ec *executionContext) _Mutation_unlikeTweet(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_unlikeTweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4948,7 +6098,7 @@ func (ec *executionContext) _Mutation_bookmarkTweet(ctx context.Context, field g
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_bookmarkTweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5017,7 +6167,7 @@ func (ec *executionContext) _Mutation_unbookmarkTweet(ctx context.Context, field
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_unbookmarkTweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5086,7 +6236,7 @@ func (ec *executionContext) _Mutation_retweet(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_retweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5155,7 +6305,7 @@ func (ec *executionContext) _Mutation_undoRetweet(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_undoRetweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5224,7 +6374,7 @@ func (ec *executionContext) _Mutation_markNotificationAsRead(ctx context.Context
 	}
 	res := resTmp.(*model.Notification)
 	fc.Result = res
-	return ec.marshalNNotification2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
+	return ec.marshalNNotification2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_markNotificationAsRead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5337,7 +6487,7 @@ func (ec *executionContext) _Mutation_createConversation(ctx context.Context, fi
 	}
 	res := resTmp.(*model.Conversation)
 	fc.Result = res
-	return ec.marshalNConversation2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, field.Selections, res)
+	return ec.marshalNConversation2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createConversation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5404,7 +6554,7 @@ func (ec *executionContext) _Mutation_sendMessage(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Message)
 	fc.Result = res
-	return ec.marshalNMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
+	return ec.marshalNMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_sendMessage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5475,7 +6625,7 @@ func (ec *executionContext) _Mutation_markMessageAsRead(ctx context.Context, fie
 	}
 	res := resTmp.(*model.Message)
 	fc.Result = res
-	return ec.marshalNMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
+	return ec.marshalNMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_markMessageAsRead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5546,7 +6696,7 @@ func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5609,7 +6759,7 @@ func (ec *executionContext) _Mutation_updateProfile(ctx context.Context, field g
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5692,7 +6842,7 @@ func (ec *executionContext) _Mutation_followUser(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_followUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5775,7 +6925,7 @@ func (ec *executionContext) _Mutation_unfollowUser(ctx context.Context, field gr
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_unfollowUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5902,7 +7052,7 @@ func (ec *executionContext) _Notification_type(ctx context.Context, field graphq
 	}
 	res := resTmp.(model.NotificationType)
 	fc.Result = res
-	return ec.marshalNNotificationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx, field.Selections, res)
+	return ec.marshalNNotificationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Notification_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5946,7 +7096,7 @@ func (ec *executionContext) _Notification_actor(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Notification_actor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6018,7 +7168,7 @@ func (ec *executionContext) _Notification_entity(ctx context.Context, field grap
 	}
 	res := resTmp.(model.NotificationEntity)
 	fc.Result = res
-	return ec.marshalNNotificationEntity2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEntity(ctx, field.Selections, res)
+	return ec.marshalNNotificationEntity2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEntity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Notification_entity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6150,7 +7300,7 @@ func (ec *executionContext) _NotificationConnection_edges(ctx context.Context, f
 	}
 	res := resTmp.([]model.NotificationEdge)
 	fc.Result = res
-	return ec.marshalNNotificationEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNNotificationEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_NotificationConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6200,7 +7350,7 @@ func (ec *executionContext) _NotificationConnection_pageInfo(ctx context.Context
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_NotificationConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6250,7 +7400,7 @@ func (ec *executionContext) _NotificationEdge_node(ctx context.Context, field gr
 	}
 	res := resTmp.(*model.Notification)
 	fc.Result = res
-	return ec.marshalNNotification2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
+	return ec.marshalNNotification2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_NotificationEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6475,7 +7625,7 @@ func (ec *executionContext) _Query_userByUsername(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalOUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_userByUsername(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6555,7 +7705,7 @@ func (ec *executionContext) _Query_tweet(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(*model.Tweet)
 	fc.Result = res
-	return ec.marshalOTweet2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
+	return ec.marshalOTweet2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_tweet(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6623,7 +7773,7 @@ func (ec *executionContext) _Query_userTweets(ctx context.Context, field graphql
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_userTweets(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6681,7 +7831,7 @@ func (ec *executionContext) _Query_homeFeed(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_homeFeed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6739,7 +7889,7 @@ func (ec *executionContext) _Query_notifications(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.NotificationConnection)
 	fc.Result = res
-	return ec.marshalONotificationConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationConnection(ctx, field.Selections, res)
+	return ec.marshalONotificationConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_notifications(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6800,7 +7950,7 @@ func (ec *executionContext) _Query_conversations(ctx context.Context, field grap
 	}
 	res := resTmp.([]model.Conversation)
 	fc.Result = res
-	return ec.marshalNConversation2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversationᚄ(ctx, field.Selections, res)
+	return ec.marshalNConversation2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_conversations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6853,7 +8003,7 @@ func (ec *executionContext) _Query_conversation(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.Conversation)
 	fc.Result = res
-	return ec.marshalOConversation2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, field.Selections, res)
+	return ec.marshalOConversation2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_conversation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6917,7 +8067,7 @@ func (ec *executionContext) _Query_messages(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.MessageConnection)
 	fc.Result = res
-	return ec.marshalOMessageConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageConnection(ctx, field.Selections, res)
+	return ec.marshalOMessageConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_messages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6975,7 +8125,7 @@ func (ec *executionContext) _Query_search(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*model.SearchResults)
 	fc.Result = res
-	return ec.marshalOSearchResults2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchResults(ctx, field.Selections, res)
+	return ec.marshalOSearchResults2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchResults(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_search(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7038,7 +8188,7 @@ func (ec *executionContext) _Query_trendingHashtags(ctx context.Context, field g
 	}
 	res := resTmp.([]model.Hashtag)
 	fc.Result = res
-	return ec.marshalNHashtag2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagᚄ(ctx, field.Selections, res)
+	return ec.marshalNHashtag2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_trendingHashtags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7101,7 +8251,7 @@ func (ec *executionContext) _Query_recommendedUsers(ctx context.Context, field g
 	}
 	res := resTmp.([]model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_recommendedUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7181,7 +8331,7 @@ func (ec *executionContext) _Query_recommendedTweets(ctx context.Context, field 
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_recommendedTweets(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7239,7 +8389,7 @@ func (ec *executionContext) _Query_followers(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.UserConnection)
 	fc.Result = res
-	return ec.marshalOUserConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
+	return ec.marshalOUserConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_followers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7297,7 +8447,7 @@ func (ec *executionContext) _Query_following(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.UserConnection)
 	fc.Result = res
-	return ec.marshalOUserConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
+	return ec.marshalOUserConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_following(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7355,7 +8505,7 @@ func (ec *executionContext) _Query_userReplies(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_userReplies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7413,7 +8563,7 @@ func (ec *executionContext) _Query_userMedia(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_userMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7471,7 +8621,7 @@ func (ec *executionContext) _Query_userLikes(ctx context.Context, field graphql.
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_userLikes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7594,8 +8744,6 @@ func (ec *executionContext) fieldContext_Query___type(ctx context.Context, field
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -7608,8 +8756,8 @@ func (ec *executionContext) fieldContext_Query___type(ctx context.Context, field
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -7755,7 +8903,7 @@ func (ec *executionContext) _Recommendation_type(ctx context.Context, field grap
 	}
 	res := resTmp.(model.RecommendationType)
 	fc.Result = res
-	return ec.marshalNRecommendationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx, field.Selections, res)
+	return ec.marshalNRecommendationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Recommendation_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7799,7 +8947,7 @@ func (ec *executionContext) _Recommendation_entity(ctx context.Context, field gr
 	}
 	res := resTmp.(model.RecommendationEntity)
 	fc.Result = res
-	return ec.marshalNRecommendationEntity2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationEntity(ctx, field.Selections, res)
+	return ec.marshalNRecommendationEntity2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationEntity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Recommendation_entity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7884,7 +9032,7 @@ func (ec *executionContext) _SearchResults_tweets(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.TweetConnection)
 	fc.Result = res
-	return ec.marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
+	return ec.marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SearchResults_tweets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7931,7 +9079,7 @@ func (ec *executionContext) _SearchResults_users(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.UserConnection)
 	fc.Result = res
-	return ec.marshalOUserConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
+	return ec.marshalOUserConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SearchResults_users(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7978,7 +9126,7 @@ func (ec *executionContext) _SearchResults_hashtags(ctx context.Context, field g
 	}
 	res := resTmp.(*model.HashtagConnection)
 	fc.Result = res
-	return ec.marshalOHashtagConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagConnection(ctx, field.Selections, res)
+	return ec.marshalOHashtagConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SearchResults_hashtags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8116,7 +9264,7 @@ func (ec *executionContext) _Tweet_author(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Tweet_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8232,7 +9380,7 @@ func (ec *executionContext) _Tweet_media(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Tweet_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8284,7 +9432,7 @@ func (ec *executionContext) _Tweet_interaction(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.Interaction)
 	fc.Result = res
-	return ec.marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
+	return ec.marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Tweet_interaction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8339,7 +9487,7 @@ func (ec *executionContext) _Tweet_comments(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.CommentConnection)
 	fc.Result = res
-	return ec.marshalOCommentConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentConnection(ctx, field.Selections, res)
+	return ec.marshalOCommentConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Tweet_comments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8400,7 +9548,7 @@ func (ec *executionContext) _TweetConnection_edges(ctx context.Context, field gr
 	}
 	res := resTmp.([]model.TweetEdge)
 	fc.Result = res
-	return ec.marshalNTweetEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNTweetEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TweetConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8450,7 +9598,7 @@ func (ec *executionContext) _TweetConnection_pageInfo(ctx context.Context, field
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TweetConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8500,7 +9648,7 @@ func (ec *executionContext) _TweetEdge_node(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.Tweet)
 	fc.Result = res
-	return ec.marshalNTweet2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
+	return ec.marshalNTweet2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TweetEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9152,7 +10300,7 @@ func (ec *executionContext) _UserConnection_edges(ctx context.Context, field gra
 	}
 	res := resTmp.([]model.UserEdge)
 	fc.Result = res
-	return ec.marshalNUserEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdgeᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9202,7 +10350,7 @@ func (ec *executionContext) _UserConnection_pageInfo(ctx context.Context, field 
 	}
 	res := resTmp.(*model.PageInfo)
 	fc.Result = res
-	return ec.marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
+	return ec.marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9252,7 +10400,7 @@ func (ec *executionContext) _UserEdge_node(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -9466,50 +10614,6 @@ func (ec *executionContext) fieldContext___Directive_description(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___Directive_isRepeatable(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsRepeatable, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___Directive_isRepeatable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__Directive",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) ___Directive_locations(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Directive_locations(ctx, field)
 	if err != nil {
@@ -9585,7 +10689,7 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Directive_args(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Directive_args(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Directive",
 		Field:      field,
@@ -9601,24 +10705,53 @@ func (ec *executionContext) fieldContext___Directive_args(ctx context.Context, f
 				return ec.fieldContext___InputValue_type(ctx, field)
 			case "defaultValue":
 				return ec.fieldContext___InputValue_defaultValue(ctx, field)
-			case "isDeprecated":
-				return ec.fieldContext___InputValue_isDeprecated(ctx, field)
-			case "deprecationReason":
-				return ec.fieldContext___InputValue_deprecationReason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
 		},
 	}
+	return fc, nil
+}
+
+func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext___Directive_isRepeatable(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
 	defer func() {
 		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
 		}
 	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field___Directive_args_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRepeatable, nil
+	})
+	if err != nil {
 		ec.Error(ctx, err)
-		return fc, err
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext___Directive_isRepeatable(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -9909,7 +11042,7 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Field_args(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Field_args(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Field",
 		Field:      field,
@@ -9925,24 +11058,9 @@ func (ec *executionContext) fieldContext___Field_args(ctx context.Context, field
 				return ec.fieldContext___InputValue_type(ctx, field)
 			case "defaultValue":
 				return ec.fieldContext___InputValue_defaultValue(ctx, field)
-			case "isDeprecated":
-				return ec.fieldContext___InputValue_isDeprecated(ctx, field)
-			case "deprecationReason":
-				return ec.fieldContext___InputValue_deprecationReason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
 		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field___Field_args_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
 	}
 	return fc, nil
 }
@@ -9992,8 +11110,6 @@ func (ec *executionContext) fieldContext___Field_type(_ context.Context, field g
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10006,8 +11122,8 @@ func (ec *executionContext) fieldContext___Field_type(_ context.Context, field g
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10230,8 +11346,6 @@ func (ec *executionContext) fieldContext___InputValue_type(_ context.Context, fi
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10244,8 +11358,8 @@ func (ec *executionContext) fieldContext___InputValue_type(_ context.Context, fi
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10286,91 +11400,6 @@ func (ec *executionContext) fieldContext___InputValue_defaultValue(_ context.Con
 		Object:     "__InputValue",
 		Field:      field,
 		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) ___InputValue_isDeprecated(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___InputValue_isDeprecated(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsDeprecated(), nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___InputValue_isDeprecated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__InputValue",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) ___InputValue_deprecationReason(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___InputValue_deprecationReason(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DeprecationReason(), nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___InputValue_deprecationReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__InputValue",
-		Field:      field,
-		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
@@ -10465,8 +11494,6 @@ func (ec *executionContext) fieldContext___Schema_types(_ context.Context, field
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10479,8 +11506,8 @@ func (ec *executionContext) fieldContext___Schema_types(_ context.Context, field
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10533,8 +11560,6 @@ func (ec *executionContext) fieldContext___Schema_queryType(_ context.Context, f
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10547,8 +11572,8 @@ func (ec *executionContext) fieldContext___Schema_queryType(_ context.Context, f
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10598,8 +11623,6 @@ func (ec *executionContext) fieldContext___Schema_mutationType(_ context.Context
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10612,8 +11635,8 @@ func (ec *executionContext) fieldContext___Schema_mutationType(_ context.Context
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10663,8 +11686,6 @@ func (ec *executionContext) fieldContext___Schema_subscriptionType(_ context.Con
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -10677,8 +11698,8 @@ func (ec *executionContext) fieldContext___Schema_subscriptionType(_ context.Con
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -10729,12 +11750,12 @@ func (ec *executionContext) fieldContext___Schema_directives(_ context.Context, 
 				return ec.fieldContext___Directive_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Directive_description(ctx, field)
-			case "isRepeatable":
-				return ec.fieldContext___Directive_isRepeatable(ctx, field)
 			case "locations":
 				return ec.fieldContext___Directive_locations(ctx, field)
 			case "args":
 				return ec.fieldContext___Directive_args(ctx, field)
+			case "isRepeatable":
+				return ec.fieldContext___Directive_isRepeatable(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Directive", field.Name)
 		},
@@ -10868,47 +11889,6 @@ func (ec *executionContext) fieldContext___Type_description(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___Type_specifiedByURL(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SpecifiedByURL(), nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "__Type",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext___Type_fields(ctx, field)
 	if err != nil {
@@ -11017,8 +11997,6 @@ func (ec *executionContext) fieldContext___Type_interfaces(_ context.Context, fi
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -11031,8 +12009,8 @@ func (ec *executionContext) fieldContext___Type_interfaces(_ context.Context, fi
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -11082,8 +12060,6 @@ func (ec *executionContext) fieldContext___Type_possibleTypes(_ context.Context,
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -11096,8 +12072,8 @@ func (ec *executionContext) fieldContext___Type_possibleTypes(_ context.Context,
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -11211,10 +12187,6 @@ func (ec *executionContext) fieldContext___Type_inputFields(_ context.Context, f
 				return ec.fieldContext___InputValue_type(ctx, field)
 			case "defaultValue":
 				return ec.fieldContext___InputValue_defaultValue(ctx, field)
-			case "isDeprecated":
-				return ec.fieldContext___InputValue_isDeprecated(ctx, field)
-			case "deprecationReason":
-				return ec.fieldContext___InputValue_deprecationReason(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __InputValue", field.Name)
 		},
@@ -11264,8 +12236,6 @@ func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field 
 				return ec.fieldContext___Type_name(ctx, field)
 			case "description":
 				return ec.fieldContext___Type_description(ctx, field)
-			case "specifiedByURL":
-				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			case "fields":
 				return ec.fieldContext___Type_fields(ctx, field)
 			case "interfaces":
@@ -11278,8 +12248,8 @@ func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field 
 				return ec.fieldContext___Type_inputFields(ctx, field)
 			case "ofType":
 				return ec.fieldContext___Type_ofType(ctx, field)
-			case "isOneOf":
-				return ec.fieldContext___Type_isOneOf(ctx, field)
+			case "specifiedByURL":
+				return ec.fieldContext___Type_specifiedByURL(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Type", field.Name)
 		},
@@ -11287,8 +12257,8 @@ func (ec *executionContext) fieldContext___Type_ofType(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) ___Type_isOneOf(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext___Type_isOneOf(ctx, field)
+func (ec *executionContext) ___Type_specifiedByURL(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext___Type_specifiedByURL(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11301,7 +12271,7 @@ func (ec *executionContext) ___Type_isOneOf(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IsOneOf(), nil
+		return obj.SpecifiedByURL(), nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11310,19 +12280,19 @@ func (ec *executionContext) ___Type_isOneOf(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "__Type",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11675,7 +12645,7 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 			it.Query = data
 		case "types":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("types"))
-			data, err := ec.unmarshalOSearchType2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx, v)
+			data, err := ec.unmarshalOSearchType2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11770,13 +12740,6 @@ func (ec *executionContext) _NotificationEntity(ctx context.Context, sel ast.Sel
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.User:
-		return ec._User(ctx, sel, &obj)
-	case *model.User:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._User(ctx, sel, obj)
 	case model.Tweet:
 		return ec._Tweet(ctx, sel, &obj)
 	case *model.Tweet:
@@ -11791,6 +12754,13 @@ func (ec *executionContext) _NotificationEntity(ctx context.Context, sel ast.Sel
 			return graphql.Null
 		}
 		return ec._Comment(ctx, sel, obj)
+	case model.User:
+		return ec._User(ctx, sel, &obj)
+	case *model.User:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._User(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -13737,11 +14707,6 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			}
 		case "description":
 			out.Values[i] = ec.___Directive_description(ctx, field, obj)
-		case "isRepeatable":
-			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "locations":
 			out.Values[i] = ec.___Directive_locations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13749,6 +14714,11 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			}
 		case "args":
 			out.Values[i] = ec.___Directive_args(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isRepeatable":
+			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -13906,13 +14876,6 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 			}
 		case "defaultValue":
 			out.Values[i] = ec.___InputValue_defaultValue(ctx, field, obj)
-		case "isDeprecated":
-			out.Values[i] = ec.___InputValue_isDeprecated(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deprecationReason":
-			out.Values[i] = ec.___InputValue_deprecationReason(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14011,8 +14974,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec.___Type_name(ctx, field, obj)
 		case "description":
 			out.Values[i] = ec.___Type_description(ctx, field, obj)
-		case "specifiedByURL":
-			out.Values[i] = ec.___Type_specifiedByURL(ctx, field, obj)
 		case "fields":
 			out.Values[i] = ec.___Type_fields(ctx, field, obj)
 		case "interfaces":
@@ -14025,8 +14986,8 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec.___Type_inputFields(ctx, field, obj)
 		case "ofType":
 			out.Values[i] = ec.___Type_ofType(ctx, field, obj)
-		case "isOneOf":
-			out.Values[i] = ec.___Type_isOneOf(ctx, field, obj)
+		case "specifiedByURL":
+			out.Values[i] = ec.___Type_specifiedByURL(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14054,11 +15015,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNAuthPayload2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v model.AuthPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNAuthPayload2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v model.AuthPayload) graphql.Marshaler {
 	return ec._AuthPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAuthPayload2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *model.AuthPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNAuthPayload2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *model.AuthPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14068,7 +15029,7 @@ func (ec *executionContext) marshalNAuthPayload2ᚖbackendᚋservicesᚋgateway�
 	return ec._AuthPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNBookmarkTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput(ctx context.Context, v any) (model.BookmarkTweetInput, error) {
+func (ec *executionContext) unmarshalNBookmarkTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐBookmarkTweetInput(ctx context.Context, v any) (model.BookmarkTweetInput, error) {
 	res, err := ec.unmarshalInputBookmarkTweetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -14079,7 +15040,6 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14089,11 +15049,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNComment2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v model.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v model.Comment) graphql.Marshaler {
 	return ec._Comment(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNComment2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v *model.Comment) graphql.Marshaler {
+func (ec *executionContext) marshalNComment2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v *model.Comment) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14103,11 +15063,11 @@ func (ec *executionContext) marshalNComment2ᚖbackendᚋservicesᚋgatewayᚋin
 	return ec._Comment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNCommentEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdge(ctx context.Context, sel ast.SelectionSet, v model.CommentEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNCommentEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdge(ctx context.Context, sel ast.SelectionSet, v model.CommentEdge) graphql.Marshaler {
 	return ec._CommentEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCommentEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CommentEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNCommentEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CommentEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14131,7 +15091,7 @@ func (ec *executionContext) marshalNCommentEdge2ᚕbackendᚋservicesᚋgateway�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNCommentEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNCommentEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14151,11 +15111,11 @@ func (ec *executionContext) marshalNCommentEdge2ᚕbackendᚋservicesᚋgateway�
 	return ret
 }
 
-func (ec *executionContext) marshalNConversation2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v model.Conversation) graphql.Marshaler {
+func (ec *executionContext) marshalNConversation2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v model.Conversation) graphql.Marshaler {
 	return ec._Conversation(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNConversation2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversationᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Conversation) graphql.Marshaler {
+func (ec *executionContext) marshalNConversation2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversationᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Conversation) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14179,7 +15139,7 @@ func (ec *executionContext) marshalNConversation2ᚕbackendᚋservicesᚋgateway
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNConversation2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, sel, v[i])
+			ret[i] = ec.marshalNConversation2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14199,7 +15159,7 @@ func (ec *executionContext) marshalNConversation2ᚕbackendᚋservicesᚋgateway
 	return ret
 }
 
-func (ec *executionContext) marshalNConversation2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v *model.Conversation) graphql.Marshaler {
+func (ec *executionContext) marshalNConversation2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v *model.Conversation) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14209,22 +15169,22 @@ func (ec *executionContext) marshalNConversation2ᚖbackendᚋservicesᚋgateway
 	return ec._Conversation(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNCreateCommentInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateCommentInput(ctx context.Context, v any) (model.CreateCommentInput, error) {
+func (ec *executionContext) unmarshalNCreateCommentInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateCommentInput(ctx context.Context, v any) (model.CreateCommentInput, error) {
 	res, err := ec.unmarshalInputCreateCommentInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateConversationInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateConversationInput(ctx context.Context, v any) (model.CreateConversationInput, error) {
+func (ec *executionContext) unmarshalNCreateConversationInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateConversationInput(ctx context.Context, v any) (model.CreateConversationInput, error) {
 	res, err := ec.unmarshalInputCreateConversationInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateMessageInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateMessageInput(ctx context.Context, v any) (model.CreateMessageInput, error) {
+func (ec *executionContext) unmarshalNCreateMessageInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateMessageInput(ctx context.Context, v any) (model.CreateMessageInput, error) {
 	res, err := ec.unmarshalInputCreateMessageInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateTweetInput(ctx context.Context, v any) (model.CreateTweetInput, error) {
+func (ec *executionContext) unmarshalNCreateTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateTweetInput(ctx context.Context, v any) (model.CreateTweetInput, error) {
 	res, err := ec.unmarshalInputCreateTweetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -14235,7 +15195,6 @@ func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) 
 }
 
 func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalFloatContext(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14245,11 +15204,11 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) marshalNHashtag2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx context.Context, sel ast.SelectionSet, v model.Hashtag) graphql.Marshaler {
+func (ec *executionContext) marshalNHashtag2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx context.Context, sel ast.SelectionSet, v model.Hashtag) graphql.Marshaler {
 	return ec._Hashtag(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNHashtag2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Hashtag) graphql.Marshaler {
+func (ec *executionContext) marshalNHashtag2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Hashtag) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14273,7 +15232,7 @@ func (ec *executionContext) marshalNHashtag2ᚕbackendᚋservicesᚋgatewayᚋin
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNHashtag2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx, sel, v[i])
+			ret[i] = ec.marshalNHashtag2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14293,7 +15252,7 @@ func (ec *executionContext) marshalNHashtag2ᚕbackendᚋservicesᚋgatewayᚋin
 	return ret
 }
 
-func (ec *executionContext) marshalNHashtag2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx context.Context, sel ast.SelectionSet, v *model.Hashtag) graphql.Marshaler {
+func (ec *executionContext) marshalNHashtag2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtag(ctx context.Context, sel ast.SelectionSet, v *model.Hashtag) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14303,11 +15262,11 @@ func (ec *executionContext) marshalNHashtag2ᚖbackendᚋservicesᚋgatewayᚋin
 	return ec._Hashtag(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNHashtagEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdge(ctx context.Context, sel ast.SelectionSet, v model.HashtagEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNHashtagEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdge(ctx context.Context, sel ast.SelectionSet, v model.HashtagEdge) graphql.Marshaler {
 	return ec._HashtagEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNHashtagEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HashtagEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNHashtagEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HashtagEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14331,7 +15290,7 @@ func (ec *executionContext) marshalNHashtagEdge2ᚕbackendᚋservicesᚋgateway�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNHashtagEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNHashtagEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14357,7 +15316,6 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (str
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14369,7 +15327,9 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 
 func (ec *executionContext) unmarshalNID2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
 	var vSlice []any
-	vSlice = graphql.CoerceList(v)
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -14403,7 +15363,6 @@ func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, 
 }
 
 func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14413,11 +15372,11 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNInteraction2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx context.Context, sel ast.SelectionSet, v model.Interaction) graphql.Marshaler {
+func (ec *executionContext) marshalNInteraction2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx context.Context, sel ast.SelectionSet, v model.Interaction) graphql.Marshaler {
 	return ec._Interaction(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNInteraction2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx context.Context, sel ast.SelectionSet, v *model.Interaction) graphql.Marshaler {
+func (ec *executionContext) marshalNInteraction2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐInteraction(ctx context.Context, sel ast.SelectionSet, v *model.Interaction) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14427,21 +15386,21 @@ func (ec *executionContext) marshalNInteraction2ᚖbackendᚋservicesᚋgateway�
 	return ec._Interaction(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNLikeTweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput(ctx context.Context, v any) (model.LikeTweetInput, error) {
+func (ec *executionContext) unmarshalNLikeTweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLikeTweetInput(ctx context.Context, v any) (model.LikeTweetInput, error) {
 	res, err := ec.unmarshalInputLikeTweetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNLoginInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLoginInput(ctx context.Context, v any) (model.LoginInput, error) {
+func (ec *executionContext) unmarshalNLoginInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐLoginInput(ctx context.Context, v any) (model.LoginInput, error) {
 	res, err := ec.unmarshalInputLoginInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNMedia2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
 	return ec._Media(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMedia2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Media) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14465,7 +15424,7 @@ func (ec *executionContext) marshalNMedia2ᚕbackendᚋservicesᚋgatewayᚋinte
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMedia2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, sel, v[i])
+			ret[i] = ec.marshalNMedia2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14485,7 +15444,7 @@ func (ec *executionContext) marshalNMedia2ᚕbackendᚋservicesᚋgatewayᚋinte
 	return ret
 }
 
-func (ec *executionContext) marshalNMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v *model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v *model.Media) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14495,21 +15454,21 @@ func (ec *executionContext) marshalNMedia2ᚖbackendᚋservicesᚋgatewayᚋinte
 	return ec._Media(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNMediaType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, v any) (model.MediaType, error) {
+func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, v any) (model.MediaType, error) {
 	var res model.MediaType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNMediaType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
+func (ec *executionContext) marshalNMediaType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNMessage2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v model.Message) graphql.Marshaler {
+func (ec *executionContext) marshalNMessage2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v model.Message) graphql.Marshaler {
 	return ec._Message(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
+func (ec *executionContext) marshalNMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14519,11 +15478,11 @@ func (ec *executionContext) marshalNMessage2ᚖbackendᚋservicesᚋgatewayᚋin
 	return ec._Message(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMessageEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdge(ctx context.Context, sel ast.SelectionSet, v model.MessageEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNMessageEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdge(ctx context.Context, sel ast.SelectionSet, v model.MessageEdge) graphql.Marshaler {
 	return ec._MessageEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMessageEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MessageEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNMessageEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MessageEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14547,7 +15506,7 @@ func (ec *executionContext) marshalNMessageEdge2ᚕbackendᚋservicesᚋgateway�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMessageEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNMessageEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14567,11 +15526,11 @@ func (ec *executionContext) marshalNMessageEdge2ᚕbackendᚋservicesᚋgateway�
 	return ret
 }
 
-func (ec *executionContext) marshalNNotification2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v model.Notification) graphql.Marshaler {
+func (ec *executionContext) marshalNNotification2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v model.Notification) graphql.Marshaler {
 	return ec._Notification(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNNotification2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v *model.Notification) graphql.Marshaler {
+func (ec *executionContext) marshalNNotification2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v *model.Notification) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14581,11 +15540,11 @@ func (ec *executionContext) marshalNNotification2ᚖbackendᚋservicesᚋgateway
 	return ec._Notification(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNNotificationEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdge(ctx context.Context, sel ast.SelectionSet, v model.NotificationEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNNotificationEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdge(ctx context.Context, sel ast.SelectionSet, v model.NotificationEdge) graphql.Marshaler {
 	return ec._NotificationEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNNotificationEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NotificationEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNNotificationEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NotificationEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14609,7 +15568,7 @@ func (ec *executionContext) marshalNNotificationEdge2ᚕbackendᚋservicesᚋgat
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNNotificationEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNNotificationEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14629,7 +15588,7 @@ func (ec *executionContext) marshalNNotificationEdge2ᚕbackendᚋservicesᚋgat
 	return ret
 }
 
-func (ec *executionContext) marshalNNotificationEntity2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEntity(ctx context.Context, sel ast.SelectionSet, v model.NotificationEntity) graphql.Marshaler {
+func (ec *executionContext) marshalNNotificationEntity2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationEntity(ctx context.Context, sel ast.SelectionSet, v model.NotificationEntity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14639,17 +15598,17 @@ func (ec *executionContext) marshalNNotificationEntity2backendᚋservicesᚋgate
 	return ec._NotificationEntity(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNotificationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx context.Context, v any) (model.NotificationType, error) {
+func (ec *executionContext) unmarshalNNotificationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx context.Context, v any) (model.NotificationType, error) {
 	var res model.NotificationType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNNotificationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx context.Context, sel ast.SelectionSet, v model.NotificationType) graphql.Marshaler {
+func (ec *executionContext) marshalNNotificationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationType(ctx context.Context, sel ast.SelectionSet, v model.NotificationType) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
+func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *model.PageInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14659,7 +15618,7 @@ func (ec *executionContext) marshalNPageInfo2ᚖbackendᚋservicesᚋgatewayᚋi
 	return ec._PageInfo(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRecommendationEntity2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationEntity(ctx context.Context, sel ast.SelectionSet, v model.RecommendationEntity) graphql.Marshaler {
+func (ec *executionContext) marshalNRecommendationEntity2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationEntity(ctx context.Context, sel ast.SelectionSet, v model.RecommendationEntity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14669,38 +15628,38 @@ func (ec *executionContext) marshalNRecommendationEntity2backendᚋservicesᚋga
 	return ec._RecommendationEntity(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRecommendationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx context.Context, v any) (model.RecommendationType, error) {
+func (ec *executionContext) unmarshalNRecommendationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx context.Context, v any) (model.RecommendationType, error) {
 	var res model.RecommendationType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNRecommendationType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx context.Context, sel ast.SelectionSet, v model.RecommendationType) graphql.Marshaler {
+func (ec *executionContext) marshalNRecommendationType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRecommendationType(ctx context.Context, sel ast.SelectionSet, v model.RecommendationType) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) unmarshalNRegisterInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRegisterInput(ctx context.Context, v any) (model.RegisterInput, error) {
+func (ec *executionContext) unmarshalNRegisterInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRegisterInput(ctx context.Context, v any) (model.RegisterInput, error) {
 	res, err := ec.unmarshalInputRegisterInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNRetweetInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput(ctx context.Context, v any) (model.RetweetInput, error) {
+func (ec *executionContext) unmarshalNRetweetInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐRetweetInput(ctx context.Context, v any) (model.RetweetInput, error) {
 	res, err := ec.unmarshalInputRetweetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNSearchInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchInput(ctx context.Context, v any) (model.SearchInput, error) {
+func (ec *executionContext) unmarshalNSearchInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchInput(ctx context.Context, v any) (model.SearchInput, error) {
 	res, err := ec.unmarshalInputSearchInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNSearchType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx context.Context, v any) (model.SearchType, error) {
+func (ec *executionContext) unmarshalNSearchType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx context.Context, v any) (model.SearchType, error) {
 	var res model.SearchType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNSearchType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx context.Context, sel ast.SelectionSet, v model.SearchType) graphql.Marshaler {
+func (ec *executionContext) marshalNSearchType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx context.Context, sel ast.SelectionSet, v model.SearchType) graphql.Marshaler {
 	return v
 }
 
@@ -14710,7 +15669,6 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) 
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14720,11 +15678,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTweet2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v model.Tweet) graphql.Marshaler {
+func (ec *executionContext) marshalNTweet2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v model.Tweet) graphql.Marshaler {
 	return ec._Tweet(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTweet2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v *model.Tweet) graphql.Marshaler {
+func (ec *executionContext) marshalNTweet2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v *model.Tweet) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14734,11 +15692,11 @@ func (ec *executionContext) marshalNTweet2ᚖbackendᚋservicesᚋgatewayᚋinte
 	return ec._Tweet(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTweetEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdge(ctx context.Context, sel ast.SelectionSet, v model.TweetEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNTweetEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdge(ctx context.Context, sel ast.SelectionSet, v model.TweetEdge) graphql.Marshaler {
 	return ec._TweetEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTweetEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TweetEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNTweetEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TweetEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14762,7 +15720,7 @@ func (ec *executionContext) marshalNTweetEdge2ᚕbackendᚋservicesᚋgatewayᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTweetEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNTweetEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14782,7 +15740,7 @@ func (ec *executionContext) marshalNTweetEdge2ᚕbackendᚋservicesᚋgatewayᚋ
 	return ret
 }
 
-func (ec *executionContext) unmarshalNUpdateProfileInput2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput(ctx context.Context, v any) (model.UpdateProfileInput, error) {
+func (ec *executionContext) unmarshalNUpdateProfileInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUpdateProfileInput(ctx context.Context, v any) (model.UpdateProfileInput, error) {
 	res, err := ec.unmarshalInputUpdateProfileInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -14793,7 +15751,6 @@ func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgen�
 }
 
 func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalUpload(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14803,11 +15760,11 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	return res
 }
 
-func (ec *executionContext) marshalNUser2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []model.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14831,7 +15788,7 @@ func (ec *executionContext) marshalNUser2ᚕbackendᚋservicesᚋgatewayᚋinter
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14851,7 +15808,7 @@ func (ec *executionContext) marshalNUser2ᚕbackendᚋservicesᚋgatewayᚋinter
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -14861,11 +15818,11 @@ func (ec *executionContext) marshalNUser2ᚖbackendᚋservicesᚋgatewayᚋinter
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUserEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdge(ctx context.Context, sel ast.SelectionSet, v model.UserEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNUserEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdge(ctx context.Context, sel ast.SelectionSet, v model.UserEdge) graphql.Marshaler {
 	return ec._UserEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUserEdge2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.UserEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNUserEdge2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.UserEdge) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -14889,7 +15846,7 @@ func (ec *executionContext) marshalNUserEdge2ᚕbackendᚋservicesᚋgatewayᚋi
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUserEdge2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNUserEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -14915,7 +15872,6 @@ func (ec *executionContext) unmarshalN_FieldSet2string(ctx context.Context, v an
 }
 
 func (ec *executionContext) marshalN_FieldSet2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14983,7 +15939,6 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Con
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -14995,7 +15950,9 @@ func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Conte
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
 	var vSlice []any
-	vSlice = graphql.CoerceList(v)
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -15172,7 +16129,6 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v a
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -15188,8 +16144,6 @@ func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (
 }
 
 func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalBoolean(v)
 	return res
 }
@@ -15206,27 +16160,25 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	if v == nil {
 		return graphql.Null
 	}
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
 }
 
-func (ec *executionContext) marshalOCommentConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentConnection(ctx context.Context, sel ast.SelectionSet, v *model.CommentConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOCommentConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCommentConnection(ctx context.Context, sel ast.SelectionSet, v *model.CommentConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._CommentConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOConversation2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v *model.Conversation) graphql.Marshaler {
+func (ec *executionContext) marshalOConversation2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐConversation(ctx context.Context, sel ast.SelectionSet, v *model.Conversation) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Conversation(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOHashtagConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagConnection(ctx context.Context, sel ast.SelectionSet, v *model.HashtagConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOHashtagConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐHashtagConnection(ctx context.Context, sel ast.SelectionSet, v *model.HashtagConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15238,7 +16190,9 @@ func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v any
 		return nil, nil
 	}
 	var vSlice []any
-	vSlice = graphql.CoerceList(v)
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
@@ -15281,8 +16235,6 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	if v == nil {
 		return graphql.Null
 	}
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalID(*v)
 	return res
 }
@@ -15299,58 +16251,58 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	if v == nil {
 		return graphql.Null
 	}
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalInt(*v)
 	return res
 }
 
-func (ec *executionContext) marshalOMedia2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v *model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalOMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v *model.Media) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Media(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOMessage2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
+func (ec *executionContext) marshalOMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Message(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOMessageConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageConnection(ctx context.Context, sel ast.SelectionSet, v *model.MessageConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOMessageConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessageConnection(ctx context.Context, sel ast.SelectionSet, v *model.MessageConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._MessageConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalONotificationConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationConnection(ctx context.Context, sel ast.SelectionSet, v *model.NotificationConnection) graphql.Marshaler {
+func (ec *executionContext) marshalONotificationConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐNotificationConnection(ctx context.Context, sel ast.SelectionSet, v *model.NotificationConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._NotificationConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSearchResults2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchResults(ctx context.Context, sel ast.SelectionSet, v *model.SearchResults) graphql.Marshaler {
+func (ec *executionContext) marshalOSearchResults2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchResults(ctx context.Context, sel ast.SelectionSet, v *model.SearchResults) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._SearchResults(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOSearchType2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx context.Context, v any) ([]model.SearchType, error) {
+func (ec *executionContext) unmarshalOSearchType2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx context.Context, v any) ([]model.SearchType, error) {
 	if v == nil {
 		return nil, nil
 	}
 	var vSlice []any
-	vSlice = graphql.CoerceList(v)
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
 	var err error
 	res := make([]model.SearchType, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNSearchType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNSearchType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}
@@ -15358,7 +16310,7 @@ func (ec *executionContext) unmarshalOSearchType2ᚕbackendᚋservicesᚋgateway
 	return res, nil
 }
 
-func (ec *executionContext) marshalOSearchType2ᚕbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SearchType) graphql.Marshaler {
+func (ec *executionContext) marshalOSearchType2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SearchType) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -15385,7 +16337,7 @@ func (ec *executionContext) marshalOSearchType2ᚕbackendᚋservicesᚋgateway�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNSearchType2backendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx, sel, v[i])
+			ret[i] = ec.marshalNSearchType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐSearchType(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -15411,8 +16363,6 @@ func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) 
 }
 
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalString(v)
 	return res
 }
@@ -15429,34 +16379,32 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	if v == nil {
 		return graphql.Null
 	}
-	_ = sel
-	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
 }
 
-func (ec *executionContext) marshalOTweet2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v *model.Tweet) graphql.Marshaler {
+func (ec *executionContext) marshalOTweet2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweet(ctx context.Context, sel ast.SelectionSet, v *model.Tweet) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Tweet(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOTweetConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx context.Context, sel ast.SelectionSet, v *model.TweetConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOTweetConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐTweetConnection(ctx context.Context, sel ast.SelectionSet, v *model.TweetConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._TweetConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUser2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserConnection2ᚖbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOUserConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserConnection(ctx context.Context, sel ast.SelectionSet, v *model.UserConnection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

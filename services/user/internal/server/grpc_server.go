@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 
-	"backend/services/user/internal/service"
-	"backend/services/user/proto"
+	"github.com/flick/backend/services/user/internal/service"
+	"github.com/flick/backend/services/user/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"

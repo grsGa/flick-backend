@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/recommendation/internal/repository"
+	"github.com/flick/backend/services/recommendation/internal/repository"
 )
 
 // NewRecommendationServiceFactory 创建推荐服务工厂

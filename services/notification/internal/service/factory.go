@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/notification/internal/repository"
+	"github.com/flick/backend/services/notification/internal/repository"
 )
 
 // NewNotificationServiceFactory 创建通知服务工厂

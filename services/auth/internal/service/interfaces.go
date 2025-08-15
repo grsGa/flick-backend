@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"backend/services/auth/proto"
+	"github.com/flick/backend/services/auth/proto"
 )
 
 // AuthService defines the interface for the authentication service.

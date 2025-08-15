@@ -3,13 +3,13 @@ package main
 import (
 	"strconv"
 
-	"backend/pkg/config"
-	"backend/pkg/database"
-	"backend/pkg/discovery"
-	"backend/pkg/logger"
-	"backend/services/user/internal/repository"
-	"backend/services/user/internal/server"
-	"backend/services/user/internal/service"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/discovery"
+	"github.com/flick/backend/pkg/logger"
+	"github.com/flick/backend/services/user/internal/repository"
+	"github.com/flick/backend/services/user/internal/server"
+	"github.com/flick/backend/services/user/internal/service"
 
 	"go.uber.org/zap"
 )

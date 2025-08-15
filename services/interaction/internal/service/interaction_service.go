@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"time"
-	
+
+	"github.com/flick/backend/services/interaction/internal/repository"
+	"github.com/flick/backend/services/interaction/proto"
 	"github.com/google/uuid"
-	"backend/services/interaction/internal/repository"
-	"backend/services/interaction/proto"
 )
 
 // interactionService 互动服务实现
@@ -33,7 +33,7 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 			},
 		}, err
 	}
-	
+
 	// 如果已经关注，直接返回
 	if isFollowing {
 		return &proto.CreateFollowResponse{
@@ -43,7 +43,7 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 			},
 		}, nil
 	}
-	
+
 	// 创建关注对象
 	follow := &proto.Follow{
 		Id:         uuid.New().String(),
@@ -51,7 +51,7 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 		FolloweeId: req.FolloweeId,
 		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err = s.interactionRepo.CreateFollow(ctx, follow)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateFollowResponse{
 		Follow: follow,
 	}, nil
@@ -80,7 +80,7 @@ func (s *interactionService) DeleteFollow(ctx context.Context, req *proto.Delete
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteFollowResponse{
 		Success: true,
 	}, nil
@@ -97,7 +97,7 @@ func (s *interactionService) IsFollowing(ctx context.Context, req *proto.IsFollo
 			},
 		}, err
 	}
-	
+
 	return &proto.IsFollowingResponse{
 		IsFollowing: isFollowing,
 	}, nil
@@ -114,7 +114,7 @@ func (s *interactionService) GetFollowers(ctx context.Context, req *proto.GetFol
 			},
 		}, err
 	}
-	
+
 	return &proto.GetFollowersResponse{
 		Followers: followers,
 		Total:     total,
@@ -132,7 +132,7 @@ func (s *interactionService) GetFollowing(ctx context.Context, req *proto.GetFol
 			},
 		}, err
 	}
-	
+
 	return &proto.GetFollowingResponse{
 		Following: following,
 		Total:     total,
@@ -151,7 +151,7 @@ func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLi
 			},
 		}, err
 	}
-	
+
 	// 如果已经点赞，直接返回
 	if isLiked {
 		return &proto.CreateLikeResponse{
@@ -161,7 +161,7 @@ func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLi
 			},
 		}, nil
 	}
-	
+
 	// 创建点赞对象
 	like := &proto.Like{
 		Id:        uuid.New().String(),
@@ -169,7 +169,7 @@ func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLi
 		PostId:    req.PostId,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err = s.interactionRepo.CreateLike(ctx, like)
 	if err != nil {
@@ -180,7 +180,7 @@ func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLi
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateLikeResponse{
 		Like: like,
 	}, nil
@@ -198,7 +198,7 @@ func (s *interactionService) DeleteLike(ctx context.Context, req *proto.DeleteLi
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteLikeResponse{
 		Success: true,
 	}, nil
@@ -215,7 +215,7 @@ func (s *interactionService) IsLiked(ctx context.Context, req *proto.IsLikedRequ
 			},
 		}, err
 	}
-	
+
 	return &proto.IsLikedResponse{
 		IsLiked: isLiked,
 	}, nil
@@ -232,7 +232,7 @@ func (s *interactionService) GetLikes(ctx context.Context, req *proto.GetLikesRe
 			},
 		}, err
 	}
-	
+
 	return &proto.GetLikesResponse{
 		Likes: likes,
 		Total: total,
@@ -249,7 +249,7 @@ func (s *interactionService) CreateRepost(ctx context.Context, req *proto.Create
 		Comment:   req.Comment,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.interactionRepo.CreateRepost(ctx, repost)
 	if err != nil {
@@ -260,7 +260,7 @@ func (s *interactionService) CreateRepost(ctx context.Context, req *proto.Create
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateRepostResponse{
 		Repost: repost,
 	}, nil
@@ -278,7 +278,7 @@ func (s *interactionService) DeleteRepost(ctx context.Context, req *proto.Delete
 			},
 		}, err
 	}
-	
+
 	return &proto.DeleteRepostResponse{
 		Success: true,
 	}, nil
@@ -295,7 +295,7 @@ func (s *interactionService) CreateReport(ctx context.Context, req *proto.Create
 		Reason:     req.Reason,
 		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.interactionRepo.CreateReport(ctx, report)
 	if err != nil {
@@ -306,7 +306,7 @@ func (s *interactionService) CreateReport(ctx context.Context, req *proto.Create
 			},
 		}, err
 	}
-	
+
 	return &proto.CreateReportResponse{
 		Report: report,
 	}, nil

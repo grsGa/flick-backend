@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"backend/services/search/proto"
+	"github.com/flick/backend/services/search/proto"
 )
 
 // SearchRepository 定义搜索仓储接口

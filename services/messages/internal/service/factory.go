@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/messages/internal/repository"
+	"github.com/flick/backend/services/messages/internal/repository"
 )
 
 // NewMessageServiceFactory 创建消息服务工厂

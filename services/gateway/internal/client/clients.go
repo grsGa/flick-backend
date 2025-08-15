@@ -5,16 +5,15 @@ import (
 
 	"google.golang.org/grpc"
 
-	auth_proto "backend/services/auth/proto"
-	bookmark_proto "backend/services/bookmark/proto"
-	content_proto "backend/services/content/proto"
-	interaction_proto "backend/services/interaction/proto"
-	media_proto "backend/services/media/proto"
-	messages_proto "backend/services/messages/proto"
-	notification_proto "backend/services/notification/proto"
-	recommendation_proto "backend/services/recommendation/proto"
-	search_proto "backend/services/search/proto"
-	user_proto "backend/services/user/proto"
+	auth_proto "github.com/flick/backend/services/auth/proto"
+	content_proto "github.com/flick/backend/services/content/proto"
+	interaction_proto "github.com/flick/backend/services/interaction/proto"
+	media_proto "github.com/flick/backend/services/media/proto"
+	messages_proto "github.com/flick/backend/services/messages/proto"
+	notification_proto "github.com/flick/backend/services/notification/proto"
+	recommendation_proto "github.com/flick/backend/services/recommendation/proto"
+	search_proto "github.com/flick/backend/services/search/proto"
+	user_proto "github.com/flick/backend/services/user/proto"
 )
 
 // userServiceClient 用户服务gRPC客户端实现
@@ -423,34 +422,4 @@ func (c *searchServiceClient) SearchHashtags(ctx context.Context, in *search_pro
 	return c.client.SearchHashtags(ctx, in)
 }
 
-// bookmarkServiceClient 书签服务gRPC客户端实现
-type bookmarkServiceClient struct {
-	client bookmark_proto.BookmarkServiceClient
-}
 
-// NewBookmarkServiceClient 创建书签服务客户端
-func NewBookmarkServiceClient(conn *grpc.ClientConn) BookmarkServiceClient {
-	return &bookmarkServiceClient{
-		client: bookmark_proto.NewBookmarkServiceClient(conn),
-	}
-}
-
-// CreateBookmark 创建书签
-func (c *bookmarkServiceClient) CreateBookmark(ctx context.Context, in *bookmark_proto.CreateBookmarkRequest, opts ...interface{}) (*bookmark_proto.CreateBookmarkResponse, error) {
-	return c.client.CreateBookmark(ctx, in)
-}
-
-// DeleteBookmark 删除书签
-func (c *bookmarkServiceClient) DeleteBookmark(ctx context.Context, in *bookmark_proto.DeleteBookmarkRequest, opts ...interface{}) (*bookmark_proto.DeleteBookmarkResponse, error) {
-	return c.client.DeleteBookmark(ctx, in)
-}
-
-// IsBookmarked 检查是否已收藏
-func (c *bookmarkServiceClient) IsBookmarked(ctx context.Context, in *bookmark_proto.IsBookmarkedRequest, opts ...interface{}) (*bookmark_proto.IsBookmarkedResponse, error) {
-	return c.client.IsBookmarked(ctx, in)
-}
-
-// ListBookmarks 获取用户书签列表
-func (c *bookmarkServiceClient) ListBookmarks(ctx context.Context, in *bookmark_proto.ListBookmarksRequest, opts ...interface{}) (*bookmark_proto.ListBookmarksResponse, error) {
-	return c.client.ListBookmarks(ctx, in)
-}

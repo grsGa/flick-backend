@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"backend/services/search/internal/repository"
-	"backend/services/search/proto"
+	"github.com/flick/backend/services/search/internal/repository"
+	"github.com/flick/backend/services/search/proto"
 )
 
 // searchService 搜索服务实现

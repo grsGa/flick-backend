@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"backend/pkg/config"
-	"backend/pkg/httpclient"
-	"backend/services/auth/internal/repository"
-	"backend/services/auth/proto"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/httpclient"
+	"github.com/flick/backend/services/auth/internal/repository"
+	"github.com/flick/backend/services/auth/proto"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"

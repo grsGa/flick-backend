@@ -3,16 +3,15 @@ package client
 import (
 	"context"
 
-	auth_proto "backend/services/auth/proto"
-	bookmark_proto "backend/services/bookmark/proto"
-	content_proto "backend/services/content/proto"
-	interaction_proto "backend/services/interaction/proto"
-	media_proto "backend/services/media/proto"
-	messages_proto "backend/services/messages/proto"
-	notification_proto "backend/services/notification/proto"
-	recommendation_proto "backend/services/recommendation/proto"
-	search_proto "backend/services/search/proto"
-	user_proto "backend/services/user/proto"
+	auth_proto "github.com/flick/backend/services/auth/proto"
+	content_proto "github.com/flick/backend/services/content/proto"
+	interaction_proto "github.com/flick/backend/services/interaction/proto"
+	media_proto "github.com/flick/backend/services/media/proto"
+	messages_proto "github.com/flick/backend/services/messages/proto"
+	notification_proto "github.com/flick/backend/services/notification/proto"
+	recommendation_proto "github.com/flick/backend/services/recommendation/proto"
+	search_proto "github.com/flick/backend/services/search/proto"
+	user_proto "github.com/flick/backend/services/user/proto"
 )
 
 // UserServiceClient 定义用户服务客户端接口
@@ -220,19 +219,4 @@ type SearchServiceClient interface {
 
 	// SearchHashtags 搜索标签
 	SearchHashtags(ctx context.Context, in *search_proto.SearchHashtagsRequest, opts ...interface{}) (*search_proto.SearchHashtagsResponse, error)
-}
-
-// BookmarkServiceClient 定义书签服务客户端接口
-type BookmarkServiceClient interface {
-	// CreateBookmark 创建书签
-	CreateBookmark(ctx context.Context, in *bookmark_proto.CreateBookmarkRequest, opts ...interface{}) (*bookmark_proto.CreateBookmarkResponse, error)
-
-	// DeleteBookmark 删除书签
-	DeleteBookmark(ctx context.Context, in *bookmark_proto.DeleteBookmarkRequest, opts ...interface{}) (*bookmark_proto.DeleteBookmarkResponse, error)
-
-	// IsBookmarked 检查是否已收藏
-	IsBookmarked(ctx context.Context, in *bookmark_proto.IsBookmarkedRequest, opts ...interface{}) (*bookmark_proto.IsBookmarkedResponse, error)
-
-	// ListBookmarks 获取用户书签列表
-	ListBookmarks(ctx context.Context, in *bookmark_proto.ListBookmarksRequest, opts ...interface{}) (*bookmark_proto.ListBookmarksResponse, error)
 }

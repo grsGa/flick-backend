@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"backend/services/recommendation/proto"
+	"github.com/flick/backend/services/recommendation/proto"
 )
 
 // RecommendationRepository 定义推荐仓储接口

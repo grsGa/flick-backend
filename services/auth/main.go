@@ -1,14 +1,14 @@
 package main
 
 import (
-	"backend/pkg/config"
-	"backend/pkg/database"
-	"backend/pkg/discovery"
-	"backend/pkg/logger"
-	"backend/pkg/telemetry"
-	"backend/services/auth/internal/repository"
-	"backend/services/auth/internal/server"
-	"backend/services/auth/internal/service"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/discovery"
+	"github.com/flick/backend/pkg/logger"
+	"github.com/flick/backend/pkg/telemetry"
+	"github.com/flick/backend/services/auth/internal/repository"
+	"github.com/flick/backend/services/auth/internal/server"
+	"github.com/flick/backend/services/auth/internal/service"
 	"context"
 	"log"
 	"strconv"

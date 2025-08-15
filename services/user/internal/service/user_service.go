@@ -5,10 +5,10 @@ import (
 	"errors"
 	"strings"
 
-	"backend/pkg/auth"
-	"backend/pkg/config"
-	"backend/services/user/internal/repository"
-	"backend/services/user/proto"
+	"github.com/flick/backend/pkg/auth"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/services/user/internal/repository"
+	"github.com/flick/backend/services/user/proto"
 
 	"go.uber.org/zap"
 )

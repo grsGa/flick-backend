@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"backend/pkg/config"
-	"backend/pkg/models"
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

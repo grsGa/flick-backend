@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"net"
-	
+
+	"github.com/flick/backend/services/notification/internal/service"
+	"github.com/flick/backend/services/notification/proto"
 	"google.golang.org/grpc"
-	"backend/services/notification/internal/service"
-	"backend/services/notification/proto"
 )
 
 // grpcServer gRPC服务实现
@@ -58,9 +58,9 @@ func (s *grpcServer) Run(port string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	grpcServer := grpc.NewServer()
 	proto.RegisterNotificationServiceServer(grpcServer, s)
-	
+
 	return grpcServer.Serve(lis)
 }

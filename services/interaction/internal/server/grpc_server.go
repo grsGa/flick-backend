@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"net"
-	
+
+	"github.com/flick/backend/services/interaction/internal/service"
+	"github.com/flick/backend/services/interaction/proto"
 	"google.golang.org/grpc"
-	"backend/services/interaction/internal/service"
-	"backend/services/interaction/proto"
 )
 
 // grpcServer gRPC服务实现
@@ -88,9 +88,9 @@ func (s *grpcServer) Run(port string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	grpcServer := grpc.NewServer()
 	proto.RegisterInteractionServiceServer(grpcServer, s)
-	
+
 	return grpcServer.Serve(lis)
 }

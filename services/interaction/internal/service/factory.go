@@ -1,7 +1,7 @@
 package service
 
 import (
-	"backend/services/interaction/internal/repository"
+	"github.com/flick/backend/services/interaction/internal/repository"
 )
 
 // NewInteractionServiceFactory 创建互动服务工厂
