@@ -47,9 +47,9 @@ services:
       postgres:
         condition: service_started
       auth-service:
-        condition: service_healthy
+        condition: service_started
       user-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - flick_network
     healthcheck:
@@ -81,6 +81,10 @@ services:
       - CONSUL_AGENT_ADDR=consul:8500
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URL=${GITHUB_REDIRECT_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URL=${GOOGLE_REDIRECT_URL}
       - POSTGRES_HOST=postgres
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
@@ -89,12 +93,6 @@ services:
     depends_on:
       - consul
       - postgres
-    healthcheck:
-      test: ["CMD", "grpc_health_probe", "-addr=:50053", "-service=auth-service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
     networks:
       - flick_network
     entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/auth"]
@@ -116,12 +114,6 @@ services:
     depends_on:
       - consul
       - postgres
-    healthcheck:
-      test: ["CMD", "grpc_health_probe", "-addr=:50051", "-service=user-service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
     networks:
       - flick_network
     entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/user"]
