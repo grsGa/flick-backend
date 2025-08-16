@@ -30,10 +30,10 @@ type authService struct {
 func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logger *zap.Logger) AuthService {
 	// Validate that required OAuth configuration is present.
 	if cfg.GoogleClientID == "" || cfg.GoogleClientSecret == "" || cfg.GoogleRedirectURL == "" {
-		logger.Fatal("Google OAuth configuration is incomplete. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URL")
+		logger.Warn("Google OAuth configuration is incomplete. OAuth login will be disabled. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URL")
 	}
 	if cfg.GithubClientID == "" || cfg.GithubClientSecret == "" || cfg.GithubRedirectURL == "" {
-		logger.Fatal("GitHub OAuth configuration is incomplete. Please check environment variables: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URL")
+		logger.Warn("GitHub OAuth configuration is incomplete. OAuth login will be disabled. Please check environment variables: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URL")
 	}
 
 	githubOauthConfig := &oauth2.Config{
