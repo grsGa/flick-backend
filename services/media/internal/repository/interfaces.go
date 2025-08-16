@@ -21,7 +21,7 @@ type MediaRepository interface {
 	ListFiles(ctx context.Context, userID string, page, pageSize int32) ([]*proto.MediaFile, int32, error)
 
 	// SaveFileToStorage 保存文件到存储
-	SaveFileToStorage(ctx context.Context, fileID string, fileData []byte) (string, error)
+	SaveFileToStorage(ctx context.Context, fileID string, fileData []byte, contentType, category, userID string) (string, error)
 
 	// DeleteFileFromStorage 从存储中删除文件
 	DeleteFileFromStorage(ctx context.Context, url string) error

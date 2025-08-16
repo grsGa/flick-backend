@@ -81,7 +81,7 @@ func (r *contentRepository) CreateContent(ctx context.Context, content *proto.Co
 	for _, mediaFile := range content.MediaFiles {
 		media := &models.MediaAttachment{
 			ID:     mediaFile.Id,
-			PostID: content.Id,
+			PostID: &content.Id, // 使用指针
 			URL:    mediaFile.Url,
 			Type:   mediaFile.Type,
 		}
@@ -110,10 +110,12 @@ func (r *contentRepository) UpdateContent(ctx context.Context, content *proto.Co
 
 	// 更新媒体附件（简化处理，实际应支持增删改）
 	for _, mediaFile := range content.MediaFiles {
+		postID := content.Id
 		media := &models.MediaAttachment{
-			ID:   mediaFile.Id,
-			URL:  mediaFile.Url,
-			Type: mediaFile.Type,
+			ID:     mediaFile.Id,
+			PostID: &postID, // 使用指针
+			URL:    mediaFile.Url,
+			Type:   mediaFile.Type,
 		}
 
 		if err := r.db.Where("id = ?", mediaFile.Id).Updates(media).Error; err != nil {

@@ -16,15 +16,18 @@ import (
 type MinIOClient struct {
 	client     *minio.Client
 	bucketName string
+	endpoint   string
+	publicURL  string
 }
 
 // MediaStorageConfig holds MinIO configuration
 type MediaStorageConfig struct {
-	Endpoint   string
-	AccessKey  string
-	SecretKey  string
-	UseSSL     bool
-	BucketName string
+	Endpoint    string
+	AccessKey   string
+	SecretKey   string
+	UseSSL      bool
+	BucketName  string
+	PublicURL   string // Public URL for browser access
 }
 
 // NewMinIOClient creates a new MinIO client instance
@@ -41,6 +44,8 @@ func NewMinIOClient(config MediaStorageConfig) (*MinIOClient, error) {
 	client := &MinIOClient{
 		client:     minioClient,
 		bucketName: config.BucketName,
+		endpoint:   config.Endpoint,
+		publicURL:  config.PublicURL,
 	}
 
 	// Ensure bucket exists
@@ -51,7 +56,7 @@ func NewMinIOClient(config MediaStorageConfig) (*MinIOClient, error) {
 	return client, nil
 }
 
-// ensureBucket creates the bucket if it doesn't exist
+// ensureBucket creates the bucket if it doesn't exist and sets public read policy
 func (m *MinIOClient) ensureBucket(ctx context.Context) error {
 	exists, err := m.client.BucketExists(ctx, m.bucketName)
 	if err != nil {
@@ -65,15 +70,47 @@ func (m *MinIOClient) ensureBucket(ctx context.Context) error {
 		}
 	}
 
+	// Set public read policy for the bucket
+	policy := fmt.Sprintf(`{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Effect": "Allow",
+				"Principal": {"AWS": "*"},
+				"Action": ["s3:GetObject"],
+				"Resource": ["arn:aws:s3:::%s/*"]
+			}
+		]
+	}`, m.bucketName)
+
+	err = m.client.SetBucketPolicy(ctx, m.bucketName, policy)
+	if err != nil {
+		return fmt.Errorf("failed to set bucket policy: %w", err)
+	}
+
 	return nil
 }
 
-// UploadFile uploads a file to MinIO and returns the file URL
-func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category string) (string, error) {
+// UploadFile uploads a file to MinIO using hierarchical path structure
+func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category, userID string) (string, error) {
 	// Generate unique filename
 	fileID := uuid.New().String()
 	extension := getExtensionFromContentType(contentType)
-	objectName := fmt.Sprintf("%s/%s%s", category, fileID, extension)
+	
+	// Create hierarchical path: category/userId/filename
+	var objectName string
+	switch category {
+	case "avatars":
+		objectName = fmt.Sprintf("avatars/%s/avatar_%s%s", userID, fileID, extension)
+	case "banners":
+		objectName = fmt.Sprintf("banners/%s/banner_%s%s", userID, fileID, extension)
+	case "posts":
+		// For posts, we'll need postID as well, but for now use fileID as placeholder
+		objectName = fmt.Sprintf("posts/%s/%s/img_%s%s", userID, fileID, fileID, extension)
+	default:
+		// Fallback to simple structure
+		objectName = fmt.Sprintf("%s/%s/%s%s", category, userID, fileID, extension)
+	}
 
 	// Upload file
 	_, err := m.client.PutObject(ctx, m.bucketName, objectName, reader, fileSize, minio.PutObjectOptions{
@@ -83,8 +120,17 @@ func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize
 		return "", fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	// Return the file URL
-	return fmt.Sprintf("/%s/%s", m.bucketName, objectName), nil
+	// Return the file URL - use public URL for browser access
+	publicURL := m.publicURL
+	if publicURL == "" {
+		// Fallback to endpoint if no public URL configured
+		protocol := "http"
+		if strings.Contains(m.endpoint, "https") {
+			protocol = "https"
+		}
+		publicURL = fmt.Sprintf("%s://%s", protocol, m.endpoint)
+	}
+	return fmt.Sprintf("%s/%s/%s", publicURL, m.bucketName, objectName), nil
 }
 
 // DeleteFile deletes a file from MinIO
@@ -141,6 +187,23 @@ func getExtensionFromContentType(contentType string) string {
 
 // extractObjectNameFromURL extracts object name from file URL
 func extractObjectNameFromURL(fileURL, bucketName string) string {
+	// Support both formats:
+	// 1. Full URL: http://minio:9000/social-media/avatars/user123/avatar_abc.jpg
+	// 2. Relative path: /social-media/avatars/user123/avatar_abc.jpg
+	
+	// Remove protocol and host if present
+	if strings.Contains(fileURL, "://") {
+		parts := strings.SplitN(fileURL, "://", 2)
+		if len(parts) == 2 {
+			// Remove host part, keep path
+			hostAndPath := parts[1]
+			slashIndex := strings.Index(hostAndPath, "/")
+			if slashIndex != -1 {
+				fileURL = hostAndPath[slashIndex:]
+			}
+		}
+	}
+	
 	// Expected format: /bucket-name/category/filename.ext
 	prefix := fmt.Sprintf("/%s/", bucketName)
 	if strings.HasPrefix(fileURL, prefix) {

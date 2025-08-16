@@ -341,17 +341,41 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 
 // UserReplies is the resolver for the userReplies field.
 func (r *queryResolver) UserReplies(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	panic(fmt.Errorf("not implemented: UserReplies - userReplies"))
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] UserReplies query received for userID: %s\n", userID)
+
+	// TODO: Implement actual user replies logic with content service
+	// For now, return empty connection to prevent 404 and allow frontend to work
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // UserMedia is the resolver for the userMedia field.
 func (r *queryResolver) UserMedia(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	panic(fmt.Errorf("not implemented: UserMedia - userMedia"))
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] UserMedia query received for userID: %s\n", userID)
+
+	// TODO: Implement actual user media logic with content/media service
+	// For now, return empty connection to prevent 404 and allow frontend to work
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // UserLikes is the resolver for the userLikes field.
 func (r *queryResolver) UserLikes(ctx context.Context, userID string, first int, after *string) (*model.TweetConnection, error) {
-	panic(fmt.Errorf("not implemented: UserLikes - userLikes"))
+	// Gateway log: GraphQL query received
+	fmt.Printf("[Gateway] UserLikes query received for userID: %s\n", userID)
+
+	// TODO: Implement actual user likes logic with interaction service
+	// For now, return empty connection to prevent 404 and allow frontend to work
+	return &model.TweetConnection{
+		Edges:    []model.TweetEdge{},
+		PageInfo: &model.PageInfo{HasNextPage: false},
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

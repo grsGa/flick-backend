@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/flick/backend/services/media/internal/repository"
@@ -21,13 +23,41 @@ func NewMediaService(mediaRepo repository.MediaRepository) MediaService {
 	}
 }
 
+// getContentTypeFromFilename determines content type from filename extension
+func getContentTypeFromFilename(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	switch ext {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".mov":
+		return "video/quicktime"
+	case ".avi":
+		return "video/x-msvideo"
+	default:
+		return "application/octet-stream"
+	}
+}
+
 // UploadFile 上传文件
 func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
 	// 生成文件ID
 	fileID := uuid.New().String()
 
+	// 确定内容类型
+	contentType := getContentTypeFromFilename(req.Filename)
+	
 	// 保存文件到存储
-	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData)
+	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, req.Type, req.UserId)
 	if err != nil {
 		return &proto.UploadFileResponse{
 			Error: &proto.Error{

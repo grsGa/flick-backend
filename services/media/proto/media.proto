@@ -29,6 +29,7 @@ message MediaFile {
   string alt_text = 7;
   string created_at = 8;
   string updated_at = 9;
+  string post_id = 10; // 可选的帖子ID，用于关联帖子附件
 }
 
 // 上传文件请求

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"time"
@@ -14,13 +15,15 @@ import (
 
 // mediaRepository 媒体仓储实现
 type mediaRepository struct {
-	db *gorm.DB
+	db          *gorm.DB
+	storageRepo *MinIOStorageRepository
 }
 
 // NewMediaRepository 创建媒体仓储实例
-func NewMediaRepository() MediaRepository {
+func NewMediaRepository(storageRepo *MinIOStorageRepository) MediaRepository {
 	return &mediaRepository{
-		db: database.GetDB(),
+		db:          database.GetDB(),
+		storageRepo: storageRepo,
 	}
 }
 
@@ -29,11 +32,16 @@ func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile)
 	createdAt, _ := time.Parse(time.RFC3339, file.CreatedAt)
 	media := &models.MediaAttachment{
 		ID:        file.Id,
-		PostID:    "", // 需要与内容服务关联
+		PostID:    nil, // 对于头像/横幅等独立文件，PostID为nil
 		URL:       file.Url,
 		Type:      file.Type,
 		AltText:   &file.AltText,
 		CreatedAt: createdAt,
+	}
+
+	// 如果有PostID，则设置它
+	if file.PostId != "" {
+		media.PostID = &file.PostId
 	}
 
 	return r.db.Create(media).Error
@@ -99,22 +107,18 @@ func (r *mediaRepository) ListFiles(ctx context.Context, userID string, page, pa
 	return files, int32(total), nil
 }
 
-// SaveFileToStorage 保存文件到存储(简化实现)
-func (r *mediaRepository) SaveFileToStorage(ctx context.Context, fileID string, fileData []byte) (string, error) {
-	// 在实际实现中，这里应该将文件保存到对象存储服务(如MinIO、S3等)
-	// 并返回文件的URL
-
-	// 简化实现，返回模拟URL
-	url := "https://example.com/media/" + fileID
-	return url, nil
+// SaveFileToStorage 保存文件到MinIO存储
+func (r *mediaRepository) SaveFileToStorage(ctx context.Context, fileID string, fileData []byte, contentType, category, userID string) (string, error) {
+	// 使用MinIO存储文件
+	reader := bytes.NewReader(fileData)
+	fileSize := int64(len(fileData))
+	
+	return r.storageRepo.UploadFile(ctx, reader, fileSize, contentType, category, userID)
 }
 
-// DeleteFileFromStorage 从存储中删除文件(简化实现)
+// DeleteFileFromStorage 从存储中删除文件
 func (r *mediaRepository) DeleteFileFromStorage(ctx context.Context, url string) error {
-	// 在实际实现中，这里应该从对象存储服务中删除文件
-
-	// 简化实现，直接返回nil
-	return nil
+	return r.storageRepo.DeleteFile(ctx, url)
 }
 
 // toString 将*string转换为string

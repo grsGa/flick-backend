@@ -285,12 +285,18 @@ func setupRoutes(r *gin.Engine) {
 		media := api.Group("/media")
 		{
 			media.POST("/upload", func(c *gin.Context) {
-				// Get user ID from context (set by auth middleware)
-				userID, exists := c.Get("user_id")
-				if !exists {
+				// Debug logging for media upload
+				fmt.Printf("[MEDIA] Upload request received\n")
+				
+				// Get user claims from context (set by auth middleware)
+				claims := middleware.GetUserClaims(c.Request.Context())
+				if claims == nil {
+					fmt.Printf("[MEDIA] No user claims found in context\n")
 					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 					return
 				}
+				userID := claims.UserID
+				fmt.Printf("[MEDIA] User authenticated: %s\n", userID)
 
 				// Parse multipart form
 				err := c.Request.ParseMultipartForm(10 << 20) // 10MB max
@@ -319,7 +325,7 @@ func setupRoutes(r *gin.Engine) {
 
 				// Call media service
 				req := &media_proto.UploadFileRequest{
-					UserId:   userID.(string),
+					UserId:   userID,
 					Filename: header.Filename,
 					FileData: fileData,
 					Type:     fileType,

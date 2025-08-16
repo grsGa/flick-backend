@@ -20,9 +20,9 @@ func NewMinIOStorageRepository(client *storage.MinIOClient) *MinIOStorageReposit
 	}
 }
 
-// UploadFile uploads a file to MinIO storage
-func (r *MinIOStorageRepository) UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category string) (string, error) {
-	return r.client.UploadFile(ctx, reader, fileSize, contentType, category)
+// UploadFile uploads a file to MinIO storage with user ID for hierarchical structure
+func (r *MinIOStorageRepository) UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category, userID string) (string, error) {
+	return r.client.UploadFile(ctx, reader, fileSize, contentType, category, userID)
 }
 
 // DeleteFile deletes a file from MinIO storage

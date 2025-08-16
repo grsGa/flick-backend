@@ -9,7 +9,7 @@ import (
 // MediaStorage defines the interface for media storage operations
 type MediaStorage interface {
 	// UploadFile uploads a file and returns the file URL
-	UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category string) (string, error)
+	UploadFile(ctx context.Context, reader io.Reader, fileSize int64, contentType, category, userID string) (string, error)
 	
 	// DeleteFile deletes a file by URL
 	DeleteFile(ctx context.Context, fileURL string) error
