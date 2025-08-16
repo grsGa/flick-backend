@@ -3,13 +3,13 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/flick/backend/pkg/config"
 	"github.com/flick/backend/pkg/httpclient"
 	"github.com/flick/backend/services/auth/internal/repository"
 	"github.com/flick/backend/services/auth/proto"
-
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -330,11 +330,23 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 	user, err := s.authRepo.GetUserByIdentifier(ctx, githubUser.Email)
 	if err != nil {
 		s.logger.Info("User not found, creating new user from GitHub login", zap.String("email", githubUser.Email))
+
+		// Use GitHub login as username, fallback to email username if empty
+		username := githubUser.Login
+		if username == "" {
+			username = extractUsernameFromEmail(githubUser.Email)
+		}
+
+		displayName := githubUser.Name
+		if displayName == "" {
+			displayName = username
+		}
+
 		// Create new user
 		user = &proto.User{
-			Username:    githubUser.Login,
+			Username:    username,
 			Email:       githubUser.Email,
-			DisplayName: githubUser.Name,
+			DisplayName: displayName,
 			LoginMethod: "github",
 			Status:      "active",
 			CreatedAt:   time.Now().Format(time.RFC3339),
@@ -442,11 +454,19 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 	user, err := s.authRepo.GetUserByIdentifier(ctx, googleUser.Email)
 	if err != nil {
 		s.logger.Info("User not found, creating new user from Google login", zap.String("email", googleUser.Email))
+
+		// Extract username from email (part before @)
+		username := extractUsernameFromEmail(googleUser.Email)
+		displayName := googleUser.Name
+		if displayName == "" {
+			displayName = username
+		}
+
 		// Create new user
 		user = &proto.User{
-			Username:    googleUser.Email,
+			Username:    username,
 			Email:       googleUser.Email,
-			DisplayName: googleUser.Name,
+			DisplayName: displayName,
 			LoginMethod: "google",
 			Status:      "active",
 			CreatedAt:   time.Now().Format(time.RFC3339),
@@ -537,4 +557,19 @@ func (s *authService) parseToken(tokenString string) (jwt.MapClaims, error) {
 	}
 
 	return claims, nil
+}
+
+// extractUsernameFromEmail extracts the username part from an email address
+// Example: "testtom7928@gmail.com" -> "testtom7928"
+func extractUsernameFromEmail(email string) string {
+	if email == "" {
+		return ""
+	}
+
+	parts := strings.Split(email, "@")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return email
 }
