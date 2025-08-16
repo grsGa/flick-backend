@@ -41,7 +41,7 @@ func RegisterServiceToConsul(opts RegisterOptions) {
 	switch opts.HealthCheckType {
 	case "grpc":
 		check = &api.AgentServiceCheck{
-			GRPC:                           fmt.Sprintf("%s:%d", opts.ServiceName, opts.ServicePort),
+			TCP:                            fmt.Sprintf("%s:%d", opts.ServiceName, opts.ServicePort),
 			Interval:                       "10s",
 			Timeout:                        "5s",
 			DeregisterCriticalServiceAfter: "1m",
