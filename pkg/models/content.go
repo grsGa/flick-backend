@@ -20,9 +20,9 @@ type Post struct {
 // MediaAttachment 媒体附件模型
 type MediaAttachment struct {
 	ID        string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	PostID    string    `gorm:"type:uuid;not null;index" json:"post_id"`
+	PostID    *string   `gorm:"type:uuid;index" json:"post_id,omitempty"` // 修改为可选，支持头像/横幅等独立文件
 	URL       string    `gorm:"type:text;not null" json:"url"`
-	Type      string    `gorm:"type:varchar(10);not null;check:type IN ('image', 'video', 'gif')" json:"type"`
+	Type      string    `gorm:"type:varchar(20);not null" json:"type"` // 扩展长度支持 avatars/banners
 	AltText   *string   `gorm:"type:text" json:"alt_text,omitempty"`
 	CreatedAt time.Time `gorm:"not null" json:"created_at"`
 	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
