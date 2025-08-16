@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/flick/backend/pkg/config"
 	"github.com/flick/backend/pkg/database"
@@ -15,6 +17,7 @@ import (
 	"github.com/flick/backend/pkg/logger"
 	"github.com/flick/backend/pkg/telemetry"
 	auth_proto "github.com/flick/backend/services/auth/proto"
+	media_proto "github.com/flick/backend/services/media/proto"
 	"github.com/flick/backend/services/gateway/internal/client"
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
@@ -88,6 +91,17 @@ func main() {
 		logger.Fatal("Failed to load config", zap.Error(err))
 	}
 
+	// Initialize service discovery
+	serviceDiscovery, err := client.NewConsulServiceDiscovery()
+	if err != nil {
+		logger.Fatal("Failed to create consul service discovery", zap.Error(err))
+	}
+
+	// Initialize gRPC clients with retry logic
+	authClient := client.NewAuthServiceClient(getServiceConnWithRetry(serviceDiscovery, "auth-service", logger))
+	userClient := client.NewUserServiceClient(getServiceConnWithRetry(serviceDiscovery, "user-service", logger))
+	mediaClient := client.NewMediaServiceClient(getServiceConnWithRetry(serviceDiscovery, "media-service", logger))
+
 	// Set gin run mode
 	gin.SetMode(gin.ReleaseMode)
 
@@ -96,8 +110,10 @@ func main() {
 		logger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 
-	// Initialize gRPC clients
-	initGRPCClients()
+	// Store clients globally for use in routes
+	authServiceClient = authClient
+	userServiceClient = userClient
+	mediaServiceClient = mediaClient
 
 	// Create Gin engine
 	r := gin.Default()
@@ -117,12 +133,12 @@ func main() {
 	// Setup routes
 	setupRoutes(r)
 
+	// Service registration
 	port, err := strconv.Atoi(cfg.GatewayPort)
 	if err != nil {
 		logger.Fatal("Invalid port", zap.Error(err))
 	}
 
-	// Service registration
 	discovery.RegisterServiceToConsul(discovery.RegisterOptions{
 		ServiceName:     serviceName,
 		ServicePort:     port,
@@ -137,35 +153,45 @@ func main() {
 	}
 }
 
-// initGRPCClients initializes all gRPC client connections using service discovery.
-func initGRPCClients() {
-	logger := zap.L().Named("grpc_clients")
-
-	discovery, err := client.NewConsulServiceDiscovery()
-	if err != nil {
-		logger.Fatal("Failed to create consul service discovery", zap.Error(err))
-	}
-
-	// A helper function to reduce boilerplate
-	getClient := func(serviceName string) *grpc.ClientConn {
-		conn, err := discovery.GetServiceConn(serviceName)
-		if err != nil {
-			logger.Fatal("Failed to get client connection", zap.String("service", serviceName), zap.Error(err))
+// getServiceConnWithRetry is a helper function to get service connection with retry logic
+func getServiceConnWithRetry(serviceDiscovery client.ServiceDiscovery, serviceName string, logger *zap.Logger) *grpc.ClientConn {
+	maxRetries := 10
+	baseDelay := 2 * time.Second
+	
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		conn, err := serviceDiscovery.GetServiceConn(serviceName)
+		if err == nil {
+			logger.Info("Successfully connected to service", zap.String("service", serviceName), zap.Int("attempt", attempt))
+			return conn
 		}
-		return conn
+		
+		if attempt == maxRetries {
+			logger.Fatal("Failed to get client connection after all retries", 
+				zap.String("service", serviceName), 
+				zap.Int("attempts", maxRetries), 
+				zap.Error(err))
+		}
+		
+		delay := time.Duration(attempt) * baseDelay
+		logger.Warn("Failed to connect to service, retrying...", 
+			zap.String("service", serviceName), 
+			zap.Int("attempt", attempt), 
+			zap.Duration("retry_in", delay), 
+			zap.Error(err))
+		
+		time.Sleep(delay)
 	}
+	
+	return nil // This should never be reached due to Fatal above
+}
 
-	// Initialize all service clients
-	userServiceClient = client.NewUserServiceClient(getClient("user-service"))
-	// contentServiceClient = client.NewContentServiceClient(getClient("content-service"))
-	authServiceClient = client.NewAuthServiceClient(getClient("auth-service"))
-	// mediaServiceClient = client.NewMediaServiceClient(getClient("media-service"))
-	// messageServiceClient = client.NewMessageServiceClient(getClient("messages-service"))
-	// notificationServiceClient = client.NewNotificationServiceClient(getClient("notification-service"))
-	// interactionServiceClient = client.NewInteractionServiceClient(getClient("interaction-service"))
-	// recommendationServiceClient = client.NewRecommendationServiceClient(getClient("recommendation-service"))
-	// searchServiceClient = client.NewSearchServiceClient(getClient("search-service"))
-
+// getServiceConn is a helper function to get service connection with error handling
+func getServiceConn(serviceDiscovery client.ServiceDiscovery, serviceName string, logger *zap.Logger) *grpc.ClientConn {
+	conn, err := serviceDiscovery.GetServiceConn(serviceName)
+	if err != nil {
+		logger.Fatal("Failed to get client connection", zap.String("service", serviceName), zap.Error(err))
+	}
+	return conn
 }
 
 func setupRoutes(r *gin.Engine) {
@@ -251,5 +277,66 @@ func setupRoutes(r *gin.Engine) {
 			redirectURL := fmt.Sprintf("http://localhost:3000/auth/callback?token=%s&user=%s", res.AccessToken, url.QueryEscape(string(userJSON)))
 			c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		})
+	}
+
+	// Media API routes
+	api := r.Group("/api")
+	{
+		media := api.Group("/media")
+		{
+			media.POST("/upload", func(c *gin.Context) {
+				// Get user ID from context (set by auth middleware)
+				userID, exists := c.Get("user_id")
+				if !exists {
+					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+					return
+				}
+
+				// Parse multipart form
+				err := c.Request.ParseMultipartForm(10 << 20) // 10MB max
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form"})
+					return
+				}
+
+				file, header, err := c.Request.FormFile("file")
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
+					return
+				}
+				defer file.Close()
+
+				// Read file data
+				fileData, err := io.ReadAll(file)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+					return
+				}
+
+				// Get file type and alt text from form
+				fileType := c.PostForm("type")
+				altText := c.PostForm("alt_text")
+
+				// Call media service
+				req := &media_proto.UploadFileRequest{
+					UserId:   userID.(string),
+					Filename: header.Filename,
+					FileData: fileData,
+					Type:     fileType,
+					AltText:  altText,
+				}
+
+				res, err := mediaServiceClient.UploadFile(c, req)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
+					return
+				}
+
+				c.JSON(http.StatusOK, gin.H{
+					"url": res.File.Url,
+					"id":  res.File.Id,
+				})
+			})
+		}
 	}
 }
