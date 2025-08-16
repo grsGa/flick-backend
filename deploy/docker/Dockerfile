@@ -97,7 +97,7 @@ RUN go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.11
 # Stage 2: Create the final image
 FROM debian:stable-slim
 
-RUN apt-get update && apt-get install -y bash
+RUN apt-get update && apt-get install -y bash ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
