@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/flick/backend/pkg/auth"
@@ -18,24 +19,33 @@ const (
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Debug logging
+		fmt.Printf("[AUTH] Processing request: %s %s\n", c.Request.Method, c.Request.URL.Path)
+		
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			fmt.Printf("[AUTH] No Authorization header found\n")
 			c.Next()
 			return
 		}
 
+		fmt.Printf("[AUTH] Authorization header found: %s...\n", authHeader[:min(len(authHeader), 20)])
+
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
+			fmt.Printf("[AUTH] Invalid Bearer token format\n")
 			c.Next()
 			return
 		}
 
 		claims, err := auth.ValidateJWT(tokenString, cfg.JWTSecret)
 		if err != nil {
+			fmt.Printf("[AUTH] JWT validation failed: %v\n", err)
 			c.Next()
 			return
 		}
 
+		fmt.Printf("[AUTH] JWT validated successfully for user: %s\n", claims.UserID)
 		ctx := context.WithValue(c.Request.Context(), UserClaimsKey, claims)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
