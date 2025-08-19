@@ -21,8 +21,8 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// 初始化数据库连接
-	if err := database.InitDB(cfg, true); err != nil {
+	// 初始化数据库连接（不执行迁移避免冲突）
+	if err := database.InitDB(cfg, false); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	log.Println("Database connection initialized successfully")

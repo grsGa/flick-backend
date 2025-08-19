@@ -3,8 +3,13 @@ module github.com/flick/backend/services/gateway
 go 1.24
 
 require (
-	github.com/99designs/gqlgen v0.17.61
-	github.com/flick/backend/pkg v0.0.0
+	github.com/99designs/gqlgen v0.17.78
+	github.com/flick/backend/pkg/auth v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/config v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/database v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/discovery v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/logger v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/telemetry v0.0.0-00010101000000-000000000000
 	github.com/flick/backend/services/auth/proto v0.0.0-00010101000000-000000000000
 	github.com/flick/backend/services/content/proto v0.0.0-00010101000000-000000000000
 	github.com/flick/backend/services/interaction/proto v0.0.0-00010101000000-000000000000
@@ -18,7 +23,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/hashicorp/consul/api v1.29.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/vektah/gqlparser/v2 v2.5.21
+	github.com/vektah/gqlparser/v2 v2.5.30
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.71.1
 )
@@ -40,7 +45,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -107,7 +112,17 @@ require (
 	gorm.io/gorm v1.25.12 // indirect
 )
 
-replace github.com/flick/backend/pkg => ../../pkg
+replace github.com/flick/backend/pkg/auth => ../../pkg/auth
+
+replace github.com/flick/backend/pkg/config => ../../pkg/config
+
+replace github.com/flick/backend/pkg/database => ../../pkg/database
+
+replace github.com/flick/backend/pkg/discovery => ../../pkg/discovery
+
+replace github.com/flick/backend/pkg/logger => ../../pkg/logger
+
+replace github.com/flick/backend/pkg/telemetry => ../../pkg/telemetry
 
 replace github.com/flick/backend/services/auth/proto => ../auth/proto
 

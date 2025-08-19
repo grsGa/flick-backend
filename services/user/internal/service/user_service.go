@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/flick/backend/pkg/auth"
@@ -312,6 +313,28 @@ func (s *userService) GetFollowing(ctx context.Context, req *proto.GetFollowingR
 
 // UpdateProfile 更新个人资料
 func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
+	// Debug: Log request values
+	fmt.Printf("[User Service] UpdateProfile request:\n")
+	fmt.Printf("  UserId: %s\n", req.UserId)
+	if req.DisplayName != nil {
+		fmt.Printf("  DisplayName: %s\n", *req.DisplayName)
+	}
+	if req.Bio != nil {
+		fmt.Printf("  Bio: %s\n", *req.Bio)
+	}
+	if req.Location != nil {
+		fmt.Printf("  Location: %s\n", *req.Location)
+	}
+	if req.Website != nil {
+		fmt.Printf("  Website: %s\n", *req.Website)
+	}
+	if req.AvatarUrl != nil {
+		fmt.Printf("  AvatarUrl: %s\n", *req.AvatarUrl)
+	}
+	if req.BannerUrl != nil {
+		fmt.Printf("  BannerUrl: %s\n", *req.BannerUrl)
+	}
+
 	// 首先获取现有用户信息
 	existingUser, err := s.userRepo.GetUserByID(ctx, req.UserId)
 	if err != nil {

@@ -28,7 +28,13 @@ func NewUserRepository() UserRepository {
 // CreateUser 创建用户
 func (r *userRepository) CreateUser(ctx context.Context, user *proto.User) error {
 	modelUser := r.protoToModel(user)
-	return r.db.Create(modelUser).Error
+	if err := r.db.Create(modelUser).Error; err != nil {
+		return err
+	}
+	
+	// Update the proto user with the generated ID
+	user.Id = modelUser.ID
+	return nil
 }
 
 // GetUserByID 根据ID获取用户
@@ -46,52 +52,65 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (*proto.Use
 
 // UpdateUser 更新用户
 func (r *userRepository) UpdateUser(ctx context.Context, user *proto.User) error {
-	// 只更新提供的字段
-	updates := map[string]interface{}{}
+	// 直接更新现有用户记录，而不是使用Updates映射
+	var existingUser models.User
+	if err := r.db.Where("id = ? AND deleted_at IS NULL", user.Id).First(&existingUser).Error; err != nil {
+		return err
+	}
 
+	// 只更新提供的字段
 	if user.Username != "" {
-		updates["username"] = user.Username
+		existingUser.Username = user.Username
 	}
 
 	if user.DisplayName != "" {
-		updates["display_name"] = user.DisplayName
+		existingUser.DisplayName = user.DisplayName
 	}
 
 	if user.Email != "" {
-		updates["email"] = user.Email
+		existingUser.Email = user.Email
 	}
 
 	if user.Phone != "" {
-		updates["phone"] = user.Phone
+		existingUser.Phone = &user.Phone
 	}
 
+	// 允许设置空值来清除头像和横幅
 	if user.AvatarUrl != "" {
-		updates["avatar_url"] = user.AvatarUrl
+		existingUser.AvatarURL = user.AvatarUrl
 	}
-
 	if user.BannerUrl != "" {
-		updates["banner_url"] = user.BannerUrl
+		existingUser.BannerURL = &user.BannerUrl
+	} else {
+		existingUser.BannerURL = nil
 	}
 
+	// 允许设置空值来清除这些字段
 	if user.Bio != "" {
-		updates["bio"] = user.Bio
+		existingUser.Bio = &user.Bio
+	} else {
+		existingUser.Bio = nil
 	}
 
 	if user.Location != "" {
-		updates["location"] = user.Location
+		existingUser.Location = &user.Location
+	} else {
+		existingUser.Location = nil
 	}
 
 	if user.WebsiteUrl != "" {
-		updates["website_url"] = user.WebsiteUrl
+		existingUser.WebsiteURL = &user.WebsiteUrl
+	} else {
+		existingUser.WebsiteURL = nil
 	}
 
 	if user.Status != "" {
-		updates["status"] = user.Status
+		existingUser.Status = user.Status
 	}
 
-	updates["updated_at"] = time.Now()
+	existingUser.UpdatedAt = time.Now()
 
-	return r.db.Model(&models.User{}).Where("id = ? AND deleted_at IS NULL", user.Id).Updates(updates).Error
+	return r.db.Save(&existingUser).Error
 }
 
 // DeleteUser 删除用户（软删除）

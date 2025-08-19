@@ -40,10 +40,22 @@ type InteractionServiceClient interface {
 	IsLiked(ctx context.Context, in *IsLikedRequest, opts ...grpc.CallOption) (*IsLikedResponse, error)
 	// 获取点赞列表
 	GetLikes(ctx context.Context, in *GetLikesRequest, opts ...grpc.CallOption) (*GetLikesResponse, error)
+	// 创建评论
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
+	// 删除评论
+	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error)
+	// 获取评论列表
+	GetComments(ctx context.Context, in *GetCommentsRequest, opts ...grpc.CallOption) (*GetCommentsResponse, error)
 	// 创建转发
 	CreateRepost(ctx context.Context, in *CreateRepostRequest, opts ...grpc.CallOption) (*CreateRepostResponse, error)
 	// 删除转发
 	DeleteRepost(ctx context.Context, in *DeleteRepostRequest, opts ...grpc.CallOption) (*DeleteRepostResponse, error)
+	// 获取帖子统计
+	GetPostStats(ctx context.Context, in *GetPostStatsRequest, opts ...grpc.CallOption) (*GetPostStatsResponse, error)
+	// 更新帖子统计
+	UpdatePostStats(ctx context.Context, in *UpdatePostStatsRequest, opts ...grpc.CallOption) (*UpdatePostStatsResponse, error)
+	// 投票
+	VotePoll(ctx context.Context, in *VotePollRequest, opts ...grpc.CallOption) (*VotePollResponse, error)
 	// 创建举报
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 }
@@ -137,6 +149,33 @@ func (c *interactionServiceClient) GetLikes(ctx context.Context, in *GetLikesReq
 	return out, nil
 }
 
+func (c *interactionServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error) {
+	out := new(CreateCommentResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/CreateComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error) {
+	out := new(DeleteCommentResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/DeleteComment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) GetComments(ctx context.Context, in *GetCommentsRequest, opts ...grpc.CallOption) (*GetCommentsResponse, error) {
+	out := new(GetCommentsResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/GetComments", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *interactionServiceClient) CreateRepost(ctx context.Context, in *CreateRepostRequest, opts ...grpc.CallOption) (*CreateRepostResponse, error) {
 	out := new(CreateRepostResponse)
 	err := c.cc.Invoke(ctx, "/interaction.InteractionService/CreateRepost", in, out, opts...)
@@ -149,6 +188,33 @@ func (c *interactionServiceClient) CreateRepost(ctx context.Context, in *CreateR
 func (c *interactionServiceClient) DeleteRepost(ctx context.Context, in *DeleteRepostRequest, opts ...grpc.CallOption) (*DeleteRepostResponse, error) {
 	out := new(DeleteRepostResponse)
 	err := c.cc.Invoke(ctx, "/interaction.InteractionService/DeleteRepost", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) GetPostStats(ctx context.Context, in *GetPostStatsRequest, opts ...grpc.CallOption) (*GetPostStatsResponse, error) {
+	out := new(GetPostStatsResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/GetPostStats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) UpdatePostStats(ctx context.Context, in *UpdatePostStatsRequest, opts ...grpc.CallOption) (*UpdatePostStatsResponse, error) {
+	out := new(UpdatePostStatsResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/UpdatePostStats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) VotePoll(ctx context.Context, in *VotePollRequest, opts ...grpc.CallOption) (*VotePollResponse, error) {
+	out := new(VotePollResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/VotePoll", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -186,10 +252,22 @@ type InteractionServiceServer interface {
 	IsLiked(context.Context, *IsLikedRequest) (*IsLikedResponse, error)
 	// 获取点赞列表
 	GetLikes(context.Context, *GetLikesRequest) (*GetLikesResponse, error)
+	// 创建评论
+	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
+	// 删除评论
+	DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error)
+	// 获取评论列表
+	GetComments(context.Context, *GetCommentsRequest) (*GetCommentsResponse, error)
 	// 创建转发
 	CreateRepost(context.Context, *CreateRepostRequest) (*CreateRepostResponse, error)
 	// 删除转发
 	DeleteRepost(context.Context, *DeleteRepostRequest) (*DeleteRepostResponse, error)
+	// 获取帖子统计
+	GetPostStats(context.Context, *GetPostStatsRequest) (*GetPostStatsResponse, error)
+	// 更新帖子统计
+	UpdatePostStats(context.Context, *UpdatePostStatsRequest) (*UpdatePostStatsResponse, error)
+	// 投票
+	VotePoll(context.Context, *VotePollRequest) (*VotePollResponse, error)
 	// 创建举报
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	mustEmbedUnimplementedInteractionServiceServer()
@@ -226,11 +304,29 @@ func (UnimplementedInteractionServiceServer) IsLiked(context.Context, *IsLikedRe
 func (UnimplementedInteractionServiceServer) GetLikes(context.Context, *GetLikesRequest) (*GetLikesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLikes not implemented")
 }
+func (UnimplementedInteractionServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
+}
+func (UnimplementedInteractionServiceServer) DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
+}
+func (UnimplementedInteractionServiceServer) GetComments(context.Context, *GetCommentsRequest) (*GetCommentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetComments not implemented")
+}
 func (UnimplementedInteractionServiceServer) CreateRepost(context.Context, *CreateRepostRequest) (*CreateRepostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRepost not implemented")
 }
 func (UnimplementedInteractionServiceServer) DeleteRepost(context.Context, *DeleteRepostRequest) (*DeleteRepostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRepost not implemented")
+}
+func (UnimplementedInteractionServiceServer) GetPostStats(context.Context, *GetPostStatsRequest) (*GetPostStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPostStats not implemented")
+}
+func (UnimplementedInteractionServiceServer) UpdatePostStats(context.Context, *UpdatePostStatsRequest) (*UpdatePostStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdatePostStats not implemented")
+}
+func (UnimplementedInteractionServiceServer) VotePoll(context.Context, *VotePollRequest) (*VotePollResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VotePoll not implemented")
 }
 func (UnimplementedInteractionServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
@@ -410,6 +506,60 @@ func _InteractionService_GetLikes_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InteractionService_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).CreateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/CreateComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).CreateComment(ctx, req.(*CreateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).DeleteComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/DeleteComment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_GetComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCommentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).GetComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/GetComments",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).GetComments(ctx, req.(*GetCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _InteractionService_CreateRepost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateRepostRequest)
 	if err := dec(in); err != nil {
@@ -442,6 +592,60 @@ func _InteractionService_DeleteRepost_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InteractionServiceServer).DeleteRepost(ctx, req.(*DeleteRepostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_GetPostStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).GetPostStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/GetPostStats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).GetPostStats(ctx, req.(*GetPostStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_UpdatePostStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePostStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).UpdatePostStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/UpdatePostStats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).UpdatePostStats(ctx, req.(*UpdatePostStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_VotePoll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VotePollRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).VotePoll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/VotePoll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).VotePoll(ctx, req.(*VotePollRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -508,12 +712,36 @@ var InteractionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _InteractionService_GetLikes_Handler,
 		},
 		{
+			MethodName: "CreateComment",
+			Handler:    _InteractionService_CreateComment_Handler,
+		},
+		{
+			MethodName: "DeleteComment",
+			Handler:    _InteractionService_DeleteComment_Handler,
+		},
+		{
+			MethodName: "GetComments",
+			Handler:    _InteractionService_GetComments_Handler,
+		},
+		{
 			MethodName: "CreateRepost",
 			Handler:    _InteractionService_CreateRepost_Handler,
 		},
 		{
 			MethodName: "DeleteRepost",
 			Handler:    _InteractionService_DeleteRepost_Handler,
+		},
+		{
+			MethodName: "GetPostStats",
+			Handler:    _InteractionService_GetPostStats_Handler,
+		},
+		{
+			MethodName: "UpdatePostStats",
+			Handler:    _InteractionService_UpdatePostStats_Handler,
+		},
+		{
+			MethodName: "VotePoll",
+			Handler:    _InteractionService_VotePoll_Handler,
 		},
 		{
 			MethodName: "CreateReport",

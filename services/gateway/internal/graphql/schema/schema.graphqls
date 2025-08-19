@@ -24,15 +24,85 @@ scalar Upload
 
 # Content related GraphQL types
 
-type Tweet {
+type Post {
   id: ID!
   content: String!
   author: User!
-  createdAt: String!
+  visibility: PostVisibility!
+  replyPermission: ReplyPermission!
+  parentId: ID
+  repostId: ID
+  hasMedia: Boolean!
+  hasPoll: Boolean!
   media: [Media!]!
+  mediaAttachments: [MediaAttachment!]!
+  mentionedUsers: [ID!]!
+  tags: [String!]!
+  poll: Poll
+  stats: PostStats!
   interaction: Interaction!
-  comments(first: Int!, after: String): CommentConnection
+  createdAt: String!
+  updatedAt: String!
 }
+
+type MediaAttachment {
+  id: ID!
+  url: String!
+  type: String!
+}
+
+type Poll {
+  id: ID!
+  question: String!
+  options: [PollOption!]!
+  durationMinutes: Int!
+  expiresAt: String!
+  isExpired: Boolean!
+}
+
+type PollOption {
+  id: ID!
+  text: String!
+  voteCount: Int!
+}
+
+type PostStats {
+  likeCount: Int!
+  commentCount: Int!
+  repostCount: Int!
+  viewCount: Int!
+}
+
+enum PostVisibility {
+  PUBLIC
+  PRIVATE
+  FOLLOWERS
+}
+
+enum ReplyPermission {
+  EVERYONE
+  FOLLOWING
+  MENTIONED_ONLY
+}
+
+input CreatePostInput {
+  content: String!
+  visibility: PostVisibility
+  replyPermission: ReplyPermission
+  parentId: ID
+  repostId: ID
+  mediaUrls: [String!]
+  mentionedUsers: [ID!]
+  tags: [String!]
+  pollData: PollDataInput
+}
+
+input PollDataInput {
+  question: String!
+  options: [String!]!
+  durationMinutes: Int!
+}
+
 
 type Comment {
   id: ID!
@@ -42,15 +112,10 @@ type Comment {
   interaction: Interaction!
 }
 
-input CreateTweetInput {
-  content: String!
-  mediaIds: [ID!]
-  replyTo: ID
-}
 
 input CreateCommentInput {
   content: String!
-  tweetId: ID!
+  postId: ID!
 }
 
 type Media {
@@ -69,13 +134,13 @@ type PageInfo {
   endCursor: String
 }
 
-type TweetEdge {
-  node: Tweet!
+type PostEdge {
+  node: Post!
   cursor: String!
 }
 
-type TweetConnection {
-  edges: [TweetEdge!]!
+type PostConnection {
+  edges: [PostEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -94,22 +159,23 @@ type CommentConnection {
 type Interaction {
   isLiked: Boolean!
   isBookmarked: Boolean!
-  isRetweeted: Boolean!
+  isReposted: Boolean!
   likeCount: Int!
   commentCount: Int!
-  retweetCount: Int!
+  repostCount: Int!
 }
 
-input LikeTweetInput {
-  tweetId: ID!
+input LikePostInput {
+  postId: ID!
 }
 
-input BookmarkTweetInput {
-  tweetId: ID!
+input BookmarkPostInput {
+  postId: ID!
 }
 
-input RetweetInput {
-  tweetId: ID!
+
+input RepostInput {
+  postId: ID!
 }
 
 # Message related GraphQL types
@@ -167,11 +233,11 @@ enum NotificationType {
   LIKE
   COMMENT
   FOLLOW
-  RETWEET
+  REPOST
   BOOKMARK
 }
 
-union NotificationEntity = Tweet | Comment | User
+union NotificationEntity = Post | Comment | User
 
 type NotificationEdge {
   node: Notification!
@@ -194,16 +260,16 @@ type Recommendation {
 
 enum RecommendationType {
   USER
-  TWEET
+  POST
   HASHTAG
 }
 
-union RecommendationEntity = User | Tweet | Hashtag
+union RecommendationEntity = User | Post | Hashtag
 
 # Search related GraphQL types
 
 type SearchResults {
-  tweets: TweetConnection
+  posts: PostConnection
   users: UserConnection
   hashtags: HashtagConnection
 }
@@ -211,7 +277,7 @@ type SearchResults {
 type Hashtag {
   id: ID!
   name: String!
-  tweetCount: Int!
+  postCount: Int!
 }
 
 type UserConnection {
@@ -242,7 +308,7 @@ input SearchInput {
 }
 
 enum SearchType {
-  TWEET
+  POST
   USER
   HASHTAG
 }
@@ -274,11 +340,20 @@ input UpdateProfileInput {
   bannerUrl: String
 }
 
+
 type Query {
   health: String
-  tweet(id: ID!): Tweet
-  userTweets(username: String!, first: Int!, after: String): TweetConnection
-  homeFeed(first: Int!, after: String): TweetConnection
+  # User queries
+  userByUsername(username: String!): User
+  # Post queries
+  post(id: ID!): Post
+  userPosts(username: String!, first: Int!, after: String): PostConnection
+  timeline(first: Int!, after: String): PostConnection
+  checkReplyPermission(postId: ID!): Boolean!
+  userReplies(userId: ID!, first: Int!, after: String): PostConnection
+  userMedia(userId: ID!, first: Int!, after: String): PostConnection
+  userLikes(userId: ID!, first: Int!, after: String): PostConnection
+  homeFeed(first: Int!, after: String): PostConnection
   notifications(first: Int!, after: String): NotificationConnection
   conversations: [Conversation!]!
   conversation(id: ID!): Conversation
@@ -286,21 +361,25 @@ type Query {
   search(input: SearchInput!): SearchResults
   trendingHashtags(first: Int!): [Hashtag!]!
   recommendedUsers(first: Int!): [User!]!
-  recommendedTweets(first: Int!): TweetConnection
+  recommendedPosts(first: Int!): PostConnection
+  followers(userId: ID!, first: Int!, after: String): UserConnection
+  following(userId: ID!, first: Int!, after: String): UserConnection
 }
 
 type Mutation {
   login(input: LoginInput!): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
   uploadMedia(file: Upload!): Media!
-  createTweet(input: CreateTweetInput!): Tweet!
+  # Post mutations
+  createPost(input: CreatePostInput!): Post!
+  deletePost(postId: ID!): Boolean!
   createComment(input: CreateCommentInput!): Comment!
-  likeTweet(input: LikeTweetInput!): Interaction!
-  unlikeTweet(input: LikeTweetInput!): Interaction!
-  bookmarkTweet(input: BookmarkTweetInput!): Interaction!
-  unbookmarkTweet(input: BookmarkTweetInput!): Interaction!
-  retweet(input: RetweetInput!): Interaction!
-  undoRetweet(input: RetweetInput!): Interaction!
+  likePost(input: LikePostInput!): Interaction!
+  unlikePost(input: LikePostInput!): Interaction!
+  bookmarkPost(input: BookmarkPostInput!): Interaction!
+  unbookmarkPost(input: BookmarkPostInput!): Interaction!
+  repost(input: RepostInput!): Interaction!
+  undoRepost(input: RepostInput!): Interaction!
   createConversation(input: CreateConversationInput!): Conversation!
   sendMessage(input: CreateMessageInput!): Message!
   markMessageAsRead(messageId: ID!): Message!

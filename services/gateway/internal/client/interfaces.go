@@ -12,6 +12,7 @@ import (
 	recommendation_proto "github.com/flick/backend/services/recommendation/proto"
 	search_proto "github.com/flick/backend/services/search/proto"
 	user_proto "github.com/flick/backend/services/user/proto"
+	"google.golang.org/grpc"
 )
 
 // UserServiceClient 定义用户服务客户端接口
@@ -52,20 +53,23 @@ type UserServiceClient interface {
 
 // ContentServiceClient 定义内容服务客户端接口
 type ContentServiceClient interface {
-	// GetContent 获取内容
-	GetContent(ctx context.Context, in *content_proto.GetContentRequest, opts ...interface{}) (*content_proto.GetContentResponse, error)
+	// CreatePost 创建帖子
+	CreatePost(ctx context.Context, in *content_proto.CreatePostRequest, opts ...grpc.CallOption) (*content_proto.CreatePostResponse, error)
 
-	// CreateContent 创建内容
-	CreateContent(ctx context.Context, in *content_proto.CreateContentRequest, opts ...interface{}) (*content_proto.CreateContentResponse, error)
+	// GetPost 获取帖子
+	GetPost(ctx context.Context, in *content_proto.GetPostRequest, opts ...grpc.CallOption) (*content_proto.GetPostResponse, error)
 
-	// UpdateContent 更新内容
-	UpdateContent(ctx context.Context, in *content_proto.UpdateContentRequest, opts ...interface{}) (*content_proto.UpdateContentResponse, error)
+	// GetUserPosts 获取用户帖子列表
+	GetUserPosts(ctx context.Context, in *content_proto.GetUserPostsRequest, opts ...grpc.CallOption) (*content_proto.GetUserPostsResponse, error)
 
-	// DeleteContent 删除内容
-	DeleteContent(ctx context.Context, in *content_proto.DeleteContentRequest, opts ...interface{}) (*content_proto.DeleteContentResponse, error)
+	// GetTimeline 获取时间线
+	GetTimeline(ctx context.Context, in *content_proto.GetTimelineRequest, opts ...grpc.CallOption) (*content_proto.GetTimelineResponse, error)
 
-	// ListContent 列出内容
-	ListContent(ctx context.Context, in *content_proto.ListContentRequest, opts ...interface{}) (*content_proto.ListContentResponse, error)
+	// DeletePost 删除帖子
+	DeletePost(ctx context.Context, in *content_proto.DeletePostRequest, opts ...grpc.CallOption) (*content_proto.DeletePostResponse, error)
+
+	// CheckReplyPermission 检查回复权限
+	CheckReplyPermission(ctx context.Context, in *content_proto.CheckReplyPermissionRequest, opts ...grpc.CallOption) (*content_proto.CheckReplyPermissionResponse, error)
 }
 
 // AuthServiceClient 定义认证服务客户端接口

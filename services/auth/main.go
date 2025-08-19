@@ -45,8 +45,8 @@ func main() {
 		logger.Fatal("Failed to load config", zap.Error(err))
 	}
 
-	// Initialize Database
-	if err := database.InitDB(cfg, true); err != nil {
+	// Initialize Database (without migration to avoid conflicts)
+	if err := database.InitDB(cfg, false); err != nil {
 		logger.Fatal("Failed to connect to database", zap.Error(err))
 	}
 

@@ -1,0 +1,159 @@
+package resolver
+
+import (
+	"github.com/flick/backend/services/gateway/internal/graphql/model"
+	content_proto "github.com/flick/backend/services/content/proto"
+)
+
+// postProtoToGql converts content service proto Post to GraphQL model
+func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
+	if post == nil {
+		return nil
+	}
+
+	// Convert media attachments
+	mediaAttachments := make([]model.MediaAttachment, len(post.MediaAttachments))
+	for i, media := range post.MediaAttachments {
+		mediaAttachments[i] = model.MediaAttachment{
+			ID:   media.Id,
+			URL:  media.Url,
+			Type: media.Type,
+		}
+	}
+
+	// Convert poll if exists
+	var poll *model.Poll
+	if post.Poll != nil {
+		pollOptions := make([]model.PollOption, len(post.Poll.Options))
+		for i, option := range post.Poll.Options {
+			pollOptions[i] = model.PollOption{
+				ID:        option.Id,
+				Text:      option.Text,
+				VoteCount: int(option.VoteCount),
+			}
+		}
+
+		poll = &model.Poll{
+			ID:              post.Poll.Id,
+			Question:        post.Poll.Question,
+			Options:         pollOptions,
+			DurationMinutes: int(post.Poll.DurationMinutes),
+			ExpiresAt:       post.Poll.ExpiresAt,
+		}
+	}
+
+	// Convert post stats - always provide default values
+	stats := &model.PostStats{
+		LikeCount:    0,
+		CommentCount: 0,
+		RepostCount:  0,
+		ViewCount:    0,
+	}
+	if post.Stats != nil {
+		stats.LikeCount = int(post.Stats.LikeCount)
+		stats.CommentCount = int(post.Stats.CommentCount)
+		stats.RepostCount = int(post.Stats.RepostCount)
+		stats.ViewCount = int(post.Stats.ViewCount)
+	}
+
+	// Convert visibility enum
+	visibility := model.PostVisibilityPublic // default
+	switch post.Visibility {
+	case "public":
+		visibility = model.PostVisibilityPublic
+	case "private":
+		visibility = model.PostVisibilityPrivate
+	case "followers":
+		visibility = model.PostVisibilityFollowers
+	}
+
+	// Convert reply permission enum
+	replyPermission := model.ReplyPermissionEveryone // default
+	switch post.ReplyPermission {
+	case "EVERYONE":
+		replyPermission = model.ReplyPermissionEveryone
+	case "FOLLOWING":
+		replyPermission = model.ReplyPermissionFollowing
+	case "MENTIONED_ONLY":
+		replyPermission = model.ReplyPermissionMentionedOnly
+	}
+
+	// Convert author information - ensure all required fields are present
+	author := &model.User{
+		ID:             post.UserId,
+		Username:       "user_" + post.UserId, // Default fallback
+		FollowersCount: 0,
+		FollowingCount: 0,
+		CreatedAt:      post.CreatedAt, // Use post creation time as fallback
+	}
+	
+	if post.Author != nil {
+		author.ID = post.Author.Id
+		author.Username = post.Author.Username
+		if post.Author.DisplayName != "" {
+			displayName := post.Author.DisplayName
+			author.DisplayName = &displayName
+		}
+		if post.Author.AvatarUrl != "" {
+			avatarUrl := post.Author.AvatarUrl
+			author.AvatarURL = &avatarUrl
+		}
+		if post.Author.IsVerified {
+			isVerified := post.Author.IsVerified
+			author.IsVerified = &isVerified
+		}
+	}
+
+	// Convert media attachments to Media format for frontend
+	media := make([]model.Media, len(post.MediaAttachments))
+	for i, attachment := range post.MediaAttachments {
+		mediaType := model.MediaTypeImage
+		if attachment.Type == "video" {
+			mediaType = model.MediaTypeVideo
+		}
+		media[i] = model.Media{
+			ID:   attachment.Id,
+			URL:  attachment.Url,
+			Type: mediaType,
+		}
+	}
+
+	// Create interaction object from stats
+	interaction := &model.Interaction{
+		IsLiked:      false, // TODO: Get actual user interaction status
+		IsBookmarked: false, // TODO: Get actual user interaction status
+		IsReposted:   false, // TODO: Get actual user interaction status
+		LikeCount:    stats.LikeCount,
+		CommentCount: stats.CommentCount,
+		RepostCount:  stats.RepostCount,
+	}
+
+	return &model.Post{
+		ID:               post.Id,
+		Content:          post.Content,
+		Author:           author,
+		Visibility:       visibility,
+		ReplyPermission:  replyPermission,
+		ParentID:         stringToPointer(post.ParentId),
+		RepostID:         stringToPointer(post.RepostId),
+		HasMedia:         len(post.MediaAttachments) > 0,
+		HasPoll:          post.Poll != nil,
+		Media:            media,
+		MediaAttachments: mediaAttachments,
+		MentionedUsers:   post.MentionedUsers,
+		Tags:             post.Tags,
+		Poll:             poll,
+		Stats:            stats,
+		Interaction:      interaction,
+		CreatedAt:        post.CreatedAt,
+		UpdatedAt:        post.UpdatedAt,
+	}
+}
+
+// Helper function to convert string to pointer
+func stringToPointer(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

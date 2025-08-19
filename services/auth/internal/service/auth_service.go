@@ -70,8 +70,8 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		s.logger.Warn("Login failed: user not found", zap.String("identifier", req.Identifier), zap.Error(err))
 		return &proto.LoginResponse{
 			Error: &proto.Error{
-				Code:    401,
-				Message: "Invalid credentials",
+				Code:    404,
+				Message: "User not found",
 			},
 		}, nil
 	}
@@ -82,7 +82,7 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 		return &proto.LoginResponse{
 			Error: &proto.Error{
 				Code:    401,
-				Message: "Invalid credentials",
+				Message: "Invalid password",
 			},
 		}, nil
 	}

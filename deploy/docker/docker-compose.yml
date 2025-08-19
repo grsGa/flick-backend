@@ -50,6 +50,10 @@ services:
         condition: service_started
       user-service:
         condition: service_started
+      content-service:
+        condition: service_started
+      media-service:
+        condition: service_started
     networks:
       - flick_network
     healthcheck:
@@ -161,6 +165,132 @@ services:
       - flick_network
     entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/usr/local/bin/wait-for-it.sh", "minio:9000", "-t", "0", "--", "/app/media"]
     restart: always
+
+  content-service:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile
+    container_name: content-service
+    environment:
+      - CONTENT_SERVICE_PORT=50055
+      - CONSUL_AGENT_ADDR=consul:8500
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=flick
+      - POSTGRES_PORT=5432
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - flick_network
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/content"]
+    restart: always
+
+  interaction-service:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile
+    container_name: interaction-service
+    environment:
+      - INTERACTION_SERVICE_PORT=50056
+      - CONSUL_AGENT_ADDR=consul:8500
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=flick
+      - POSTGRES_PORT=5432
+    depends_on:
+      - consul
+      - postgres
+    networks:
+      - flick_network
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/interaction"]
+    restart: always
+
+  # messages-service:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile
+  #   container_name: messages-service
+  #   environment:
+  #     - MESSAGES_SERVICE_PORT=50057
+  #     - CONSUL_AGENT_ADDR=consul:8500
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=flick
+  #     - POSTGRES_PORT=5432
+  #   depends_on:
+  #     - consul
+  #     - postgres
+  #   networks:
+  #     - flick_network
+  #   entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/messages"]
+  #   restart: always
+
+  # notification-service:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile
+  #   container_name: notification-service
+  #   environment:
+  #     - NOTIFICATION_SERVICE_PORT=50058
+  #     - CONSUL_AGENT_ADDR=consul:8500
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=flick
+  #     - POSTGRES_PORT=5432
+  #   depends_on:
+  #     - consul
+  #     - postgres
+  #   networks:
+  #     - flick_network
+  #   entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/notification"]
+  #   restart: always
+
+  # recommendation-service:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile
+  #   container_name: recommendation-service
+  #   environment:
+  #     - RECOMMENDATION_SERVICE_PORT=50059
+  #     - CONSUL_AGENT_ADDR=consul:8500
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=flick
+  #     - POSTGRES_PORT=5432
+  #   depends_on:
+  #     - consul
+  #     - postgres
+  #   networks:
+  #     - flick_network
+  #   entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/recommendation"]
+  #   restart: always
+
+  # search-service:
+  #   build:
+  #     context: ../../
+  #     dockerfile: deploy/docker/Dockerfile
+  #   container_name: search-service
+  #   environment:
+  #     - SEARCH_SERVICE_PORT=50060
+  #     - CONSUL_AGENT_ADDR=consul:8500
+  #     - POSTGRES_HOST=postgres
+  #     - POSTGRES_USER=user
+  #     - POSTGRES_PASSWORD=password
+  #     - POSTGRES_DB=flick
+  #     - POSTGRES_PORT=5432
+  #   depends_on:
+  #     - consul
+  #     - postgres
+  #   networks:
+  #     - flick_network
+  #   entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/search"]
+  #   restart: always
 
 volumes:
   postgres_data:

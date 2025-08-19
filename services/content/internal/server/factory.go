@@ -5,9 +5,9 @@ import (
 )
 
 // NewGRPCServerFactory 创建gRPC服务工厂
-func NewGRPCServerFactory(contentService service.ContentService) GRPCServerFactory {
+func NewGRPCServerFactory(postService service.PostService) GRPCServerFactory {
 	return &grpcServerFactory{
-		contentService: contentService,
+		postService: postService,
 	}
 }
 
@@ -18,10 +18,10 @@ type GRPCServerFactory interface {
 
 // grpcServerFactory gRPC服务工厂实现
 type grpcServerFactory struct {
-	contentService service.ContentService
+	postService service.PostService
 }
 
 // Create 创建gRPC服务实例
 func (f *grpcServerFactory) Create() *grpcServer {
-	return NewGRPCServer(f.contentService)
+	return NewGRPCServer(f.postService)
 }

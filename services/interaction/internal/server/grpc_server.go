@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/flick/backend/pkg/discovery"
 	"github.com/flick/backend/services/interaction/internal/service"
 	"github.com/flick/backend/services/interaction/proto"
 	"google.golang.org/grpc"
@@ -88,6 +89,14 @@ func (s *grpcServer) Run(port string) error {
 	if err != nil {
 		return err
 	}
+
+	// 注册到Consul
+	portInt := 50056 // interaction service port
+	discovery.RegisterServiceToConsul(discovery.RegisterOptions{
+		ServiceName:     "interaction-service",
+		ServicePort:     portInt,
+		HealthCheckType: "grpc",
+	})
 
 	grpcServer := grpc.NewServer()
 	proto.RegisterInteractionServiceServer(grpcServer, s)

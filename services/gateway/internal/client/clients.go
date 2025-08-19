@@ -93,29 +93,34 @@ func NewContentServiceClient(conn *grpc.ClientConn) ContentServiceClient {
 	}
 }
 
-// GetContent 获取内容
-func (c *contentServiceClient) GetContent(ctx context.Context, in *content_proto.GetContentRequest, opts ...interface{}) (*content_proto.GetContentResponse, error) {
-	return c.client.GetContent(ctx, in)
+// CreatePost 创建帖子
+func (c *contentServiceClient) CreatePost(ctx context.Context, in *content_proto.CreatePostRequest, opts ...grpc.CallOption) (*content_proto.CreatePostResponse, error) {
+	return c.client.CreatePost(ctx, in, opts...)
 }
 
-// CreateContent 创建内容
-func (c *contentServiceClient) CreateContent(ctx context.Context, in *content_proto.CreateContentRequest, opts ...interface{}) (*content_proto.CreateContentResponse, error) {
-	return c.client.CreateContent(ctx, in)
+// GetPost 获取帖子
+func (c *contentServiceClient) GetPost(ctx context.Context, in *content_proto.GetPostRequest, opts ...grpc.CallOption) (*content_proto.GetPostResponse, error) {
+	return c.client.GetPost(ctx, in, opts...)
 }
 
-// UpdateContent 更新内容
-func (c *contentServiceClient) UpdateContent(ctx context.Context, in *content_proto.UpdateContentRequest, opts ...interface{}) (*content_proto.UpdateContentResponse, error) {
-	return c.client.UpdateContent(ctx, in)
+// GetUserPosts 获取用户帖子列表
+func (c *contentServiceClient) GetUserPosts(ctx context.Context, in *content_proto.GetUserPostsRequest, opts ...grpc.CallOption) (*content_proto.GetUserPostsResponse, error) {
+	return c.client.GetUserPosts(ctx, in, opts...)
 }
 
-// DeleteContent 删除内容
-func (c *contentServiceClient) DeleteContent(ctx context.Context, in *content_proto.DeleteContentRequest, opts ...interface{}) (*content_proto.DeleteContentResponse, error) {
-	return c.client.DeleteContent(ctx, in)
+// GetTimeline 获取时间线
+func (c *contentServiceClient) GetTimeline(ctx context.Context, in *content_proto.GetTimelineRequest, opts ...grpc.CallOption) (*content_proto.GetTimelineResponse, error) {
+	return c.client.GetTimeline(ctx, in, opts...)
 }
 
-// ListContent 列出内容
-func (c *contentServiceClient) ListContent(ctx context.Context, in *content_proto.ListContentRequest, opts ...interface{}) (*content_proto.ListContentResponse, error) {
-	return c.client.ListContent(ctx, in)
+// DeletePost 删除帖子
+func (c *contentServiceClient) DeletePost(ctx context.Context, in *content_proto.DeletePostRequest, opts ...grpc.CallOption) (*content_proto.DeletePostResponse, error) {
+	return c.client.DeletePost(ctx, in, opts...)
+}
+
+// CheckReplyPermission 检查回复权限
+func (c *contentServiceClient) CheckReplyPermission(ctx context.Context, in *content_proto.CheckReplyPermissionRequest, opts ...grpc.CallOption) (*content_proto.CheckReplyPermissionResponse, error) {
+	return c.client.CheckReplyPermission(ctx, in, opts...)
 }
 
 // authServiceClient 认证服务gRPC客户端实现

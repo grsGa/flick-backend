@@ -3,6 +3,7 @@
 package model
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -21,8 +22,8 @@ type AuthPayload struct {
 	User  *User  `json:"user"`
 }
 
-type BookmarkTweetInput struct {
-	TweetID string `json:"tweetId"`
+type BookmarkPostInput struct {
+	PostID string `json:"postId"`
 }
 
 type Comment struct {
@@ -55,7 +56,7 @@ type Conversation struct {
 
 type CreateCommentInput struct {
 	Content string `json:"content"`
-	TweetID string `json:"tweetId"`
+	PostID  string `json:"postId"`
 }
 
 type CreateConversationInput struct {
@@ -68,16 +69,22 @@ type CreateMessageInput struct {
 	MediaID        *string `json:"mediaId,omitempty"`
 }
 
-type CreateTweetInput struct {
-	Content  string   `json:"content"`
-	MediaIds []string `json:"mediaIds,omitempty"`
-	ReplyTo  *string  `json:"replyTo,omitempty"`
+type CreatePostInput struct {
+	Content         string           `json:"content"`
+	Visibility      *PostVisibility  `json:"visibility,omitempty"`
+	ReplyPermission *ReplyPermission `json:"replyPermission,omitempty"`
+	ParentID        *string          `json:"parentId,omitempty"`
+	RepostID        *string          `json:"repostId,omitempty"`
+	MediaUrls       []string         `json:"mediaUrls,omitempty"`
+	MentionedUsers  []string         `json:"mentionedUsers,omitempty"`
+	Tags            []string         `json:"tags,omitempty"`
+	PollData        *PollDataInput   `json:"pollData,omitempty"`
 }
 
 type Hashtag struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	TweetCount int    `json:"tweetCount"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	PostCount int    `json:"postCount"`
 }
 
 func (Hashtag) IsRecommendationEntity() {}
@@ -95,26 +102,31 @@ type HashtagEdge struct {
 type Interaction struct {
 	IsLiked      bool `json:"isLiked"`
 	IsBookmarked bool `json:"isBookmarked"`
-	IsRetweeted  bool `json:"isRetweeted"`
+	IsReposted   bool `json:"isReposted"`
 	LikeCount    int  `json:"likeCount"`
 	CommentCount int  `json:"commentCount"`
-	RetweetCount int  `json:"retweetCount"`
+	RepostCount  int  `json:"repostCount"`
 }
 
-type LikeTweetInput struct {
-	TweetID string `json:"tweetId"`
+type LikePostInput struct {
+	PostID string `json:"postId"`
 }
 
 type LoginInput struct {
-	Username *string `json:"username,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Password string  `json:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type Media struct {
 	ID   string    `json:"id"`
 	URL  string    `json:"url"`
 	Type MediaType `json:"type"`
+}
+
+type MediaAttachment struct {
+	ID   string `json:"id"`
+	URL  string `json:"url"`
+	Type string `json:"type"`
 }
 
 type Message struct {
@@ -164,6 +176,69 @@ type PageInfo struct {
 	EndCursor   *string `json:"endCursor,omitempty"`
 }
 
+type Poll struct {
+	ID              string       `json:"id"`
+	Question        string       `json:"question"`
+	Options         []PollOption `json:"options"`
+	DurationMinutes int          `json:"durationMinutes"`
+	ExpiresAt       string       `json:"expiresAt"`
+	IsExpired       bool         `json:"isExpired"`
+}
+
+type PollDataInput struct {
+	Question        string   `json:"question"`
+	Options         []string `json:"options"`
+	DurationMinutes int      `json:"durationMinutes"`
+}
+
+type PollOption struct {
+	ID        string `json:"id"`
+	Text      string `json:"text"`
+	VoteCount int    `json:"voteCount"`
+}
+
+type Post struct {
+	ID               string            `json:"id"`
+	Content          string            `json:"content"`
+	Author           *User             `json:"author"`
+	Visibility       PostVisibility    `json:"visibility"`
+	ReplyPermission  ReplyPermission   `json:"replyPermission"`
+	ParentID         *string           `json:"parentId,omitempty"`
+	RepostID         *string           `json:"repostId,omitempty"`
+	HasMedia         bool              `json:"hasMedia"`
+	HasPoll          bool              `json:"hasPoll"`
+	Media            []Media           `json:"media"`
+	MediaAttachments []MediaAttachment `json:"mediaAttachments"`
+	MentionedUsers   []string          `json:"mentionedUsers"`
+	Tags             []string          `json:"tags"`
+	Poll             *Poll             `json:"poll,omitempty"`
+	Stats            *PostStats        `json:"stats"`
+	Interaction      *Interaction      `json:"interaction"`
+	CreatedAt        string            `json:"createdAt"`
+	UpdatedAt        string            `json:"updatedAt"`
+}
+
+func (Post) IsNotificationEntity() {}
+
+func (Post) IsRecommendationEntity() {}
+
+type PostConnection struct {
+	Edges    []PostEdge `json:"edges"`
+	PageInfo *PageInfo  `json:"pageInfo"`
+}
+
+type PostEdge struct {
+	Node   *Post  `json:"node"`
+	Cursor string `json:"cursor"`
+}
+
+type PostStats struct {
+	LikeCount    int `json:"likeCount"`
+	CommentCount int `json:"commentCount"`
+	RepostCount  int `json:"repostCount"`
+	ViewCount    int `json:"viewCount"`
+}
+
 type Query struct {
 }
 
@@ -182,8 +257,8 @@ type RegisterInput struct {
 	Phone       *string `json:"phone,omitempty"`
 }
 
-type RetweetInput struct {
-	TweetID string `json:"tweetId"`
+type RepostInput struct {
+	PostID string `json:"postId"`
 }
 
 type SearchInput struct {
@@ -194,33 +269,9 @@ type SearchInput struct {
 }
 
 type SearchResults struct {
-	Tweets   *TweetConnection   `json:"tweets,omitempty"`
+	Posts    *PostConnection    `json:"posts,omitempty"`
 	Users    *UserConnection    `json:"users,omitempty"`
 	Hashtags *HashtagConnection `json:"hashtags,omitempty"`
-}
-
-type Tweet struct {
-	ID          string             `json:"id"`
-	Content     string             `json:"content"`
-	Author      *User              `json:"author"`
-	CreatedAt   string             `json:"createdAt"`
-	Media       []Media            `json:"media"`
-	Interaction *Interaction       `json:"interaction"`
-	Comments    *CommentConnection `json:"comments,omitempty"`
-}
-
-func (Tweet) IsNotificationEntity() {}
-
-func (Tweet) IsRecommendationEntity() {}
-
-type TweetConnection struct {
-	Edges    []TweetEdge `json:"edges"`
-	PageInfo *PageInfo   `json:"pageInfo"`
-}
-
-type TweetEdge struct {
-	Node   *Tweet `json:"node"`
-	Cursor string `json:"cursor"`
 }
 
 type UpdateProfileInput struct {
@@ -303,13 +354,27 @@ func (e MediaType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func (e *MediaType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MediaType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type NotificationType string
 
 const (
 	NotificationTypeLike     NotificationType = "LIKE"
 	NotificationTypeComment  NotificationType = "COMMENT"
 	NotificationTypeFollow   NotificationType = "FOLLOW"
-	NotificationTypeRetweet  NotificationType = "RETWEET"
+	NotificationTypeRepost   NotificationType = "REPOST"
 	NotificationTypeBookmark NotificationType = "BOOKMARK"
 )
 
@@ -317,13 +382,13 @@ var AllNotificationType = []NotificationType{
 	NotificationTypeLike,
 	NotificationTypeComment,
 	NotificationTypeFollow,
-	NotificationTypeRetweet,
+	NotificationTypeRepost,
 	NotificationTypeBookmark,
 }
 
 func (e NotificationType) IsValid() bool {
 	switch e {
-	case NotificationTypeLike, NotificationTypeComment, NotificationTypeFollow, NotificationTypeRetweet, NotificationTypeBookmark:
+	case NotificationTypeLike, NotificationTypeComment, NotificationTypeFollow, NotificationTypeRepost, NotificationTypeBookmark:
 		return true
 	}
 	return false
@@ -350,23 +415,94 @@ func (e NotificationType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func (e *NotificationType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e NotificationType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PostVisibility string
+
+const (
+	PostVisibilityPublic    PostVisibility = "PUBLIC"
+	PostVisibilityPrivate   PostVisibility = "PRIVATE"
+	PostVisibilityFollowers PostVisibility = "FOLLOWERS"
+)
+
+var AllPostVisibility = []PostVisibility{
+	PostVisibilityPublic,
+	PostVisibilityPrivate,
+	PostVisibilityFollowers,
+}
+
+func (e PostVisibility) IsValid() bool {
+	switch e {
+	case PostVisibilityPublic, PostVisibilityPrivate, PostVisibilityFollowers:
+		return true
+	}
+	return false
+}
+
+func (e PostVisibility) String() string {
+	return string(e)
+}
+
+func (e *PostVisibility) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PostVisibility(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PostVisibility", str)
+	}
+	return nil
+}
+
+func (e PostVisibility) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PostVisibility) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PostVisibility) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type RecommendationType string
 
 const (
 	RecommendationTypeUser    RecommendationType = "USER"
-	RecommendationTypeTweet   RecommendationType = "TWEET"
+	RecommendationTypePost    RecommendationType = "POST"
 	RecommendationTypeHashtag RecommendationType = "HASHTAG"
 )
 
 var AllRecommendationType = []RecommendationType{
 	RecommendationTypeUser,
-	RecommendationTypeTweet,
+	RecommendationTypePost,
 	RecommendationTypeHashtag,
 }
 
 func (e RecommendationType) IsValid() bool {
 	switch e {
-	case RecommendationTypeUser, RecommendationTypeTweet, RecommendationTypeHashtag:
+	case RecommendationTypeUser, RecommendationTypePost, RecommendationTypeHashtag:
 		return true
 	}
 	return false
@@ -393,23 +529,94 @@ func (e RecommendationType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+func (e *RecommendationType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e RecommendationType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type ReplyPermission string
+
+const (
+	ReplyPermissionEveryone      ReplyPermission = "EVERYONE"
+	ReplyPermissionFollowing     ReplyPermission = "FOLLOWING"
+	ReplyPermissionMentionedOnly ReplyPermission = "MENTIONED_ONLY"
+)
+
+var AllReplyPermission = []ReplyPermission{
+	ReplyPermissionEveryone,
+	ReplyPermissionFollowing,
+	ReplyPermissionMentionedOnly,
+}
+
+func (e ReplyPermission) IsValid() bool {
+	switch e {
+	case ReplyPermissionEveryone, ReplyPermissionFollowing, ReplyPermissionMentionedOnly:
+		return true
+	}
+	return false
+}
+
+func (e ReplyPermission) String() string {
+	return string(e)
+}
+
+func (e *ReplyPermission) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ReplyPermission(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ReplyPermission", str)
+	}
+	return nil
+}
+
+func (e ReplyPermission) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ReplyPermission) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ReplyPermission) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type SearchType string
 
 const (
-	SearchTypeTweet   SearchType = "TWEET"
+	SearchTypePost    SearchType = "POST"
 	SearchTypeUser    SearchType = "USER"
 	SearchTypeHashtag SearchType = "HASHTAG"
 )
 
 var AllSearchType = []SearchType{
-	SearchTypeTweet,
+	SearchTypePost,
 	SearchTypeUser,
 	SearchTypeHashtag,
 }
 
 func (e SearchType) IsValid() bool {
 	switch e {
-	case SearchTypeTweet, SearchTypeUser, SearchTypeHashtag:
+	case SearchTypePost, SearchTypeUser, SearchTypeHashtag:
 		return true
 	}
 	return false
@@ -434,4 +641,18 @@ func (e *SearchType) UnmarshalGQL(v any) error {
 
 func (e SearchType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SearchType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SearchType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

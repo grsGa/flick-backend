@@ -23,9 +23,11 @@ import (
 	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
 	"github.com/flick/backend/services/gateway/internal/middleware"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -100,6 +102,7 @@ func main() {
 	// Initialize gRPC clients with retry logic
 	authClient := client.NewAuthServiceClient(getServiceConnWithRetry(serviceDiscovery, "auth-service", logger))
 	userClient := client.NewUserServiceClient(getServiceConnWithRetry(serviceDiscovery, "user-service", logger))
+	contentClient := client.NewContentServiceClient(getServiceConnWithRetry(serviceDiscovery, "content-service", logger))
 	mediaClient := client.NewMediaServiceClient(getServiceConnWithRetry(serviceDiscovery, "media-service", logger))
 
 	// Set gin run mode
@@ -113,6 +116,7 @@ func main() {
 	// Store clients globally for use in routes
 	authServiceClient = authClient
 	userServiceClient = userClient
+	contentServiceClient = contentClient
 	mediaServiceClient = mediaClient
 
 	// Create Gin engine
@@ -204,13 +208,34 @@ func setupRoutes(r *gin.Engine) {
 
 	// GraphQL endpoint
 	graphqlPath := "/graphql"
-	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient)}))
+	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient)}))
 	queryHandler.Use(extension.Introspection{})
+	
+	// Add error handling
+	queryHandler.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
+		fmt.Printf("[Gateway] GraphQL Error: %v\n", e)
+		return graphql.DefaultErrorPresenter(ctx, e)
+	})
+	
+	queryHandler.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
+		fmt.Printf("[Gateway] GraphQL Panic: %v\n", err)
+		return fmt.Errorf("internal server error")
+	})
 
 	// GraphQL路由
 	graphql := r.Group(graphqlPath)
 	{
 		graphql.POST("", func(c *gin.Context) {
+			fmt.Printf("[Gateway] GraphQL request received: %s %s\n", c.Request.Method, c.Request.URL.Path)
+			fmt.Printf("[Gateway] Content-Type: %s\n", c.Request.Header.Get("Content-Type"))
+			
+			authHeader := c.Request.Header.Get("Authorization")
+			if len(authHeader) > 20 {
+				fmt.Printf("[Gateway] Authorization: %s...\n", authHeader[:20])
+			} else {
+				fmt.Printf("[Gateway] Authorization: %s\n", authHeader)
+			}
+			
 			// The middleware already added the claims to the request context.
 			// gqlgen will automatically pick it up.
 			queryHandler.ServeHTTP(c.Writer, c.Request)

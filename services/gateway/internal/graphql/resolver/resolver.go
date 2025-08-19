@@ -10,16 +10,18 @@ import (
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{
-	AuthServiceClient client.AuthServiceClient
-	UserServiceClient client.UserServiceClient
+type Resolver struct {
+	AuthServiceClient    client.AuthServiceClient
+	UserServiceClient    client.UserServiceClient
+	ContentServiceClient client.ContentServiceClient
 }
 
 // NewResolver creates a new resolver instance
-func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient) *Resolver {
+func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient) *Resolver {
 	return &Resolver{
-		AuthServiceClient: authServiceClient,
-		UserServiceClient: userServiceClient,
+		AuthServiceClient:    authServiceClient,
+		UserServiceClient:    userServiceClient,
+		ContentServiceClient: contentServiceClient,
 	}
 }
 
@@ -28,7 +30,7 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	if user == nil {
 		return nil
 	}
-	
+
 	// Convert string to *string for optional fields
 	var displayName, bio, location, website, avatarUrl, bannerUrl *string
 	if user.DisplayName != "" {
@@ -49,7 +51,7 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	if user.BannerUrl != "" {
 		bannerUrl = &user.BannerUrl
 	}
-	
+
 	// Convert bool to *bool for optional fields
 	var isFollowing, isVerified *bool
 	if user.IsFollowing {
@@ -58,7 +60,7 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	if user.IsVerified {
 		isVerified = &user.IsVerified
 	}
-	
+
 	return &model.User{
 		ID:             user.Id,
 		Username:       user.Username,
