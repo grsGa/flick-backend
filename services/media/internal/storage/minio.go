@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/google/uuid"
 )
 
 // MinIOClient wraps MinIO client with bucket operations
@@ -22,12 +22,12 @@ type MinIOClient struct {
 
 // MediaStorageConfig holds MinIO configuration
 type MediaStorageConfig struct {
-	Endpoint    string
-	AccessKey   string
-	SecretKey   string
-	UseSSL      bool
-	BucketName  string
-	PublicURL   string // Public URL for browser access
+	Endpoint   string
+	AccessKey  string
+	SecretKey  string
+	UseSSL     bool
+	BucketName string
+	PublicURL  string // Public URL for browser access
 }
 
 // NewMinIOClient creates a new MinIO client instance
@@ -96,7 +96,7 @@ func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize
 	// Generate unique filename
 	fileID := uuid.New().String()
 	extension := getExtensionFromContentType(contentType)
-	
+
 	// Create hierarchical path: category/userId/filename
 	var objectName string
 	switch category {
@@ -190,7 +190,7 @@ func extractObjectNameFromURL(fileURL, bucketName string) string {
 	// Support both formats:
 	// 1. Full URL: http://minio:9000/social-media/avatars/user123/avatar_abc.jpg
 	// 2. Relative path: /social-media/avatars/user123/avatar_abc.jpg
-	
+
 	// Remove protocol and host if present
 	if strings.Contains(fileURL, "://") {
 		parts := strings.SplitN(fileURL, "://", 2)
@@ -203,7 +203,7 @@ func extractObjectNameFromURL(fileURL, bucketName string) string {
 			}
 		}
 	}
-	
+
 	// Expected format: /bucket-name/category/filename.ext
 	prefix := fmt.Sprintf("/%s/", bucketName)
 	if strings.HasPrefix(fileURL, prefix) {

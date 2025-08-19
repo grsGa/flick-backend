@@ -33,6 +33,7 @@ func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile)
 	media := &models.MediaAttachment{
 		ID:        file.Id,
 		PostID:    nil, // 对于头像/横幅等独立文件，PostID为nil
+		UserID:    file.UserId, // 添加用户ID字段
 		URL:       file.Url,
 		Type:      file.Type,
 		AltText:   &file.AltText,
@@ -112,7 +113,6 @@ func (r *mediaRepository) SaveFileToStorage(ctx context.Context, fileID string, 
 	// 使用MinIO存储文件
 	reader := bytes.NewReader(fileData)
 	fileSize := int64(len(fileData))
-	
 	return r.storageRepo.UploadFile(ctx, reader, fileSize, contentType, category, userID)
 }
 

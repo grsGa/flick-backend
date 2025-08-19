@@ -30,6 +30,11 @@ message MediaFile {
   string created_at = 8;
   string updated_at = 9;
   string post_id = 10; // 可选的帖子ID，用于关联帖子附件
+  string status = 11; // 文件状态: pending, uploaded, processing, ready, failed
+  int32 width = 12; // 图片宽度
+  int32 height = 13; // 图片高度
+  int32 duration = 14; // 视频时长(秒)
+  string thumbnail_url = 15; // 缩略图URL
 }
 
 // 上传文件请求

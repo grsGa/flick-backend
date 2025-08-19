@@ -55,7 +55,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 
 	// 确定内容类型
 	contentType := getContentTypeFromFilename(req.Filename)
-	
+
 	// 保存文件到存储
 	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, req.Type, req.UserId)
 	if err != nil {

@@ -32,8 +32,8 @@ func main() {
 		Endpoint:   os.Getenv("MINIO_ENDPOINT"),
 		AccessKey:  os.Getenv("MINIO_ACCESS_KEY"),
 		SecretKey:  os.Getenv("MINIO_SECRET_KEY"),
-		UseSSL:     false, // 开发环境使用HTTP
-		BucketName: "social-media", // 单一存储桶
+		UseSSL:     false,                   // 开发环境使用HTTP
+		BucketName: "social-media",          // 单一存储桶
 		PublicURL:  "http://localhost:9000", // 浏览器可访问的公开URL
 	}
 

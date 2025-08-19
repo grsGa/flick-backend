@@ -5,8 +5,7 @@ go 1.24
 require (
 	github.com/99designs/gqlgen v0.17.78
 	github.com/flick/backend/pkg/auth v0.0.0-00010101000000-000000000000
-	github.com/flick/backend/pkg/config v0.0.0-00010101000000-000000000000
-	github.com/flick/backend/pkg/database v0.0.0-00010101000000-000000000000
+	github.com/flick/backend/pkg/config v0.0.0
 	github.com/flick/backend/pkg/discovery v0.0.0-00010101000000-000000000000
 	github.com/flick/backend/pkg/logger v0.0.0-00010101000000-000000000000
 	github.com/flick/backend/pkg/telemetry v0.0.0-00010101000000-000000000000
@@ -59,12 +58,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.5.5 // indirect
-	github.com/jackc/puddle/v2 v2.2.1 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
@@ -100,7 +93,6 @@ require (
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422 // indirect
@@ -108,8 +100,6 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/postgres v1.5.11 // indirect
-	gorm.io/gorm v1.25.12 // indirect
 )
 
 replace github.com/flick/backend/pkg/auth => ../../pkg/auth

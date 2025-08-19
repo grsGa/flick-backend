@@ -426,5 +426,3 @@ func (c *searchServiceClient) SearchUsers(ctx context.Context, in *search_proto.
 func (c *searchServiceClient) SearchHashtags(ctx context.Context, in *search_proto.SearchHashtagsRequest, opts ...interface{}) (*search_proto.SearchHashtagsResponse, error) {
 	return c.client.SearchHashtags(ctx, in)
 }
-
-

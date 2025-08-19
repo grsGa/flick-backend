@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"net"
-	
-	"google.golang.org/grpc"
+
 	"github.com/flick/backend/services/media/internal/service"
 	"github.com/flick/backend/services/media/proto"
+	"google.golang.org/grpc"
 )
 
 // grpcServer gRPC服务实现
@@ -48,9 +48,9 @@ func (s *grpcServer) Run(port string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	grpcServer := grpc.NewServer()
 	proto.RegisterMediaServiceServer(grpcServer, s)
-	
+
 	return grpcServer.Serve(lis)
 }

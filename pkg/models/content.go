@@ -22,13 +22,22 @@ type Post struct {
 
 // MediaAttachment 媒体附件模型
 type MediaAttachment struct {
-	ID        string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	PostID    *string   `gorm:"type:uuid;index" json:"post_id,omitempty"` // 修改为可选，支持头像/横幅等独立文件
-	URL       string    `gorm:"type:text;not null" json:"url"`
-	Type      string    `gorm:"type:varchar(20);not null" json:"type"` // 扩展长度支持 avatars/banners
-	AltText   *string   `gorm:"type:text" json:"alt_text,omitempty"`
-	CreatedAt time.Time `gorm:"not null" json:"created_at"`
-	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+	ID           string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	PostID       *string   `gorm:"type:uuid;index" json:"post_id,omitempty"` // 修改为可选，支持头像/横幅等独立文件
+	UserID       string    `gorm:"type:uuid;not null;index" json:"user_id"` // 添加用户ID字段
+	Filename     string    `gorm:"type:varchar(255);not null" json:"filename"`
+	URL          string    `gorm:"type:text;not null" json:"url"`
+	Type         string    `gorm:"type:varchar(20);not null" json:"type"` // 扩展长度支持 avatars/banners
+	Size         int64     `gorm:"not null;default:0" json:"size"`
+	Status       string    `gorm:"type:varchar(20);not null;default:'pending'" json:"status"` // pending, uploaded, processing, ready, failed
+	Width        int32     `gorm:"default:0" json:"width"`
+	Height       int32     `gorm:"default:0" json:"height"`
+	Duration     int32     `gorm:"default:0" json:"duration"` // 视频时长(秒)
+	ThumbnailURL *string   `gorm:"type:text" json:"thumbnail_url,omitempty"`
+	AltText      *string   `gorm:"type:text" json:"alt_text,omitempty"`
+	CreatedAt    time.Time `gorm:"not null" json:"created_at"`
+	UpdatedAt    time.Time `gorm:"not null" json:"updated_at"`
+	DeletedAt    *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 // PostMention 帖子提及模型 - 用于 @username 功能

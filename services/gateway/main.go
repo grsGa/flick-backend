@@ -17,20 +17,20 @@ import (
 	"github.com/flick/backend/pkg/logger"
 	"github.com/flick/backend/pkg/telemetry"
 	auth_proto "github.com/flick/backend/services/auth/proto"
-	media_proto "github.com/flick/backend/services/media/proto"
 	"github.com/flick/backend/services/gateway/internal/client"
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
 	"github.com/flick/backend/services/gateway/internal/middleware"
+	media_proto "github.com/flick/backend/services/media/proto"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/golang-lru/simplelru"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -161,31 +161,31 @@ func main() {
 func getServiceConnWithRetry(serviceDiscovery client.ServiceDiscovery, serviceName string, logger *zap.Logger) *grpc.ClientConn {
 	maxRetries := 10
 	baseDelay := 2 * time.Second
-	
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		conn, err := serviceDiscovery.GetServiceConn(serviceName)
 		if err == nil {
 			logger.Info("Successfully connected to service", zap.String("service", serviceName), zap.Int("attempt", attempt))
 			return conn
 		}
-		
+
 		if attempt == maxRetries {
-			logger.Fatal("Failed to get client connection after all retries", 
-				zap.String("service", serviceName), 
-				zap.Int("attempts", maxRetries), 
+			logger.Fatal("Failed to get client connection after all retries",
+				zap.String("service", serviceName),
+				zap.Int("attempts", maxRetries),
 				zap.Error(err))
 		}
-		
+
 		delay := time.Duration(attempt) * baseDelay
-		logger.Warn("Failed to connect to service, retrying...", 
-			zap.String("service", serviceName), 
-			zap.Int("attempt", attempt), 
-			zap.Duration("retry_in", delay), 
+		logger.Warn("Failed to connect to service, retrying...",
+			zap.String("service", serviceName),
+			zap.Int("attempt", attempt),
+			zap.Duration("retry_in", delay),
 			zap.Error(err))
-		
+
 		time.Sleep(delay)
 	}
-	
+
 	return nil // This should never be reached due to Fatal above
 }
 
@@ -210,13 +210,13 @@ func setupRoutes(r *gin.Engine) {
 	graphqlPath := "/graphql"
 	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient)}))
 	queryHandler.Use(extension.Introspection{})
-	
+
 	// Add error handling
 	queryHandler.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
 		fmt.Printf("[Gateway] GraphQL Error: %v\n", e)
 		return graphql.DefaultErrorPresenter(ctx, e)
 	})
-	
+
 	queryHandler.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
 		fmt.Printf("[Gateway] GraphQL Panic: %v\n", err)
 		return fmt.Errorf("internal server error")
@@ -228,14 +228,14 @@ func setupRoutes(r *gin.Engine) {
 		graphql.POST("", func(c *gin.Context) {
 			fmt.Printf("[Gateway] GraphQL request received: %s %s\n", c.Request.Method, c.Request.URL.Path)
 			fmt.Printf("[Gateway] Content-Type: %s\n", c.Request.Header.Get("Content-Type"))
-			
+
 			authHeader := c.Request.Header.Get("Authorization")
 			if len(authHeader) > 20 {
 				fmt.Printf("[Gateway] Authorization: %s...\n", authHeader[:20])
 			} else {
 				fmt.Printf("[Gateway] Authorization: %s\n", authHeader)
 			}
-			
+
 			// The middleware already added the claims to the request context.
 			// gqlgen will automatically pick it up.
 			queryHandler.ServeHTTP(c.Writer, c.Request)
@@ -309,10 +309,11 @@ func setupRoutes(r *gin.Engine) {
 	{
 		media := api.Group("/media")
 		{
+			// Legacy direct upload endpoint (keep for compatibility)
 			media.POST("/upload", func(c *gin.Context) {
 				// Debug logging for media upload
 				fmt.Printf("[MEDIA] Upload request received\n")
-				
+
 				// Get user claims from context (set by auth middleware)
 				claims := middleware.GetUserClaims(c.Request.Context())
 				if claims == nil {

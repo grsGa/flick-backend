@@ -276,8 +276,15 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 		query = query.Limit(int(limit))
 	}
 	if cursor != "" {
-		// 简化处理，实际应该解析cursor
-		query = query.Where("created_at < ?", cursor)
+		// cursor是post ID，需要找到该post的created_at时间
+		var cursorPost models.Post
+		if err := r.db.Where("id = ?", cursor).First(&cursorPost).Error; err == nil {
+			query = query.Where("created_at < ?", cursorPost.CreatedAt)
+			fmt.Printf("[Content Repository] Using cursor post %s with created_at: %s\n", cursor, cursorPost.CreatedAt.Format(time.RFC3339))
+		} else {
+			fmt.Printf("[Content Repository] Failed to find cursor post %s: %v, ignoring cursor\n", cursor, err)
+			// 如果找不到cursor post，忽略cursor继续查询，而不是失败
+		}
 	}
 	
 	// 添加SQL调试
@@ -304,11 +311,14 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 
 	// 生成下一页cursor（简化处理）
 	nextCursor := ""
-	hasMore := len(posts) == int(limit)
+	// 只有当返回的帖子数等于请求的limit时，才可能有更多帖子
+	// 如果返回的帖子数少于limit，说明已经到底了
+	hasMore := limit > 0 && len(posts) == int(limit)
 	if hasMore && len(posts) > 0 {
-		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+		nextCursor = posts[len(posts)-1].ID // 使用post ID作为cursor，与处理逻辑一致
 	}
 
+	fmt.Printf("[Content Repository] GetUserPosts result: posts=%d, hasMore=%t, nextCursor=%s\n", len(posts), hasMore, nextCursor)
 	return postList, nextCursor, hasMore, nil
 }
 
@@ -321,12 +331,20 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL").
 		Order("created_at DESC")
 	
+	// 如果limit为-1，表示获取所有帖子，不应用限制
+	// 如果limit为0或正数，应用相应的限制
 	if limit > 0 {
 		query = query.Limit(int(limit))
 	}
 	if cursor != "" {
-		// 简化处理，实际应该解析cursor
-		query = query.Where("created_at < ?", cursor)
+		// cursor是post ID，需要找到该post的created_at时间
+		var cursorPost models.Post
+		if err := r.db.Where("id = ?", cursor).First(&cursorPost).Error; err == nil {
+			query = query.Where("created_at < ?", cursorPost.CreatedAt)
+			fmt.Printf("[Content Repository] Using cursor post %s with created_at: %s\n", cursor, cursorPost.CreatedAt.Format(time.RFC3339))
+		} else {
+			fmt.Printf("[Content Repository] Failed to find cursor post %s: %v\n", cursor, err)
+		}
 	}
 	
 	fmt.Printf("[Content Repository] Executing timeline query\n")
@@ -351,7 +369,9 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 
 	// 生成下一页cursor（简化处理）
 	nextCursor := ""
-	hasMore := len(posts) == int(limit)
+	// 如果limit为-1（获取所有帖子），则没有更多页面
+	// 否则，如果返回的帖子数等于limit，说明可能还有更多
+	hasMore := limit > 0 && len(posts) == int(limit)
 	if hasMore && len(posts) > 0 {
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
