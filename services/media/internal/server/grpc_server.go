@@ -49,7 +49,12 @@ func (s *grpcServer) Run(port string) error {
 		return err
 	}
 
-	grpcServer := grpc.NewServer()
+	// Set max message size to 100MB for large file uploads
+	maxMsgSize := 100 * 1024 * 1024 // 100MB
+	grpcServer := grpc.NewServer(
+		grpc.MaxRecvMsgSize(maxMsgSize),
+		grpc.MaxSendMsgSize(maxMsgSize),
+	)
 	proto.RegisterMediaServiceServer(grpcServer, s)
 
 	return grpcServer.Serve(lis)

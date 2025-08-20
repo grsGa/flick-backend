@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/flick/backend/services/media/internal/repository"
+	"github.com/flick/backend/services/media/internal/storage"
+	"github.com/flick/backend/services/media/internal/validator"
 	"github.com/flick/backend/services/media/proto"
 	"github.com/google/uuid"
 )
@@ -15,12 +17,14 @@ import (
 // mediaService 媒体服务实现
 type mediaService struct {
 	mediaRepo repository.MediaRepository
+	validator *validator.MediaValidator
 }
 
 // NewMediaService 创建媒体服务实例
 func NewMediaService(mediaRepo repository.MediaRepository) MediaService {
 	return &mediaService{
 		mediaRepo: mediaRepo,
+		validator: validator.NewMediaValidator(),
 	}
 }
 
@@ -56,6 +60,33 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 
 	// 确定内容类型
 	contentType := getContentTypeFromFilename(req.Filename)
+
+	// 确定媒体类别
+	var category storage.MediaCategory
+	switch req.Type {
+	case "avatars":
+		category = storage.CategoryAvatar
+	case "banners":
+		category = storage.CategoryBanner
+	case "posts":
+		category = storage.CategoryPost
+	default:
+		category = storage.CategoryPost // 默认为帖子媒体
+	}
+
+	// 验证文件
+	fileSize := int64(len(req.FileData))
+	if err := s.validator.ValidateUpload(category, req.Filename, fileSize, contentType); err != nil {
+		fmt.Printf("[MEDIA SERVICE] Validation failed: %v\n", err)
+		return &proto.UploadFileResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: err.Error(),
+			},
+		}, err
+	}
+
+	fmt.Printf("[MEDIA SERVICE] File validation passed: %s, size: %d bytes, type: %s\n", req.Filename, fileSize, contentType)
 
 	// 保存文件到存储
 	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, req.Type, req.UserId)

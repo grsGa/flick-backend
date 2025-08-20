@@ -186,9 +186,9 @@ func (s *postService) validateCreatePostRequest(req *proto.CreatePostRequest) er
 		return errors.New("user ID is required")
 	}
 
-	// 检查内容长度
-	if len(strings.TrimSpace(req.Content)) == 0 {
-		return errors.New("post content cannot be empty")
+	// 检查内容长度 - 允许纯媒体帖子（无文本内容）
+	if len(strings.TrimSpace(req.Content)) == 0 && len(req.MediaUrls) == 0 {
+		return errors.New("post must have either content or media")
 	}
 	if len(req.Content) > 280 {
 		return errors.New("post content cannot exceed 280 characters")

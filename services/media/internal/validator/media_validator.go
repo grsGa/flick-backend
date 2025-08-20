@@ -113,23 +113,32 @@ func (v *MediaValidator) isExtensionAllowed(ext string, allowedFormats []string)
 
 // isContentTypeConsistentWithExtension validates content type matches file extension
 func (v *MediaValidator) isContentTypeConsistentWithExtension(contentType, ext string) bool {
-	// Get expected MIME type from extension
-	expectedType := mime.TypeByExtension(ext)
-	if expectedType == "" {
-		return false
-	}
-
-	// Handle common variations
+	// Handle common variations explicitly
 	switch {
 	case contentType == "image/jpeg" && (ext == ".jpg" || ext == ".jpeg"):
+		return true
+	case contentType == "image/png" && ext == ".png":
+		return true
+	case contentType == "image/gif" && ext == ".gif":
+		return true
+	case contentType == "image/webp" && ext == ".webp":
+		return true
+	case contentType == "video/mp4" && ext == ".mp4":
+		return true
+	case contentType == "video/webm" && ext == ".webm":
 		return true
 	case contentType == "video/quicktime" && ext == ".mov":
 		return true
 	case contentType == "video/x-msvideo" && ext == ".avi":
 		return true
 	default:
-		// For other types, use exact match with expected MIME type
-		return strings.HasPrefix(expectedType, contentType)
+		// Get expected MIME type from extension as fallback
+		expectedType := mime.TypeByExtension(ext)
+		if expectedType == "" {
+			return false
+		}
+		// Check if content type matches expected type
+		return contentType == expectedType || strings.HasPrefix(expectedType, contentType)
 	}
 }
 

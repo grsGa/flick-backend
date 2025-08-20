@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/flick/backend/pkg/config"
@@ -324,10 +325,11 @@ func setupRoutes(r *gin.Engine) {
 				userID := claims.UserID
 				fmt.Printf("[MEDIA] User authenticated: %s\n", userID)
 
-				// Parse multipart form
-				err := c.Request.ParseMultipartForm(10 << 20) // 10MB max
+				// Parse multipart form with larger limit for post media (100MB)
+				err := c.Request.ParseMultipartForm(100 << 20) // 100MB max
 				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form"})
+					fmt.Printf("[GATEWAY] Failed to parse multipart form: %v\n", err)
+					c.JSON(http.StatusBadRequest, gin.H{"error": "File too large or invalid format"})
 					return
 				}
 
@@ -361,7 +363,14 @@ func setupRoutes(r *gin.Engine) {
 				res, err := mediaServiceClient.UploadFile(c, req)
 				if err != nil {
 					fmt.Printf("[GATEWAY] Media service error: %v\n", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
+					// Check if it's a validation error and provide specific feedback
+					if strings.Contains(err.Error(), "exceeds maximum allowed size") {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "File size too large. Maximum allowed size is 100MB for videos and 10MB for images."})
+					} else if strings.Contains(err.Error(), "not allowed") {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "File type not supported. Please use JPG, PNG, GIF, WebP for images or MP4, WebM, MOV, AVI for videos."})
+					} else {
+						c.JSON(http.StatusInternalServerError, gin.H{"error": "Upload failed. Please try again."})
+					}
 					return
 				}
 

@@ -54,7 +54,15 @@ func (d *ConsulServiceDiscovery) GetServiceConn(serviceName string) (*grpc.Clien
 
 	log.Printf("Discovered service %s at %s", serviceName, address)
 
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Set max message size to 100MB for large file uploads
+	maxMsgSize := 100 * 1024 * 1024 // 100MB
+	conn, err := grpc.Dial(address, 
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial service %s: %w", serviceName, err)
 	}
