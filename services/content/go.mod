@@ -3,6 +3,9 @@ module github.com/flick/backend/services/content
 go 1.24
 
 require (
+	github.com/flick/backend/pkg v0.0.0
+	github.com/flick/backend/services/content/proto v0.0.0
+	github.com/flick/backend/services/user/proto v0.0.0
 	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.71.1
 	gorm.io/gorm v1.25.12
@@ -24,3 +27,5 @@ require (
 replace github.com/flick/backend/pkg => ../../pkg
 
 replace github.com/flick/backend/services/content/proto => ./proto
+
+replace github.com/flick/backend/services/user/proto => ../user/proto

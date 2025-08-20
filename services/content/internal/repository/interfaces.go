@@ -2,22 +2,22 @@ package repository
 
 import (
 	"context"
-	"github.com/flick/backend/services/content/proto"
+	content_proto "github.com/flick/backend/services/content/proto"
 )
 
 // PostRepository 定义帖子仓储接口
 type PostRepository interface {
 	// CreatePost 创建帖子
-	CreatePost(ctx context.Context, req *proto.CreatePostRequest) (*proto.Post, error)
+	CreatePost(ctx context.Context, req *content_proto.CreatePostRequest) (*content_proto.Post, error)
 	
 	// GetPost 根据ID获取帖子
-	GetPost(ctx context.Context, postID, requestingUserID string) (*proto.Post, error)
+	GetPost(ctx context.Context, postID, requestingUserID string) (*content_proto.Post, error)
 	
 	// GetUserPosts 获取用户帖子列表
-	GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*proto.Post, string, bool, error)
+	GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
 	
 	// GetTimeline 获取时间线
-	GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*proto.Post, string, bool, error)
+	GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
 	
 	// DeletePost 删除帖子
 	DeletePost(ctx context.Context, postID, userID string) error
@@ -50,29 +50,29 @@ type TagRepository interface {
 // PollRepository 定义投票仓储接口
 type PollRepository interface {
 	// CreatePoll 创建投票
-	CreatePoll(ctx context.Context, postID string, pollData *proto.PollData) (*proto.Poll, error)
+	CreatePoll(ctx context.Context, postID string, pollData *content_proto.PollData) (*content_proto.Poll, error)
 	
 	// GetPoll 获取投票信息
-	GetPoll(ctx context.Context, pollID string) (*proto.Poll, error)
+	GetPoll(ctx context.Context, pollID string) (*content_proto.Poll, error)
 	
 	// GetPostPoll 根据帖子ID获取投票
-	GetPostPoll(ctx context.Context, postID string) (*proto.Poll, error)
+	GetPostPoll(ctx context.Context, postID string) (*content_proto.Poll, error)
 }
 
 // ContentRepository 定义内容仓储接口（兼容性）
 type ContentRepository interface {
 	// CreateContent 创建内容
-	CreateContent(ctx context.Context, content *proto.Post) error
+	CreateContent(ctx context.Context, content *content_proto.Post) error
 	
 	// GetContent 获取内容
-	GetContent(ctx context.Context, contentID string) (*proto.Post, error)
+	GetContent(ctx context.Context, contentID string) (*content_proto.Post, error)
 	
 	// UpdateContent 更新内容
-	UpdateContent(ctx context.Context, content *proto.Post) error
+	UpdateContent(ctx context.Context, content *content_proto.Post) error
 	
 	// DeleteContent 删除内容
 	DeleteContent(ctx context.Context, contentID string) error
 	
 	// ListContent 列出内容
-	ListContent(ctx context.Context, userID string, limit, offset int32) ([]*proto.Post, int32, error)
+	ListContent(ctx context.Context, userID string, limit, offset int32) ([]*content_proto.Post, int32, error)
 }

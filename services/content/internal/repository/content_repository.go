@@ -5,16 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/flick/backend/pkg/database"
 	"github.com/flick/backend/pkg/models"
 	"github.com/flick/backend/services/content/proto"
+	content_proto "github.com/flick/backend/services/content/proto"
 	user_proto "github.com/flick/backend/services/user/proto"
 
-	"gorm.io/gorm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"gorm.io/gorm"
 )
 
 // postRepository 帖子仓储实现
@@ -26,7 +28,7 @@ type postRepository struct {
 // NewPostRepository 创建帖子仓储实例
 func NewPostRepository() PostRepository {
 	fmt.Printf("[Content Repository] Initializing PostRepository with user service integration\n")
-	
+
 	// 连接用户服务
 	fmt.Printf("[Content Repository] Attempting to connect to user-service:50051\n")
 	userConn, err := grpc.Dial("user-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -37,7 +39,7 @@ func NewPostRepository() PostRepository {
 			db: database.GetDB(),
 		}
 	}
-	
+
 	fmt.Printf("[Content Repository] Successfully connected to user service\n")
 	return &postRepository{
 		db:         database.GetDB(),
@@ -46,12 +48,12 @@ func NewPostRepository() PostRepository {
 }
 
 // CreatePost 创建帖子
-func (r *postRepository) CreatePost(ctx context.Context, req *proto.CreatePostRequest) (*proto.Post, error) {
+func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.CreatePostRequest) (*content_proto.Post, error) {
 	fmt.Printf("[Content Repository] CreatePost called with:\n")
 	fmt.Printf("  UserID: %s\n", req.UserId)
 	fmt.Printf("  Content: %s\n", req.Content)
 	fmt.Printf("  MediaUrls: %v\n", req.MediaUrls)
-	
+
 	// 开始事务
 	fmt.Printf("[Content Repository] Starting database transaction\n")
 	tx := r.db.Begin()
@@ -67,12 +69,12 @@ func (r *postRepository) CreatePost(ctx context.Context, req *proto.CreatePostRe
 	if visibility == "" {
 		visibility = "public" // 默认为公开
 	}
-	
+
 	replyPermission := req.ReplyPermission
 	if replyPermission == "" {
 		replyPermission = "EVERYONE" // 默认允许所有人回复
 	}
-	
+
 	post := &models.Post{
 		UserID:          req.UserId,
 		Content:         req.Content,
@@ -83,7 +85,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *proto.CreatePostRe
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
-	
+
 	fmt.Printf("[Content Repository] Created post model with UserID: %s, Content: %s\n", post.UserID, post.Content)
 
 	// 设置父帖子ID（回复）
@@ -107,16 +109,27 @@ func (r *postRepository) CreatePost(ctx context.Context, req *proto.CreatePostRe
 	// 创建媒体附件
 	if len(req.MediaUrls) > 0 {
 		for _, mediaURL := range req.MediaUrls {
+			// 根据URL判断媒体类型
+			mediaType := "image"
+			if strings.Contains(mediaURL, ".mp4") || strings.Contains(mediaURL, ".webm") || strings.Contains(mediaURL, ".mov") {
+				mediaType = "video"
+			}
+
 			media := &models.MediaAttachment{
-				PostID: &post.ID,
-				URL:    mediaURL,
-				Type:   "image", // 简化处理，实际应根据URL判断类型
+				PostID:    &post.ID,
+				UserID:    req.UserId, // 添加缺失的UserID字段
+				URL:       mediaURL,
+				Type:      mediaType,
+				Status:    "active", // 设置为active状态
 				CreatedAt: time.Now(),
 			}
+			fmt.Printf("[Content Repository] CreatePost - Creating media attachment: PostID=%s, URL=%s\n", post.ID, mediaURL)
 			if err := tx.Create(media).Error; err != nil {
+				fmt.Printf("[Content Repository] CreatePost - Failed to create media attachment: %v\n", err)
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to create media attachment: %w", err)
 			}
+			fmt.Printf("[Content Repository] CreatePost - Successfully created media attachment with ID: %s\n", media.ID)
 		}
 	}
 
@@ -191,14 +204,14 @@ func (r *postRepository) CreatePost(ctx context.Context, req *proto.CreatePostRe
 	}
 
 	fmt.Printf("[Content Repository] Transaction committed successfully\n")
-	
+
 	// 构建返回的帖子对象
 	fmt.Printf("[Content Repository] Building response with committed data\n")
 	return r.buildPostProto(post, req.MediaUrls, req.MentionedUsers, req.Tags, poll, req.PollData)
 }
 
 // GetPost 根据ID获取帖子
-func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID string) (*proto.Post, error) {
+func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID string) (*content_proto.Post, error) {
 	var post models.Post
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", postID).First(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -209,7 +222,14 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 
 	// 获取媒体附件
 	var mediaAttachments []models.MediaAttachment
-	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&mediaAttachments)
+	fmt.Printf("[Content Repository] GetPost - Querying media attachments for post ID: %s\n", post.ID)
+	if err := r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&mediaAttachments).Error; err != nil {
+		fmt.Printf("[Content Repository] GetPost - Failed to fetch media attachments: %v\n", err)
+	}
+	fmt.Printf("[Content Repository] GetPost - Found %d media attachments for post %s\n", len(mediaAttachments), post.ID)
+	for i, media := range mediaAttachments {
+		fmt.Printf("[Content Repository] GetPost - Media %d: ID=%s, PostID=%v, URL=%s\n", i, media.ID, media.PostID, media.URL)
+	}
 
 	// 查询提及信息 (如果表存在)
 	var mentions []models.PostMention
@@ -249,10 +269,10 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 		if err := r.db.Where("post_id = ?", post.ID).First(&poll).Error; err == nil {
 			var options []models.PollOption
 			r.db.Where("poll_id = ?", poll.ID).Order("position").Find(&options)
-			
-			pollOptions := make([]*proto.PollOption, len(options))
+
+			pollOptions := make([]*content_proto.PollOption, len(options))
 			for i, option := range options {
-				pollOptions[i] = &proto.PollOption{
+				pollOptions[i] = &content_proto.PollOption{
 					Id:        option.ID,
 					Text:      option.Text,
 					VoteCount: int32(option.VoteCount),
@@ -265,13 +285,13 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 }
 
 // GetUserPosts 获取用户帖子列表
-func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*proto.Post, string, bool, error) {
+func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetUserPosts called for userID: %s, requestingUserID: %s, limit: %d\n", userID, requestingUserID, limit)
-	
+
 	var posts []models.Post
 	query := r.db.Where("user_id = ? AND deleted_at IS NULL", userID).
 		Order("created_at DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(int(limit))
 	}
@@ -286,10 +306,10 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 			// 如果找不到cursor post，忽略cursor继续查询，而不是失败
 		}
 	}
-	
+
 	// 添加SQL调试
 	fmt.Printf("[Content Repository] Executing query to find posts for user: %s\n", userID)
-	
+
 	if err := query.Find(&posts).Error; err != nil {
 		fmt.Printf("[Content Repository] Query failed: %v\n", err)
 		return nil, "", false, fmt.Errorf("failed to get user posts: %w", err)
@@ -297,7 +317,7 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 
 	fmt.Printf("[Content Repository] Found %d posts for user: %s\n", len(posts), userID)
 	for i, post := range posts {
-		fmt.Printf("[Content Repository] Post %d: ID=%s, Content=%s, CreatedAt=%s\n", 
+		fmt.Printf("[Content Repository] Post %d: ID=%s, Content=%s, CreatedAt=%s\n",
 			i, post.ID, post.Content[:min(50, len(post.Content))], post.CreatedAt.Format(time.RFC3339))
 	}
 
@@ -323,14 +343,14 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 }
 
 // GetTimeline 获取时间线帖子
-func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*proto.Post, string, bool, error) {
+func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetTimeline called for userID: %s, limit: %d\n", userID, limit)
-	
+
 	// 简化实现：获取所有公开帖子，实际应该根据关注关系过滤
 	var posts []models.Post
 	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL").
 		Order("created_at DESC")
-	
+
 	// 如果limit为-1，表示获取所有帖子，不应用限制
 	// 如果limit为0或正数，应用相应的限制
 	if limit > 0 {
@@ -346,7 +366,7 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 			fmt.Printf("[Content Repository] Failed to find cursor post %s: %v\n", cursor, err)
 		}
 	}
-	
+
 	fmt.Printf("[Content Repository] Executing timeline query\n")
 	if err := query.Find(&posts).Error; err != nil {
 		fmt.Printf("[Content Repository] Timeline query failed: %v\n", err)
@@ -355,7 +375,7 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 
 	fmt.Printf("[Content Repository] Timeline found %d posts\n", len(posts))
 	for i, post := range posts {
-		fmt.Printf("[Content Repository] Timeline Post %d: ID=%s, UserID=%s, Content=%s, CreatedAt=%s\n", 
+		fmt.Printf("[Content Repository] Timeline Post %d: ID=%s, UserID=%s, Content=%s, CreatedAt=%s\n",
 			i, post.ID, post.UserID, post.Content[:min(50, len(post.Content))], post.CreatedAt.Format(time.RFC3339))
 	}
 
@@ -383,15 +403,15 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 func (r *postRepository) DeletePost(ctx context.Context, id, userID string) error {
 	result := r.db.Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).
 		Update("deleted_at", time.Now())
-	
+
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete post: %w", result.Error)
 	}
-	
+
 	if result.RowsAffected == 0 {
 		return errors.New("post not found or not authorized")
 	}
-	
+
 	return nil
 }
 
@@ -433,34 +453,38 @@ func (r *postRepository) CheckReplyPermission(ctx context.Context, postID, userI
 }
 
 // buildPostProto 构建帖子Proto对象
-func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *proto.PollData) (*proto.Post, error) {
-	// 构建媒体附件
-	mediaAttachments := make([]*proto.MediaAttachment, len(mediaURLs))
-	for i, url := range mediaURLs {
-		mediaAttachments[i] = &proto.MediaAttachment{
-			Id:   strconv.Itoa(i + 1), // 临时ID
-			Url:  url,
-			Type: "image", // 简化处理
+func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *content_proto.PollData) (*content_proto.Post, error) {
+	// 获取实际的媒体附件从数据库
+	var dbMediaAttachments []models.MediaAttachment
+	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
+	
+	// 构建媒体附件 - 使用数据库中的实际数据
+	mediaAttachments := make([]*content_proto.MediaAttachment, len(dbMediaAttachments))
+	for i, media := range dbMediaAttachments {
+		mediaAttachments[i] = &content_proto.MediaAttachment{
+			Id:   media.ID,
+			Url:  media.URL,
+			Type: media.Type,
 		}
 	}
 
 	// 构建投票信息
-	var pollProto *proto.Poll
+	var pollProto *content_proto.Poll
 	if poll != nil {
 		// 获取投票选项
 		var options []models.PollOption
 		r.db.Where("poll_id = ?", poll.ID).Order("position").Find(&options)
-		
-		pollOptions := make([]*proto.PollOption, len(options))
+
+		pollOptions := make([]*content_proto.PollOption, len(options))
 		for i, option := range options {
-			pollOptions[i] = &proto.PollOption{
+			pollOptions[i] = &content_proto.PollOption{
 				Id:        option.ID,
 				Text:      option.Text,
 				VoteCount: int32(option.VoteCount),
 			}
 		}
-		
-		pollProto = &proto.Poll{
+
+		pollProto = &content_proto.Poll{
 			Id:              poll.ID,
 			Question:        poll.Question,
 			Options:         pollOptions,
@@ -469,17 +493,17 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 		}
 	} else if pollData != nil {
 		// 用于创建时的临时投票数据
-		pollOptions := make([]*proto.PollOption, len(pollData.Options))
+		pollOptions := make([]*content_proto.PollOption, len(pollData.Options))
 		for i, optionText := range pollData.Options {
-			pollOptions[i] = &proto.PollOption{
+			pollOptions[i] = &content_proto.PollOption{
 				Id:        strconv.Itoa(i + 1),
 				Text:      optionText,
 				VoteCount: 0,
 			}
 		}
-		
+
 		expiresAt := time.Now().Add(time.Duration(pollData.DurationMinutes) * time.Minute)
-		pollProto = &proto.Poll{
+		pollProto = &content_proto.Poll{
 			Id:              post.ID + "_poll", // 临时ID
 			Question:        pollData.Question,
 			Options:         pollOptions,
@@ -489,7 +513,7 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 	}
 
 	// 构建统计信息（临时数据）
-	stats := &proto.PostStats{
+	stats := &content_proto.PostStats{
 		LikeCount:    0,
 		CommentCount: 0,
 		RepostCount:  0,
@@ -501,28 +525,28 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 	author := r.fetchUserInfo(context.Background(), post.UserID)
 	fmt.Printf("[Content Repository] fetchUserInfo returned author: %+v\n", author)
 
-	return &proto.Post{
-		Id:                post.ID,
-		UserId:            post.UserID,
-		Content:           post.Content,
-		Visibility:        post.Visibility,
-		ReplyPermission:   post.ReplyPermission,
-		ParentId:          r.stringPtrToString(post.ParentID),
-		RepostId:          r.stringPtrToString(post.RepostID),
-		MediaAttachments:  mediaAttachments,
-		MentionedUsers:    mentionedUsers,
-		Tags:              tags,
-		Poll:              pollProto,
-		Stats:             stats,
-		Author:            author,
-		CreatedAt:         post.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:         post.UpdatedAt.Format(time.RFC3339),
+	return &content_proto.Post{
+		Id:               post.ID,
+		UserId:           post.UserID,
+		Content:          post.Content,
+		Visibility:       post.Visibility,
+		ReplyPermission:  post.ReplyPermission,
+		ParentId:         r.stringPtrToString(post.ParentID),
+		RepostId:         r.stringPtrToString(post.RepostID),
+		MediaAttachments: mediaAttachments,
+		MentionedUsers:   mentionedUsers,
+		Tags:             tags,
+		Poll:             pollProto,
+		Stats:            stats,
+		Author:           author,
+		CreatedAt:        post.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        post.UpdatedAt.Format(time.RFC3339),
 	}, nil
 }
 
 // buildPostList 构建帖子列表
-func (r *postRepository) buildPostList(posts []models.Post) ([]*proto.Post, error) {
-	result := make([]*proto.Post, len(posts))
+func (r *postRepository) buildPostList(posts []models.Post) ([]*content_proto.Post, error) {
+	result := make([]*content_proto.Post, len(posts))
 	for i, post := range posts {
 		// 获取每个帖子的详细信息
 		postProto, err := r.GetPost(context.Background(), post.ID, "")
@@ -552,11 +576,11 @@ func (r *postRepository) stringPtrToString(ptr *string) string {
 }
 
 // fetchUserInfo 从用户服务获取用户信息
-func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *proto.Author {
+func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *content_proto.Author {
 	// 如果没有用户客户端，返回临时数据
 	if r.userClient == nil {
 		fmt.Printf("[Content Repository] No user client available, using fallback data for user: %s\n", userID)
-		return &proto.Author{
+		return &content_proto.Author{
 			Id:          userID,
 			Username:    "user_" + userID[:8],
 			DisplayName: "User " + userID[:8],
@@ -570,10 +594,10 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *prot
 	resp, err := r.userClient.GetUser(ctx, &user_proto.GetUserRequest{
 		UserId: userID,
 	})
-	
+
 	if err != nil {
 		fmt.Printf("[Content Repository] Failed to fetch user info: %v, using fallback data\n", err)
-		return &proto.Author{
+		return &content_proto.Author{
 			Id:          userID,
 			Username:    "user_" + userID[:8],
 			DisplayName: "User " + userID[:8],
@@ -584,7 +608,7 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *prot
 
 	if resp.Error != nil {
 		fmt.Printf("[Content Repository] User service returned error: %s, using fallback data\n", resp.Error.Message)
-		return &proto.Author{
+		return &content_proto.Author{
 			Id:          userID,
 			Username:    "user_" + userID[:8],
 			DisplayName: "User " + userID[:8],
@@ -595,7 +619,7 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *prot
 
 	if resp.User == nil {
 		fmt.Printf("[Content Repository] User service returned nil user, using fallback data\n")
-		return &proto.Author{
+		return &content_proto.Author{
 			Id:          userID,
 			Username:    "user_" + userID[:8],
 			DisplayName: "User " + userID[:8],
@@ -606,7 +630,7 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *prot
 
 	// 返回真实用户数据
 	fmt.Printf("[Content Repository] Successfully fetched user info: %s (%s)\n", resp.User.Username, resp.User.DisplayName)
-	return &proto.Author{
+	return &content_proto.Author{
 		Id:          resp.User.Id,
 		Username:    resp.User.Username,
 		DisplayName: resp.User.DisplayName,
@@ -627,7 +651,7 @@ func NewContentRepository() ContentRepository {
 }
 
 // CreateContent 创建内容
-func (r *contentRepository) CreateContent(ctx context.Context, content *proto.Post) error {
+func (r *contentRepository) CreateContent(ctx context.Context, content *content_proto.Post) error {
 	// 创建帖子
 	createdAt, _ := time.Parse(time.RFC3339, content.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, content.UpdatedAt)
@@ -661,7 +685,7 @@ func (r *contentRepository) CreateContent(ctx context.Context, content *proto.Po
 }
 
 // GetContent 获取内容
-func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*proto.Post, error) {
+func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*content_proto.Post, error) {
 	var post models.Post
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", contentID).First(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -674,9 +698,9 @@ func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*
 	var mediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&mediaAttachments)
 
-	mediaFiles := make([]*proto.MediaAttachment, len(mediaAttachments))
+	mediaFiles := make([]*content_proto.MediaAttachment, len(mediaAttachments))
 	for i, media := range mediaAttachments {
-		mediaFiles[i] = &proto.MediaAttachment{
+		mediaFiles[i] = &content_proto.MediaAttachment{
 			Id:   media.ID,
 			Url:  media.URL,
 			Type: media.Type,
@@ -768,12 +792,12 @@ func (r *contentRepository) ListContent(ctx context.Context, userID string, page
 		}
 
 		contents[i] = &proto.Post{
-			Id:         post.ID,
-			UserId:     post.UserID,
-			Content:    post.Content,
+			Id:               post.ID,
+			UserId:           post.UserID,
+			Content:          post.Content,
 			MediaAttachments: mediaFiles,
-			CreatedAt:  post.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt:  post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			CreatedAt:        post.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:        post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 	}
 
