@@ -31,29 +31,33 @@ type MediaStorageConfig struct {
 }
 
 // NewMinIOClient creates a new MinIO client instance
-func NewMinIOClient(config MediaStorageConfig) (*MinIOClient, error) {
-	// Initialize MinIO client
-	minioClient, err := minio.New(config.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(config.AccessKey, config.SecretKey, ""),
-		Secure: config.UseSSL,
+func NewMinIOClient(endpoint, accessKey, secretKey, bucketName string) (*MinIOClient, error) {
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure: false,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
 
-	client := &MinIOClient{
-		client:     minioClient,
-		bucketName: config.BucketName,
-		endpoint:   config.Endpoint,
-		publicURL:  config.PublicURL,
+	// Use 127.0.0.1 for external access instead of container hostname
+	publicURL := "http://127.0.0.1:9000"
+	if endpoint != "minio:9000" {
+		publicURL = fmt.Sprintf("http://%s", endpoint)
+	}
+
+	m := &MinIOClient{
+		client:     client,
+		bucketName: bucketName,
+		publicURL:  publicURL,
 	}
 
 	// Ensure bucket exists
-	if err := client.ensureBucket(context.Background()); err != nil {
+	if err := m.ensureBucket(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ensure bucket exists: %w", err)
 	}
 
-	return client, nil
+	return m, nil
 }
 
 // ensureBucket creates the bucket if it doesn't exist and sets public read policy
@@ -76,7 +80,7 @@ func (m *MinIOClient) ensureBucket(ctx context.Context) error {
 		"Statement": [
 			{
 				"Effect": "Allow",
-				"Principal": {"AWS": "*"},
+				"Principal": "*",
 				"Action": ["s3:GetObject"],
 				"Resource": ["arn:aws:s3:::%s/*"]
 			}
@@ -85,7 +89,10 @@ func (m *MinIOClient) ensureBucket(ctx context.Context) error {
 
 	err = m.client.SetBucketPolicy(ctx, m.bucketName, policy)
 	if err != nil {
-		return fmt.Errorf("failed to set bucket policy: %w", err)
+		fmt.Printf("[MINIO] Warning: failed to set bucket policy: %v\n", err)
+		// Don't fail initialization if policy setting fails
+	} else {
+		fmt.Printf("[MINIO] Bucket policy set successfully for public read access\n")
 	}
 
 	return nil
@@ -120,6 +127,10 @@ func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize
 		return "", fmt.Errorf("failed to upload file: %w", err)
 	}
 
+	// Debug logging for MinIO upload
+	fmt.Printf("[MINIO] File uploaded successfully to: %s\n", objectName)
+	fmt.Printf("[MINIO] Bucket: %s, Size: %d bytes\n", m.bucketName, fileSize)
+
 	// Return the file URL - use public URL for browser access
 	publicURL := m.publicURL
 	if publicURL == "" {
@@ -130,7 +141,12 @@ func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize
 		}
 		publicURL = fmt.Sprintf("%s://%s", protocol, m.endpoint)
 	}
-	return fmt.Sprintf("%s/%s/%s", publicURL, m.bucketName, objectName), nil
+	
+	finalURL := fmt.Sprintf("%s/%s/%s", publicURL, m.bucketName, objectName)
+	fmt.Printf("[MINIO] Generated public URL: %s\n", finalURL)
+	fmt.Printf("[MINIO] Public URL config: %s\n", publicURL)
+	
+	return finalURL, nil
 }
 
 // DeleteFile deletes a file from MinIO

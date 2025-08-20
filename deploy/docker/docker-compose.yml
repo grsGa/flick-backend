@@ -132,11 +132,12 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_SERVER_URL: http://127.0.0.1:9000
     volumes:
       - minio_data:/data
     networks:
       - flick_network
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":9001" --address "0.0.0.0:9000"
     restart: always
 
   media-service:
@@ -157,6 +158,7 @@ services:
       - MINIO_SECRET_KEY=minioadmin123
       - MINIO_USE_SSL=false
       - MINIO_BUCKET_NAME=social-media
+      - MINIO_PUBLIC_URL=http://localhost:9000
     depends_on:
       - consul
       - postgres

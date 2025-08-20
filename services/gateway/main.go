@@ -360,10 +360,12 @@ func setupRoutes(r *gin.Engine) {
 
 				res, err := mediaServiceClient.UploadFile(c, req)
 				if err != nil {
+					fmt.Printf("[GATEWAY] Media service error: %v\n", err)
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
 					return
 				}
 
+				fmt.Printf("[GATEWAY] Upload successful, returning URL: %s\n", res.File.Url)
 				c.JSON(http.StatusOK, gin.H{
 					"url": res.File.Url,
 					"id":  res.File.Id,

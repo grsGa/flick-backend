@@ -34,7 +34,7 @@ func main() {
 		SecretKey:  os.Getenv("MINIO_SECRET_KEY"),
 		UseSSL:     false,                   // 开发环境使用HTTP
 		BucketName: "social-media",          // 单一存储桶
-		PublicURL:  "http://localhost:9000", // 浏览器可访问的公开URL
+		PublicURL:  os.Getenv("MINIO_PUBLIC_URL"), // 从环境变量获取公开URL
 	}
 
 	// 设置默认值
@@ -47,9 +47,17 @@ func main() {
 	if minioConfig.SecretKey == "" {
 		minioConfig.SecretKey = "minioadmin123"
 	}
+	if minioConfig.PublicURL == "" {
+		minioConfig.PublicURL = "http://localhost:9000" // 默认值，应在docker-compose中覆盖
+	}
 
 	// 初始化MinIO客户端
-	minioClient, err := storage.NewMinIOClient(minioConfig)
+	minioClient, err := storage.NewMinIOClient(
+		minioConfig.Endpoint,
+		minioConfig.AccessKey,
+		minioConfig.SecretKey,
+		minioConfig.BucketName,
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize MinIO client: %v", err)
 	}

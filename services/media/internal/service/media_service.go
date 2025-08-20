@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -79,6 +80,10 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		CreatedAt: time.Now().Format(time.RFC3339),
 		UpdatedAt: time.Now().Format(time.RFC3339),
 	}
+
+	// Debug logging for URL generation
+	fmt.Printf("[MEDIA SERVICE] Generated file URL: %s\n", url)
+	fmt.Printf("[MEDIA SERVICE] File type: %s, User ID: %s\n", req.Type, req.UserId)
 
 	err = s.mediaRepo.CreateFile(ctx, file)
 	if err != nil {

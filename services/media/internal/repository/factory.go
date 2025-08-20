@@ -33,7 +33,12 @@ func (f *mediaRepositoryFactory) Create() MediaRepository {
 	}
 
 	// 初始化MinIO客户端
-	minioClient, err := storage.NewMinIOClient(minioConfig)
+	minioClient, err := storage.NewMinIOClient(
+		minioConfig.Endpoint,
+		minioConfig.AccessKey,
+		minioConfig.SecretKey,
+		minioConfig.BucketName,
+	)
 	if err != nil {
 		log.Fatalf("Failed to initialize MinIO client: %v", err)
 	}
