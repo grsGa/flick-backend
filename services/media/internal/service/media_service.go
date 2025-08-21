@@ -130,14 +130,27 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		}, err
 	}
 
-	// 从URL中提取实际的文件ID (URL格式: http://host/bucket/posts/userID/fileID/filename)
+	// 从URL中提取实际的文件ID
+	// URL格式: http://host/bucket/category/userID/filename
+	// 文件名格式: category_uuid.ext (如 avatar_74bfbdb7-4ff1-430e-82af-29269accbf47.jpg)
 	parts := strings.Split(url, "/")
 	var actualFileID string
-	if len(parts) >= 6 {
-		actualFileID = parts[len(parts)-2] // 倒数第二个路径段是文件ID
-		fmt.Printf("[MEDIA SERVICE] Extracted file ID from URL: %s -> %s\n", url, actualFileID)
-	} else {
-		actualFileID = fileID // 如果无法提取，使用原始ID
+	if len(parts) >= 5 {
+		filename := parts[len(parts)-1] // 获取文件名
+		// 从文件名中提取UUID部分 (category_uuid.ext -> uuid)
+		if strings.Contains(filename, "_") && strings.Contains(filename, ".") {
+			nameParts := strings.Split(filename, "_")
+			if len(nameParts) >= 2 {
+				uuidWithExt := nameParts[1]
+				actualFileID = strings.Split(uuidWithExt, ".")[0] // 移除扩展名
+				fmt.Printf("[MEDIA SERVICE] Extracted file ID from filename: %s -> %s\n", filename, actualFileID)
+			}
+		}
+	}
+	
+	// 如果无法从URL提取，使用原始生成的UUID
+	if actualFileID == "" {
+		actualFileID = fileID
 		fmt.Printf("[MEDIA SERVICE] Could not extract file ID from URL, using original: %s\n", actualFileID)
 	}
 
