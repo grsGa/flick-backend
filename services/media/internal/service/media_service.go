@@ -120,7 +120,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	fmt.Printf("[MEDIA SERVICE] File validation passed: %s, size: %d bytes, type: %s\n", req.Filename, fileSize, contentType)
 
 	// 保存文件到存储
-	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, req.Type, req.UserId)
+	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, category.String(), req.UserId)
 	if err != nil {
 		return &proto.UploadFileResponse{
 			Error: &proto.Error{
@@ -516,11 +516,28 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 	}
 
 	bucketName := parts[3] // social-media
+	category := parts[4]   // avatars/banners/posts
 	userID := parts[5]     // user-id
-	fileID := parts[6]     // file-id
+	filename := parts[6]   // complete filename with extension
+	
+	// 从文件名中提取fileID
+	// 文件名格式: avatar_fileID.ext 或 banner_fileID.ext 或 img_fileID.ext
+	var fileID string
+	if strings.HasPrefix(filename, "avatar_") {
+		fileID = strings.TrimPrefix(filename, "avatar_")
+	} else if strings.HasPrefix(filename, "banner_") {
+		fileID = strings.TrimPrefix(filename, "banner_")
+	} else if strings.HasPrefix(filename, "img_") {
+		fileID = strings.TrimPrefix(filename, "img_")
+	} else {
+		fileID = filename
+	}
+	// 移除扩展名
+	fileID = strings.TrimSuffix(fileID, filepath.Ext(fileID))
+	
 	originalExt := filepath.Ext(originalFile.Filename)
 
-	fmt.Printf("[MEDIA PROCESSOR] Uploading variants for file %s\n", fileID)
+	fmt.Printf("[MEDIA PROCESSOR] Uploading variants for file %s (category: %s)\n", fileID, category)
 
 	// 上传各个版本
 	variantTypes := []struct {
@@ -538,9 +555,10 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 			continue
 		}
 
-		// 构建MinIO对象路径
-		variantFilename := fmt.Sprintf("img_%s_%s%s", fileID, vt.suffix, originalExt)
-		objectPath := fmt.Sprintf("posts/%s/%s/%s", userID, fileID, variantFilename)
+		// 构建MinIO对象路径 - 使用原始文件的category而不是硬编码posts
+		// 修复variant URL路径重复问题 - 不在文件名中重复fileID
+		variantFilename := fmt.Sprintf("%s%s", vt.suffix, originalExt)
+		objectPath := fmt.Sprintf("%s/%s/%s/%s", category, userID, fileID, variantFilename)
 
 		// 打开本地处理后的文件
 		file, err := os.Open(vt.variant.URL) // 这里URL实际是本地临时文件路径
