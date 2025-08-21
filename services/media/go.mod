@@ -5,6 +5,7 @@ go 1.24
 toolchain go1.24.1
 
 require (
+	github.com/flick/backend/pkg/models v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.29.1
 	github.com/minio/minio-go/v7 v7.0.95
@@ -59,5 +60,7 @@ require (
 )
 
 replace github.com/flick/backend/pkg => ../../pkg
+
+replace github.com/flick/backend/pkg/models => ../../pkg/models
 
 replace github.com/flick/backend/services/media/proto => ./proto

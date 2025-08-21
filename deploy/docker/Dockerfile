@@ -1,7 +1,12 @@
 # Stage 1: Build the Go applications
 FROM golang:1.24 AS builder
 
-RUN apt-get update && apt-get install -y git
+# 安装构建依赖和媒体处理工具
+RUN apt-get update && apt-get install -y \
+    git \
+    imagemagick \
+    libmagickwand-dev \
+    ffmpeg
 
 WORKDIR /app
 
@@ -97,7 +102,22 @@ RUN go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.11
 # Stage 2: Create the final image
 FROM debian:stable-slim
 
-RUN apt-get update && apt-get install -y bash ca-certificates && rm -rf /var/lib/apt/lists/*
+# 安装运行时依赖，包括媒体处理工具
+RUN apt-get update && apt-get install -y \
+    bash \
+    ca-certificates \
+    imagemagick \
+    ffmpeg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m appuser
+
+# 创建媒体处理临时目录
+RUN mkdir -p /tmp/media-processing && \
+    chown -R appuser:appgroup /tmp/media-processing
 
 WORKDIR /app
 

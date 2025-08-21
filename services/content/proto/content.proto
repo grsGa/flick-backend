@@ -61,6 +61,32 @@ message MediaAttachment {
   string type = 3; // image, video, gif, avatar, banner
   string alt_text = 4;
   string created_at = 5;
+  string mime_type = 6; // MIME类型
+  int32 width = 7;
+  int32 height = 8;
+  MediaVariants variants = 9; // 多版本信息
+}
+
+// 媒体版本信息
+message MediaVariants {
+  MediaVariant thumbnail = 1;  // 缩略图 (150px)
+  MediaVariant small = 2;      // 小图 (300px)
+  MediaVariant medium = 3;     // 中图 (600px)
+  MediaVariant large = 4;      // 大图 (1200px)
+  MediaVariant original = 5;   // 原图
+  // 视频特有
+  MediaVariant preview = 6;    // 视频预览图
+  MediaVariant low_res = 7;    // 低分辨率视频 (240p)
+  MediaVariant mid_res = 8;    // 中分辨率视频 (480p)
+  MediaVariant high_res = 9;   // 高分辨率视频 (720p)
+}
+
+// 单个媒体版本
+message MediaVariant {
+  string url = 1;
+  int32 width = 2;
+  int32 height = 3;
+  int64 size = 4; // 文件大小(字节)
 }
 
 // 投票信息

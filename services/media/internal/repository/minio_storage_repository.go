@@ -30,6 +30,16 @@ func (r *MinIOStorageRepository) DeleteFile(ctx context.Context, fileURL string)
 	return r.client.DeleteFile(ctx, fileURL)
 }
 
+// GetFile downloads a file and returns a reader
+func (r *MinIOStorageRepository) GetFile(ctx context.Context, bucketName, objectPath string) (io.ReadCloser, error) {
+	return r.client.GetFile(ctx, bucketName, objectPath)
+}
+
+// UploadFileWithPath uploads a file to a specific path
+func (r *MinIOStorageRepository) UploadFileWithPath(ctx context.Context, bucketName, objectPath string, reader io.Reader, fileSize int64, contentType string) (string, error) {
+	return r.client.UploadFileWithPath(ctx, bucketName, objectPath, reader, fileSize, contentType)
+}
+
 // GetFileURL generates a presigned URL for file access
 func (r *MinIOStorageRepository) GetFileURL(ctx context.Context, fileURL string, expiry time.Duration) (string, error) {
 	return r.client.GetFileURL(ctx, fileURL, expiry)

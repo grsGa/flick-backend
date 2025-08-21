@@ -4,25 +4,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/flick/backend/pkg/database"
-	"github.com/flick/backend/pkg/models"
-	"github.com/flick/backend/services/content/proto"
-	content_proto "github.com/flick/backend/services/content/proto"
-	user_proto "github.com/flick/backend/services/user/proto"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
+
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/models"
+	content_proto "github.com/flick/backend/services/content/proto"
+	media_proto "github.com/flick/backend/services/media/proto"
+	user_proto "github.com/flick/backend/services/user/proto"
 )
 
 // postRepository 帖子仓储实现
 type postRepository struct {
-	db         *gorm.DB
-	userClient user_proto.UserServiceClient
+	db          *gorm.DB
+	userClient  user_proto.UserServiceClient
+	mediaClient media_proto.MediaServiceClient
 }
 
 // NewPostRepository 创建帖子仓储实例
@@ -34,16 +36,32 @@ func NewPostRepository() PostRepository {
 	userConn, err := grpc.Dial("user-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Printf("[Content Repository] Failed to connect to user service: %v\n", err)
-		// 如果连接失败，返回没有用户客户端的仓储
-		return &postRepository{
-			db: database.GetDB(),
-		}
 	}
 
-	fmt.Printf("[Content Repository] Successfully connected to user service\n")
+	// 连接媒体服务
+	fmt.Printf("[Content Repository] Attempting to connect to media-service:50054\n")
+	mediaConn, err2 := grpc.Dial("media-service:50054", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err2 != nil {
+		fmt.Printf("[Content Repository] Failed to connect to media service: %v\n", err2)
+	}
+
+	var userClient user_proto.UserServiceClient
+	var mediaClient media_proto.MediaServiceClient
+
+	if err == nil {
+		userClient = user_proto.NewUserServiceClient(userConn)
+		fmt.Printf("[Content Repository] Successfully connected to user service\n")
+	}
+
+	if err2 == nil {
+		mediaClient = media_proto.NewMediaServiceClient(mediaConn)
+		fmt.Printf("[Content Repository] Successfully connected to media service\n")
+	}
+
 	return &postRepository{
-		db:         database.GetDB(),
-		userClient: user_proto.NewUserServiceClient(userConn),
+		db:          database.GetDB(),
+		userClient:  userClient,
+		mediaClient: mediaClient,
 	}
 }
 
@@ -109,27 +127,174 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	// 创建媒体附件
 	if len(req.MediaUrls) > 0 {
 		for _, mediaURL := range req.MediaUrls {
-			// 根据URL判断媒体类型
-			mediaType := "image"
-			if strings.Contains(mediaURL, ".mp4") || strings.Contains(mediaURL, ".webm") || strings.Contains(mediaURL, ".mov") {
-				mediaType = "video"
+			// 从URL提取文件ID (URL格式: http://host/bucket/posts/userID/fileID/filename)
+			parts := strings.Split(mediaURL, "/")
+			if len(parts) < 6 {
+				fmt.Printf("[Content Repository] CreatePost - Invalid media URL format: %s\n", mediaURL)
+				continue
+			}
+			
+			// 提取文件ID (倒数第二个路径段)
+			fileID := parts[len(parts)-2]
+			fmt.Printf("[Content Repository] CreatePost - Extracted file ID from URL: %s -> %s\n", mediaURL, fileID)
+			
+			// 查询Media服务获取完整的媒体信息，带重试逻辑等待variants处理完成
+			mediaReq := &media_proto.GetFileRequest{
+				FileId: fileID,
+			}
+			
+			var mediaResp *media_proto.GetFileResponse
+			var err error
+			
+			// 重试逻辑：最多等待6秒让Media服务完成variants处理
+			maxRetries := 3
+			retryDelay := 2 * time.Second
+			
+			for attempt := 0; attempt <= maxRetries; attempt++ {
+				if attempt > 0 {
+					fmt.Printf("[Content Repository] CreatePost - Waiting %v for media processing (attempt %d/%d)\n", retryDelay, attempt, maxRetries)
+					time.Sleep(retryDelay)
+				}
+				
+				mediaResp, err = r.mediaClient.GetFile(ctx, mediaReq)
+				if err == nil && mediaResp.File != nil && mediaResp.File.Variants != nil {
+					fmt.Printf("[Content Repository] CreatePost - Successfully got variants on attempt %d\n", attempt+1)
+					break
+				}
+				
+				if attempt < maxRetries {
+					fmt.Printf("[Content Repository] CreatePost - No variants yet on attempt %d, retrying...\n", attempt+1)
+				}
+			}
+			if err != nil {
+				fmt.Printf("[Content Repository] CreatePost - Failed to get media from media service: %v\n", err)
+				// 如果无法从Media服务获取，则创建基本记录
+				mediaType := "image"
+				mimeType := "image/jpeg"
+				
+				if strings.Contains(mediaURL, ".mp4") {
+					mediaType = "video"
+					mimeType = "video/mp4"
+				} else if strings.Contains(mediaURL, ".webm") {
+					mediaType = "video"
+					mimeType = "video/webm"
+				} else if strings.Contains(mediaURL, ".mov") {
+					mediaType = "video"
+					mimeType = "video/quicktime"
+				} else if strings.Contains(mediaURL, ".png") {
+					mimeType = "image/png"
+				} else if strings.Contains(mediaURL, ".gif") {
+					mimeType = "image/gif"
+				} else if strings.Contains(mediaURL, ".webp") {
+					mimeType = "image/webp"
+				}
+
+				media := &models.MediaAttachment{
+					PostID:    &post.ID,
+					UserID:    req.UserId,
+					URL:       mediaURL,
+					Type:      mediaType,
+					MimeType:  mimeType,
+					Status:    "active",
+					CreatedAt: time.Now(),
+				}
+				
+				if err := tx.Create(media).Error; err != nil {
+					fmt.Printf("[Content Repository] CreatePost - Failed to create media attachment: %v\n", err)
+					tx.Rollback()
+					return nil, fmt.Errorf("failed to create media attachment: %w", err)
+				}
+				fmt.Printf("[Content Repository] CreatePost - Created fallback media attachment with ID: %s\n", media.ID)
+				continue
+			}
+			
+			if mediaResp.Error != nil {
+				fmt.Printf("[Content Repository] CreatePost - Media service returned error: %s\n", mediaResp.Error.Message)
+				continue
+			}
+			
+			// 使用Media服务返回的完整信息创建媒体附件记录
+			mediaFile := mediaResp.File
+			
+			// 转换variants到数据库格式
+			var variants models.MediaVariants
+			if mediaFile.Variants != nil {
+				if mediaFile.Variants.Thumbnail != nil {
+					variants.Thumbnail = &models.MediaVariant{
+						URL:    mediaFile.Variants.Thumbnail.Url,
+						Width:  mediaFile.Variants.Thumbnail.Width,
+						Height: mediaFile.Variants.Thumbnail.Height,
+						Size:   mediaFile.Variants.Thumbnail.Size,
+					}
+				}
+				if mediaFile.Variants.Small != nil {
+					variants.Small = &models.MediaVariant{
+						URL:    mediaFile.Variants.Small.Url,
+						Width:  mediaFile.Variants.Small.Width,
+						Height: mediaFile.Variants.Small.Height,
+						Size:   mediaFile.Variants.Small.Size,
+					}
+				}
+				if mediaFile.Variants.Medium != nil {
+					variants.Medium = &models.MediaVariant{
+						URL:    mediaFile.Variants.Medium.Url,
+						Width:  mediaFile.Variants.Medium.Width,
+						Height: mediaFile.Variants.Medium.Height,
+						Size:   mediaFile.Variants.Medium.Size,
+					}
+				}
+				if mediaFile.Variants.Large != nil {
+					variants.Large = &models.MediaVariant{
+						URL:    mediaFile.Variants.Large.Url,
+						Width:  mediaFile.Variants.Large.Width,
+						Height: mediaFile.Variants.Large.Height,
+						Size:   mediaFile.Variants.Large.Size,
+					}
+				}
+				if mediaFile.Variants.Original != nil {
+					variants.Original = &models.MediaVariant{
+						URL:    mediaFile.Variants.Original.Url,
+						Width:  mediaFile.Variants.Original.Width,
+						Height: mediaFile.Variants.Original.Height,
+						Size:   mediaFile.Variants.Original.Size,
+					}
+				}
+			}
+			
+			var processedAt *time.Time
+			if mediaFile.ProcessedAt != "" {
+				if t, err := time.Parse(time.RFC3339, mediaFile.ProcessedAt); err == nil {
+					processedAt = &t
+				}
 			}
 
-			media := &models.MediaAttachment{
-				PostID:    &post.ID,
-				UserID:    req.UserId, // 添加缺失的UserID字段
-				URL:       mediaURL,
-				Type:      mediaType,
-				Status:    "active", // 设置为active状态
-				CreatedAt: time.Now(),
+			// 更新现有的媒体记录而不是创建新的
+			updateData := map[string]interface{}{
+				"post_id":      &post.ID,
+				"filename":     mediaFile.Filename,
+				"url":          mediaFile.Url,
+				"type":         mediaFile.Type,
+				"mime_type":    mediaFile.MimeType,
+				"size":         mediaFile.Size,
+				"status":       mediaFile.Status,
+				"width":        mediaFile.Width,
+				"height":       mediaFile.Height,
+				"duration":     mediaFile.Duration,
+				"variants":     variants,
+				"alt_text":     &mediaFile.AltText,
+				"processed_at": processedAt,
+				"updated_at":   time.Now(),
 			}
-			fmt.Printf("[Content Repository] CreatePost - Creating media attachment: PostID=%s, URL=%s\n", post.ID, mediaURL)
-			if err := tx.Create(media).Error; err != nil {
-				fmt.Printf("[Content Repository] CreatePost - Failed to create media attachment: %v\n", err)
+			
+			fmt.Printf("[Content Repository] CreatePost - Updating existing media attachment: ID=%s, URL=%s, HasVariants=%t\n", 
+				mediaFile.Id, mediaURL, mediaFile.Variants != nil)
+			
+			if err := tx.Model(&models.MediaAttachment{}).Where("id = ?", mediaFile.Id).Updates(updateData).Error; err != nil {
+				fmt.Printf("[Content Repository] CreatePost - Failed to update media attachment: %v\n", err)
 				tx.Rollback()
-				return nil, fmt.Errorf("failed to create media attachment: %w", err)
+				return nil, fmt.Errorf("failed to update media attachment: %w", err)
 			}
-			fmt.Printf("[Content Repository] CreatePost - Successfully created media attachment with ID: %s\n", media.ID)
+			fmt.Printf("[Content Repository] CreatePost - Successfully updated media attachment with ID: %s\n", mediaFile.Id)
 		}
 	}
 
@@ -457,14 +622,21 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 	// 获取实际的媒体附件从数据库
 	var dbMediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
-	
-	// 构建媒体附件 - 使用数据库中的实际数据
+
+	// 构建媒体附件 - 使用数据库中的实际数据并获取variants信息
 	mediaAttachments := make([]*content_proto.MediaAttachment, len(dbMediaAttachments))
 	for i, media := range dbMediaAttachments {
+		// 从Media服务获取完整的媒体信息包括variants
+		variants := r.getMediaVariants(media.ID)
+
 		mediaAttachments[i] = &content_proto.MediaAttachment{
-			Id:   media.ID,
-			Url:  media.URL,
-			Type: media.Type,
+			Id:       media.ID,
+			Url:      media.URL,
+			Type:     media.Type,
+			MimeType: media.MimeType,
+			Width:    int32(media.Width),
+			Height:   int32(media.Height),
+			Variants: variants,
 		}
 	}
 
@@ -707,7 +879,7 @@ func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*
 		}
 	}
 
-	return &proto.Post{
+	return &content_proto.Post{
 		Id:               post.ID,
 		UserId:           post.UserID,
 		Content:          post.Content,
@@ -718,7 +890,7 @@ func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*
 }
 
 // UpdateContent 更新内容
-func (r *contentRepository) UpdateContent(ctx context.Context, content *proto.Post) error {
+func (r *contentRepository) UpdateContent(ctx context.Context, content *content_proto.Post) error {
 	// 更新帖子
 	updatedAt, _ := time.Parse(time.RFC3339, content.UpdatedAt)
 	post := &models.Post{
@@ -761,7 +933,7 @@ func (r *contentRepository) DeleteContent(ctx context.Context, id string) error 
 }
 
 // ListContent 列出内容
-func (r *contentRepository) ListContent(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Post, int32, error) {
+func (r *contentRepository) ListContent(ctx context.Context, userID string, page, pageSize int32) ([]*content_proto.Post, int32, error) {
 	var posts []models.Post
 	var total int64
 
@@ -776,22 +948,22 @@ func (r *contentRepository) ListContent(ctx context.Context, userID string, page
 		return nil, 0, err
 	}
 
-	contents := make([]*proto.Post, len(posts))
+	contents := make([]*content_proto.Post, len(posts))
 	for i, post := range posts {
 		// 获取媒体附件
 		var mediaAttachments []models.MediaAttachment
 		r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&mediaAttachments)
 
-		mediaFiles := make([]*proto.MediaAttachment, len(mediaAttachments))
+		mediaFiles := make([]*content_proto.MediaAttachment, len(mediaAttachments))
 		for j, media := range mediaAttachments {
-			mediaFiles[j] = &proto.MediaAttachment{
+			mediaFiles[j] = &content_proto.MediaAttachment{
 				Id:   media.ID,
 				Url:  media.URL,
 				Type: media.Type,
 			}
 		}
 
-		contents[i] = &proto.Post{
+		contents[i] = &content_proto.Post{
 			Id:               post.ID,
 			UserId:           post.UserID,
 			Content:          post.Content,
@@ -802,4 +974,80 @@ func (r *contentRepository) ListContent(ctx context.Context, userID string, page
 	}
 
 	return contents, int32(total), nil
+}
+
+// getMediaVariants 从Media服务获取媒体variants信息
+func (r *postRepository) getMediaVariants(mediaID string) *content_proto.MediaVariants {
+	if r.mediaClient == nil {
+		log.Printf("[Content Repository] Media client not available, returning nil variants for media ID: %s", mediaID)
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 调用Media服务获取文件信息
+	resp, err := r.mediaClient.GetFile(ctx, &media_proto.GetFileRequest{
+		FileId: mediaID,
+	})
+	if err != nil {
+		log.Printf("[Content Repository] Failed to get media variants from media service for ID %s: %v", mediaID, err)
+		return nil
+	}
+
+	if resp.File == nil || resp.File.Variants == nil {
+		log.Printf("[Content Repository] No variants found for media ID: %s", mediaID)
+		return nil
+	}
+
+	// 转换Media服务的variants到Content服务的proto格式
+	variants := &content_proto.MediaVariants{}
+
+	if resp.File.Variants.Thumbnail != nil {
+		variants.Thumbnail = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Thumbnail.Url,
+			Width:  resp.File.Variants.Thumbnail.Width,
+			Height: resp.File.Variants.Thumbnail.Height,
+			Size:   resp.File.Variants.Thumbnail.Size,
+		}
+	}
+
+	if resp.File.Variants.Small != nil {
+		variants.Small = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Small.Url,
+			Width:  resp.File.Variants.Small.Width,
+			Height: resp.File.Variants.Small.Height,
+			Size:   resp.File.Variants.Small.Size,
+		}
+	}
+
+	if resp.File.Variants.Medium != nil {
+		variants.Medium = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Medium.Url,
+			Width:  resp.File.Variants.Medium.Width,
+			Height: resp.File.Variants.Medium.Height,
+			Size:   resp.File.Variants.Medium.Size,
+		}
+	}
+
+	if resp.File.Variants.Large != nil {
+		variants.Large = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Large.Url,
+			Width:  resp.File.Variants.Large.Width,
+			Height: resp.File.Variants.Large.Height,
+			Size:   resp.File.Variants.Large.Size,
+		}
+	}
+
+	if resp.File.Variants.Original != nil {
+		variants.Original = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Original.Url,
+			Width:  resp.File.Variants.Original.Width,
+			Height: resp.File.Variants.Original.Height,
+			Size:   resp.File.Variants.Original.Size,
+		}
+	}
+
+	log.Printf("[Content Repository] Successfully retrieved variants for media ID: %s", mediaID)
+	return variants
 }

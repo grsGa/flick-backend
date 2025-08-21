@@ -111,10 +111,77 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 		if attachment.Type == "video" {
 			mediaType = model.MediaTypeVideo
 		}
+		
+		// 构建variants信息
+		var variants *model.MediaVariants
+		if attachment.Variants != nil {
+			variants = &model.MediaVariants{}
+			
+			if attachment.Variants.Thumbnail != nil {
+				variants.Thumbnail = &model.MediaVariant{
+					URL:    attachment.Variants.Thumbnail.Url,
+					Width:  int(attachment.Variants.Thumbnail.Width),
+					Height: int(attachment.Variants.Thumbnail.Height),
+					Size:   int(attachment.Variants.Thumbnail.Size),
+				}
+			}
+			if attachment.Variants.Small != nil {
+				variants.Small = &model.MediaVariant{
+					URL:    attachment.Variants.Small.Url,
+					Width:  int(attachment.Variants.Small.Width),
+					Height: int(attachment.Variants.Small.Height),
+					Size:   int(attachment.Variants.Small.Size),
+				}
+			}
+			if attachment.Variants.Medium != nil {
+				variants.Medium = &model.MediaVariant{
+					URL:    attachment.Variants.Medium.Url,
+					Width:  int(attachment.Variants.Medium.Width),
+					Height: int(attachment.Variants.Medium.Height),
+					Size:   int(attachment.Variants.Medium.Size),
+				}
+			}
+			if attachment.Variants.Large != nil {
+				variants.Large = &model.MediaVariant{
+					URL:    attachment.Variants.Large.Url,
+					Width:  int(attachment.Variants.Large.Width),
+					Height: int(attachment.Variants.Large.Height),
+					Size:   int(attachment.Variants.Large.Size),
+				}
+			}
+			if attachment.Variants.Original != nil {
+				variants.Original = &model.MediaVariant{
+					URL:    attachment.Variants.Original.Url,
+					Width:  int(attachment.Variants.Original.Width),
+					Height: int(attachment.Variants.Original.Height),
+					Size:   int(attachment.Variants.Original.Size),
+				}
+			}
+		}
+		
+		// 构建完整的Media对象
+		var mimeType *string
+		if attachment.MimeType != "" {
+			mimeType = &attachment.MimeType
+		}
+		var width, height *int
+		if attachment.Width > 0 {
+			w := int(attachment.Width)
+			width = &w
+		}
+		if attachment.Height > 0 {
+			h := int(attachment.Height)
+			height = &h
+		}
+		
 		media[i] = model.Media{
-			ID:   attachment.Id,
-			URL:  attachment.Url,
-			Type: mediaType,
+			ID:       attachment.Id,
+			URL:      attachment.Url,
+			Type:     mediaType,
+			MimeType: mimeType,
+			Width:    width,
+			Height:   height,
+			Variants: variants,
 		}
 	}
 

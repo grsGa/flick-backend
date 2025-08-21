@@ -118,15 +118,38 @@ type LoginInput struct {
 }
 
 type Media struct {
-	ID   string    `json:"id"`
-	URL  string    `json:"url"`
-	Type MediaType `json:"type"`
+	ID       string         `json:"id"`
+	URL      string         `json:"url"`
+	Type     MediaType      `json:"type"`
+	MimeType *string        `json:"mimeType,omitempty"`
+	Width    *int           `json:"width,omitempty"`
+	Height   *int           `json:"height,omitempty"`
+	Variants *MediaVariants `json:"variants,omitempty"`
 }
 
 type MediaAttachment struct {
 	ID   string `json:"id"`
 	URL  string `json:"url"`
 	Type string `json:"type"`
+}
+
+type MediaVariant struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Size   int    `json:"size"`
+}
+
+type MediaVariants struct {
+	Thumbnail *MediaVariant `json:"thumbnail,omitempty"`
+	Small     *MediaVariant `json:"small,omitempty"`
+	Medium    *MediaVariant `json:"medium,omitempty"`
+	Large     *MediaVariant `json:"large,omitempty"`
+	Original  *MediaVariant `json:"original,omitempty"`
+	Preview   *MediaVariant `json:"preview,omitempty"`
+	LowRes    *MediaVariant `json:"lowRes,omitempty"`
+	MidRes    *MediaVariant `json:"midRes,omitempty"`
+	HighRes   *MediaVariant `json:"highRes,omitempty"`
 }
 
 type Message struct {

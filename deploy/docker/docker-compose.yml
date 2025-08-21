@@ -144,6 +144,7 @@ services:
     build:
       context: ../../
       dockerfile: deploy/docker/Dockerfile
+      # target: media
     container_name: media-service
     environment:
       - MEDIA_SERVICE_PORT=50054
@@ -153,12 +154,17 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=flick
       - POSTGRES_PORT=5432
+      # MinIO配置用于媒体文件存储
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin123
       - MINIO_USE_SSL=false
       - MINIO_BUCKET_NAME=social-media
       - MINIO_PUBLIC_URL=http://localhost:9000
+      # 媒体处理临时目录
+      - TEMP_DIR=/tmp/media-processing
+    volumes:
+      - media_temp:/tmp/media-processing
     depends_on:
       - consul
       - postgres
@@ -294,6 +300,27 @@ services:
   #   entrypoint: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "-t", "0", "--", "/app/search"]
   #   restart: always
 
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - flick_network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: always
+
 volumes:
   postgres_data:
   minio_data:
+  # 媒体处理相关存储卷
+  media_temp:
+    driver: local
+  redis_data:
+    driver: local

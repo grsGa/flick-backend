@@ -16,6 +16,34 @@ service MediaService {
   
   // 获取文件列表
   rpc ListFiles(ListFilesRequest) returns (ListFilesResponse);
+  
+  // 处理媒体文件生成多版本
+  rpc ProcessMedia(ProcessMediaRequest) returns (ProcessMediaResponse);
+  
+  // 获取媒体处理状态
+  rpc GetProcessStatus(GetProcessStatusRequest) returns (GetProcessStatusResponse);
+}
+
+// 媒体版本信息
+message MediaVariant {
+  string url = 1;    // 版本URL
+  int32 width = 2;   // 宽度
+  int32 height = 3;  // 高度
+  int64 size = 4;    // 文件大小
+}
+
+// 多版本媒体信息
+message MediaVariants {
+  MediaVariant thumbnail = 1; // 缩略图 (150px)
+  MediaVariant small = 2;     // 小图 (300px)
+  MediaVariant medium = 3;    // 中图 (600px)
+  MediaVariant large = 4;     // 大图 (1200px)
+  MediaVariant original = 5;  // 原图
+  // 视频特有
+  MediaVariant preview = 6;   // 视频预览图
+  MediaVariant low_res = 7;   // 低分辨率视频 (240p)
+  MediaVariant mid_res = 8;   // 中分辨率视频 (480p)
+  MediaVariant high_res = 9;  // 高分辨率视频 (720p)
 }
 
 // 文件信息
@@ -23,18 +51,21 @@ message MediaFile {
   string id = 1;
   string user_id = 2;
   string filename = 3;
-  string url = 4;
+  string url = 4; // 保留向后兼容
   string type = 5;
-  int64 size = 6;
-  string alt_text = 7;
-  string created_at = 8;
-  string updated_at = 9;
-  string post_id = 10; // 可选的帖子ID，用于关联帖子附件
-  string status = 11; // 文件状态: pending, uploaded, processing, ready, failed
-  int32 width = 12; // 图片宽度
-  int32 height = 13; // 图片高度
-  int32 duration = 14; // 视频时长(秒)
-  string thumbnail_url = 15; // 缩略图URL
+  string mime_type = 6; // MIME类型
+  int64 size = 7;
+  string alt_text = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  string post_id = 11; // 可选的帖子ID
+  string status = 12; // pending, processing, ready, failed
+  int32 width = 13;
+  int32 height = 14;
+  int32 duration = 15; // 视频时长(秒)
+  string thumbnail_url = 16; // 保留向后兼容
+  MediaVariants variants = 17; // 多版本URL存储
+  string processed_at = 18; // 处理完成时间
 }
 
 // 上传文件请求
@@ -86,6 +117,33 @@ message ListFilesResponse {
   repeated MediaFile files = 1;
   int32 total = 2;
   Error error = 3;
+}
+
+// 处理媒体请求
+message ProcessMediaRequest {
+  string file_id = 1;
+  repeated string variants = 2; // 需要生成的版本: thumbnail, small, medium, large
+  bool generate_video_preview = 3; // 是否生成视频预览图
+}
+
+// 处理媒体响应
+message ProcessMediaResponse {
+  string job_id = 1; // 异步任务ID
+  string status = 2; // processing, completed, failed
+  Error error = 3;
+}
+
+// 获取处理状态请求
+message GetProcessStatusRequest {
+  string job_id = 1;
+}
+
+// 获取处理状态响应
+message GetProcessStatusResponse {
+  string status = 1; // processing, completed, failed
+  MediaFile file = 2; // 处理完成后的文件信息
+  string progress = 3; // 处理进度 "50%"
+  Error error = 4;
 }
 
 // 错误信息

@@ -104,15 +104,38 @@ type ComplexityRoot struct {
 	}
 
 	Media struct {
-		ID   func(childComplexity int) int
-		Type func(childComplexity int) int
-		URL  func(childComplexity int) int
+		Height   func(childComplexity int) int
+		ID       func(childComplexity int) int
+		MimeType func(childComplexity int) int
+		Type     func(childComplexity int) int
+		URL      func(childComplexity int) int
+		Variants func(childComplexity int) int
+		Width    func(childComplexity int) int
 	}
 
 	MediaAttachment struct {
 		ID   func(childComplexity int) int
 		Type func(childComplexity int) int
 		URL  func(childComplexity int) int
+	}
+
+	MediaVariant struct {
+		Height func(childComplexity int) int
+		Size   func(childComplexity int) int
+		URL    func(childComplexity int) int
+		Width  func(childComplexity int) int
+	}
+
+	MediaVariants struct {
+		HighRes   func(childComplexity int) int
+		Large     func(childComplexity int) int
+		LowRes    func(childComplexity int) int
+		Medium    func(childComplexity int) int
+		MidRes    func(childComplexity int) int
+		Original  func(childComplexity int) int
+		Preview   func(childComplexity int) int
+		Small     func(childComplexity int) int
+		Thumbnail func(childComplexity int) int
 	}
 
 	Message struct {
@@ -570,12 +593,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Interaction.RepostCount(childComplexity), true
 
+	case "Media.height":
+		if e.complexity.Media.Height == nil {
+			break
+		}
+
+		return e.complexity.Media.Height(childComplexity), true
+
 	case "Media.id":
 		if e.complexity.Media.ID == nil {
 			break
 		}
 
 		return e.complexity.Media.ID(childComplexity), true
+
+	case "Media.mimeType":
+		if e.complexity.Media.MimeType == nil {
+			break
+		}
+
+		return e.complexity.Media.MimeType(childComplexity), true
 
 	case "Media.type":
 		if e.complexity.Media.Type == nil {
@@ -590,6 +627,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Media.URL(childComplexity), true
+
+	case "Media.variants":
+		if e.complexity.Media.Variants == nil {
+			break
+		}
+
+		return e.complexity.Media.Variants(childComplexity), true
+
+	case "Media.width":
+		if e.complexity.Media.Width == nil {
+			break
+		}
+
+		return e.complexity.Media.Width(childComplexity), true
 
 	case "MediaAttachment.id":
 		if e.complexity.MediaAttachment.ID == nil {
@@ -611,6 +662,97 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MediaAttachment.URL(childComplexity), true
+
+	case "MediaVariant.height":
+		if e.complexity.MediaVariant.Height == nil {
+			break
+		}
+
+		return e.complexity.MediaVariant.Height(childComplexity), true
+
+	case "MediaVariant.size":
+		if e.complexity.MediaVariant.Size == nil {
+			break
+		}
+
+		return e.complexity.MediaVariant.Size(childComplexity), true
+
+	case "MediaVariant.url":
+		if e.complexity.MediaVariant.URL == nil {
+			break
+		}
+
+		return e.complexity.MediaVariant.URL(childComplexity), true
+
+	case "MediaVariant.width":
+		if e.complexity.MediaVariant.Width == nil {
+			break
+		}
+
+		return e.complexity.MediaVariant.Width(childComplexity), true
+
+	case "MediaVariants.highRes":
+		if e.complexity.MediaVariants.HighRes == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.HighRes(childComplexity), true
+
+	case "MediaVariants.large":
+		if e.complexity.MediaVariants.Large == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Large(childComplexity), true
+
+	case "MediaVariants.lowRes":
+		if e.complexity.MediaVariants.LowRes == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.LowRes(childComplexity), true
+
+	case "MediaVariants.medium":
+		if e.complexity.MediaVariants.Medium == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Medium(childComplexity), true
+
+	case "MediaVariants.midRes":
+		if e.complexity.MediaVariants.MidRes == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.MidRes(childComplexity), true
+
+	case "MediaVariants.original":
+		if e.complexity.MediaVariants.Original == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Original(childComplexity), true
+
+	case "MediaVariants.preview":
+		if e.complexity.MediaVariants.Preview == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Preview(childComplexity), true
+
+	case "MediaVariants.small":
+		if e.complexity.MediaVariants.Small == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Small(childComplexity), true
+
+	case "MediaVariants.thumbnail":
+		if e.complexity.MediaVariants.Thumbnail == nil {
+			break
+		}
+
+		return e.complexity.MediaVariants.Thumbnail(childComplexity), true
 
 	case "Message.content":
 		if e.complexity.Message.Content == nil {
@@ -1906,6 +2048,29 @@ type Media {
   id: ID!
   url: String!
   type: MediaType!
+  mimeType: String
+  width: Int
+  height: Int
+  variants: MediaVariants
+}
+
+type MediaVariants {
+  thumbnail: MediaVariant
+  small: MediaVariant
+  medium: MediaVariant
+  large: MediaVariant
+  original: MediaVariant
+  preview: MediaVariant
+  lowRes: MediaVariant
+  midRes: MediaVariant
+  highRes: MediaVariant
+}
+
+type MediaVariant {
+  url: String!
+  width: Int!
+  height: Int!
+  size: Int!
 }
 
 enum MediaType {
@@ -4317,6 +4482,190 @@ func (ec *executionContext) fieldContext_Media_type(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _Media_mimeType(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_mimeType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MimeType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_mimeType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_width(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_width(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Width, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_height(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Height, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_variants(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Media_variants(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Variants, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariants)
+	fc.Result = res
+	return ec.marshalOMediaVariants2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariants(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Media_variants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "thumbnail":
+				return ec.fieldContext_MediaVariants_thumbnail(ctx, field)
+			case "small":
+				return ec.fieldContext_MediaVariants_small(ctx, field)
+			case "medium":
+				return ec.fieldContext_MediaVariants_medium(ctx, field)
+			case "large":
+				return ec.fieldContext_MediaVariants_large(ctx, field)
+			case "original":
+				return ec.fieldContext_MediaVariants_original(ctx, field)
+			case "preview":
+				return ec.fieldContext_MediaVariants_preview(ctx, field)
+			case "lowRes":
+				return ec.fieldContext_MediaVariants_lowRes(ctx, field)
+			case "midRes":
+				return ec.fieldContext_MediaVariants_midRes(ctx, field)
+			case "highRes":
+				return ec.fieldContext_MediaVariants_highRes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariants", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MediaAttachment_id(ctx context.Context, field graphql.CollectedField, obj *model.MediaAttachment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MediaAttachment_id(ctx, field)
 	if err != nil {
@@ -4444,6 +4793,641 @@ func (ec *executionContext) fieldContext_MediaAttachment_type(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariant_url(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariant) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariant_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariant_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariant",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariant_width(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariant) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariant_width(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Width, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariant_width(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariant",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariant_height(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariant) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariant_height(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Height, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariant_height(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariant",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariant_size(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariant) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariant_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariant_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariant",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_thumbnail(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_thumbnail(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Thumbnail, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_thumbnail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_small(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_small(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Small, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_small(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_medium(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_medium(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Medium, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_medium(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_large(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_large(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Large, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_large(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_original(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_original(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Original, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_original(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_preview(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_preview(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Preview, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_preview(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_lowRes(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_lowRes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LowRes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_lowRes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_midRes(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_midRes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MidRes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_midRes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaVariants_highRes(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariants) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaVariants_highRes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HighRes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariant)
+	fc.Result = res
+	return ec.marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaVariants_highRes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaVariants",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "url":
+				return ec.fieldContext_MediaVariant_url(ctx, field)
+			case "width":
+				return ec.fieldContext_MediaVariant_width(ctx, field)
+			case "height":
+				return ec.fieldContext_MediaVariant_height(ctx, field)
+			case "size":
+				return ec.fieldContext_MediaVariant_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariant", field.Name)
 		},
 	}
 	return fc, nil
@@ -4695,6 +5679,14 @@ func (ec *executionContext) fieldContext_Message_media(_ context.Context, field 
 				return ec.fieldContext_Media_url(ctx, field)
 			case "type":
 				return ec.fieldContext_Media_type(ctx, field)
+			case "mimeType":
+				return ec.fieldContext_Media_mimeType(ctx, field)
+			case "width":
+				return ec.fieldContext_Media_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Media_height(ctx, field)
+			case "variants":
+				return ec.fieldContext_Media_variants(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -5161,6 +6153,14 @@ func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Contex
 				return ec.fieldContext_Media_url(ctx, field)
 			case "type":
 				return ec.fieldContext_Media_type(ctx, field)
+			case "mimeType":
+				return ec.fieldContext_Media_mimeType(ctx, field)
+			case "width":
+				return ec.fieldContext_Media_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Media_height(ctx, field)
+			case "variants":
+				return ec.fieldContext_Media_variants(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -7825,6 +8825,14 @@ func (ec *executionContext) fieldContext_Post_media(_ context.Context, field gra
 				return ec.fieldContext_Media_url(ctx, field)
 			case "type":
 				return ec.fieldContext_Media_type(ctx, field)
+			case "mimeType":
+				return ec.fieldContext_Media_mimeType(ctx, field)
+			case "width":
+				return ec.fieldContext_Media_width(ctx, field)
+			case "height":
+				return ec.fieldContext_Media_height(ctx, field)
+			case "variants":
+				return ec.fieldContext_Media_variants(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
 		},
@@ -14159,6 +15167,14 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "mimeType":
+			out.Values[i] = ec._Media_mimeType(ctx, field, obj)
+		case "width":
+			out.Values[i] = ec._Media_width(ctx, field, obj)
+		case "height":
+			out.Values[i] = ec._Media_height(ctx, field, obj)
+		case "variants":
+			out.Values[i] = ec._Media_variants(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14208,6 +15224,112 @@ func (ec *executionContext) _MediaAttachment(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaVariantImplementors = []string{"MediaVariant"}
+
+func (ec *executionContext) _MediaVariant(ctx context.Context, sel ast.SelectionSet, obj *model.MediaVariant) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaVariantImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaVariant")
+		case "url":
+			out.Values[i] = ec._MediaVariant_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "width":
+			out.Values[i] = ec._MediaVariant_width(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "height":
+			out.Values[i] = ec._MediaVariant_height(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._MediaVariant_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaVariantsImplementors = []string{"MediaVariants"}
+
+func (ec *executionContext) _MediaVariants(ctx context.Context, sel ast.SelectionSet, obj *model.MediaVariants) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaVariantsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaVariants")
+		case "thumbnail":
+			out.Values[i] = ec._MediaVariants_thumbnail(ctx, field, obj)
+		case "small":
+			out.Values[i] = ec._MediaVariants_small(ctx, field, obj)
+		case "medium":
+			out.Values[i] = ec._MediaVariants_medium(ctx, field, obj)
+		case "large":
+			out.Values[i] = ec._MediaVariants_large(ctx, field, obj)
+		case "original":
+			out.Values[i] = ec._MediaVariants_original(ctx, field, obj)
+		case "preview":
+			out.Values[i] = ec._MediaVariants_preview(ctx, field, obj)
+		case "lowRes":
+			out.Values[i] = ec._MediaVariants_lowRes(ctx, field, obj)
+		case "midRes":
+			out.Values[i] = ec._MediaVariants_midRes(ctx, field, obj)
+		case "highRes":
+			out.Values[i] = ec._MediaVariants_highRes(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17627,6 +18749,20 @@ func (ec *executionContext) marshalOMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋse
 		return graphql.Null
 	}
 	return ec._Media(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMediaVariant2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariant(ctx context.Context, sel ast.SelectionSet, v *model.MediaVariant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MediaVariant(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMediaVariants2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariants(ctx context.Context, sel ast.SelectionSet, v *model.MediaVariants) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MediaVariants(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMessage2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v *model.Message) graphql.Marshaler {

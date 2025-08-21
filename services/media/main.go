@@ -21,8 +21,8 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// 初始化数据库连接（不执行迁移避免冲突）
-	if err := database.InitDB(cfg, false); err != nil {
+	// 初始化数据库连接（启用自动迁移）
+	if err := database.InitDB(cfg, true); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	log.Println("Database connection initialized successfully")
@@ -32,8 +32,8 @@ func main() {
 		Endpoint:   os.Getenv("MINIO_ENDPOINT"),
 		AccessKey:  os.Getenv("MINIO_ACCESS_KEY"),
 		SecretKey:  os.Getenv("MINIO_SECRET_KEY"),
-		UseSSL:     false,                   // 开发环境使用HTTP
-		BucketName: "social-media",          // 单一存储桶
+		UseSSL:     false,                         // 开发环境使用HTTP
+		BucketName: "social-media",                // 单一存储桶
 		PublicURL:  os.Getenv("MINIO_PUBLIC_URL"), // 从环境变量获取公开URL
 	}
 
@@ -70,7 +70,8 @@ func main() {
 	mediaRepo := repository.NewMediaRepository(storageRepo)
 
 	// 初始化服务
-	mediaService := service.NewMediaService(mediaRepo)
+	tempDir := os.Getenv("TEMP_DIR")
+	mediaService := service.NewMediaService(mediaRepo, storageRepo, tempDir)
 
 	// 初始化服务端
 	grpcServer := server.NewGRPCServer(mediaService)

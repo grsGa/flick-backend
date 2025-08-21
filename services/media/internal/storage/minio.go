@@ -149,6 +149,37 @@ func (m *MinIOClient) UploadFile(ctx context.Context, reader io.Reader, fileSize
 	return finalURL, nil
 }
 
+// GetFile downloads a file from MinIO and returns a reader
+func (m *MinIOClient) GetFile(ctx context.Context, bucketName, objectPath string) (io.ReadCloser, error) {
+	object, err := m.client.GetObject(ctx, bucketName, objectPath, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file from MinIO: %w", err)
+	}
+	return object, nil
+}
+
+// UploadFileWithPath uploads a file to a specific path in MinIO
+func (m *MinIOClient) UploadFileWithPath(ctx context.Context, bucketName, objectPath string, reader io.Reader, fileSize int64, contentType string) (string, error) {
+	// Upload file to specific path
+	_, err := m.client.PutObject(ctx, bucketName, objectPath, reader, fileSize, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload file to path %s: %w", objectPath, err)
+	}
+
+	// Generate public URL
+	publicURL := m.publicURL
+	if publicURL == "" {
+		publicURL = fmt.Sprintf("http://%s", m.endpoint)
+	}
+	
+	finalURL := fmt.Sprintf("%s/%s/%s", publicURL, bucketName, objectPath)
+	fmt.Printf("[MINIO] Uploaded file to specific path: %s\n", finalURL)
+	
+	return finalURL, nil
+}
+
 // DeleteFile deletes a file from MinIO
 func (m *MinIOClient) DeleteFile(ctx context.Context, fileURL string) error {
 	objectName := extractObjectNameFromURL(fileURL, m.bucketName)

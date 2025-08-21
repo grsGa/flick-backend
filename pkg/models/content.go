@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -20,24 +23,77 @@ type Post struct {
 	DeletedAt       *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+// MediaVariant 媒体版本信息
+type MediaVariant struct {
+	URL    string `json:"url"`    // 版本URL
+	Width  int32  `json:"width"`  // 宽度
+	Height int32  `json:"height"` // 高度
+	Size   int64  `json:"size"`   // 文件大小
+}
+
+// MediaVariants 多版本媒体信息
+type MediaVariants struct {
+	Thumbnail *MediaVariant `json:"thumbnail,omitempty"` // 缩略图 (150px)
+	Small     *MediaVariant `json:"small,omitempty"`     // 小图 (300px)
+	Medium    *MediaVariant `json:"medium,omitempty"`    // 中图 (600px)
+	Large     *MediaVariant `json:"large,omitempty"`     // 大图 (1200px)
+	Original  *MediaVariant `json:"original,omitempty"`  // 原图
+	// 视频特有
+	Preview   *MediaVariant `json:"preview,omitempty"`   // 视频预览图
+	LowRes    *MediaVariant `json:"low_res,omitempty"`   // 低分辨率视频 (240p)
+	MidRes    *MediaVariant `json:"mid_res,omitempty"`   // 中分辨率视频 (480p)
+	HighRes   *MediaVariant `json:"high_res,omitempty"`  // 高分辨率视频 (720p)
+}
+
+// Value 实现 driver.Valuer 接口，用于将 MediaVariants 转换为数据库值
+func (mv MediaVariants) Value() (driver.Value, error) {
+	if mv == (MediaVariants{}) {
+		return nil, nil
+	}
+	return json.Marshal(mv)
+}
+
+// Scan 实现 sql.Scanner 接口，用于从数据库值扫描到 MediaVariants
+func (mv *MediaVariants) Scan(value interface{}) error {
+	if value == nil {
+		*mv = MediaVariants{}
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return errors.New("cannot scan value into MediaVariants")
+	}
+
+	return json.Unmarshal(bytes, mv)
+}
+
 // MediaAttachment 媒体附件模型
 type MediaAttachment struct {
-	ID           string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	PostID       *string   `gorm:"type:uuid;index" json:"post_id,omitempty"` // 修改为可选，支持头像/横幅等独立文件
-	UserID       string    `gorm:"type:uuid;not null;index" json:"user_id"` // 添加用户ID字段
-	Filename     string    `gorm:"type:varchar(255);not null" json:"filename"`
-	URL          string    `gorm:"type:text;not null" json:"url"`
-	Type         string    `gorm:"type:varchar(20);not null" json:"type"` // 扩展长度支持 avatars/banners
-	Size         int64     `gorm:"not null;default:0" json:"size"`
-	Status       string    `gorm:"type:varchar(20);not null;default:'pending'" json:"status"` // pending, uploaded, processing, ready, failed
-	Width        int32     `gorm:"default:0" json:"width"`
-	Height       int32     `gorm:"default:0" json:"height"`
-	Duration     int32     `gorm:"default:0" json:"duration"` // 视频时长(秒)
-	ThumbnailURL *string   `gorm:"type:text" json:"thumbnail_url,omitempty"`
-	AltText      *string   `gorm:"type:text" json:"alt_text,omitempty"`
-	CreatedAt    time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"not null" json:"updated_at"`
-	DeletedAt    *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+	ID           string         `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	PostID       *string        `gorm:"type:uuid;index" json:"post_id,omitempty"` // 修改为可选，支持头像/横幅等独立文件
+	UserID       string         `gorm:"type:uuid;not null;index" json:"user_id"` // 添加用户ID字段
+	Filename     string         `gorm:"type:varchar(255);not null" json:"filename"`
+	URL          string         `gorm:"type:text;not null" json:"url"` // 保留原始URL字段向后兼容
+	Type         string         `gorm:"type:varchar(20);not null" json:"type"` // image, video, gif
+	MimeType     string         `gorm:"type:varchar(100);not null" json:"mime_type"` // image/jpeg, video/mp4等
+	Size         int64          `gorm:"not null;default:0" json:"size"`
+	Status       string         `gorm:"type:varchar(20);not null;default:'pending'" json:"status"` // pending, processing, ready, failed
+	Width        int32          `gorm:"default:0" json:"width"`
+	Height       int32          `gorm:"default:0" json:"height"`
+	Duration     int32          `gorm:"default:0" json:"duration"` // 视频时长(秒)
+	ThumbnailURL *string        `gorm:"type:text" json:"thumbnail_url,omitempty"` // 保留向后兼容
+	Variants     MediaVariants  `gorm:"type:jsonb" json:"variants"` // 多版本URL存储
+	AltText      *string        `gorm:"type:text" json:"alt_text,omitempty"`
+	ProcessedAt  *time.Time     `gorm:"index" json:"processed_at,omitempty"` // 处理完成时间
+	CreatedAt    time.Time      `gorm:"not null" json:"created_at"`
+	UpdatedAt    time.Time      `gorm:"not null" json:"updated_at"`
+	DeletedAt    *time.Time     `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 // PostMention 帖子提及模型 - 用于 @username 功能

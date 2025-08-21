@@ -32,10 +32,12 @@ func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile)
 	createdAt, _ := time.Parse(time.RFC3339, file.CreatedAt)
 	media := &models.MediaAttachment{
 		ID:        file.Id,
-		PostID:    nil, // 对于头像/横幅等独立文件，PostID为nil
-		UserID:    file.UserId, // 添加用户ID字段
+		PostID:    nil,           // 对于头像/横幅等独立文件，PostID为nil
+		UserID:    file.UserId,   // 添加用户ID字段
+		Filename:  file.Filename, // 设置文件名
 		URL:       file.Url,
 		Type:      file.Type,
+		MimeType:  file.MimeType, // 设置MIME类型
 		AltText:   &file.AltText,
 		CreatedAt: createdAt,
 	}
@@ -58,14 +60,130 @@ func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.Me
 		return nil, err
 	}
 
+	// Convert MediaVariants to proto format
+	var protoVariants *proto.MediaVariants
+	if media.Variants != (models.MediaVariants{}) {
+		protoVariants = &proto.MediaVariants{}
+		
+		if media.Variants.Thumbnail != nil {
+			protoVariants.Thumbnail = &proto.MediaVariant{
+				Url:    media.Variants.Thumbnail.URL,
+				Width:  media.Variants.Thumbnail.Width,
+				Height: media.Variants.Thumbnail.Height,
+				Size:   media.Variants.Thumbnail.Size,
+			}
+		}
+		
+		if media.Variants.Small != nil {
+			protoVariants.Small = &proto.MediaVariant{
+				Url:    media.Variants.Small.URL,
+				Width:  media.Variants.Small.Width,
+				Height: media.Variants.Small.Height,
+				Size:   media.Variants.Small.Size,
+			}
+		}
+		
+		if media.Variants.Medium != nil {
+			protoVariants.Medium = &proto.MediaVariant{
+				Url:    media.Variants.Medium.URL,
+				Width:  media.Variants.Medium.Width,
+				Height: media.Variants.Medium.Height,
+				Size:   media.Variants.Medium.Size,
+			}
+		}
+		
+		if media.Variants.Large != nil {
+			protoVariants.Large = &proto.MediaVariant{
+				Url:    media.Variants.Large.URL,
+				Width:  media.Variants.Large.Width,
+				Height: media.Variants.Large.Height,
+				Size:   media.Variants.Large.Size,
+			}
+		}
+		
+		if media.Variants.Original != nil {
+			protoVariants.Original = &proto.MediaVariant{
+				Url:    media.Variants.Original.URL,
+				Width:  media.Variants.Original.Width,
+				Height: media.Variants.Original.Height,
+				Size:   media.Variants.Original.Size,
+			}
+		}
+		
+		// Video variants
+		if media.Variants.Preview != nil {
+			protoVariants.Preview = &proto.MediaVariant{
+				Url:    media.Variants.Preview.URL,
+				Width:  media.Variants.Preview.Width,
+				Height: media.Variants.Preview.Height,
+				Size:   media.Variants.Preview.Size,
+			}
+		}
+		
+		if media.Variants.LowRes != nil {
+			protoVariants.LowRes = &proto.MediaVariant{
+				Url:    media.Variants.LowRes.URL,
+				Width:  media.Variants.LowRes.Width,
+				Height: media.Variants.LowRes.Height,
+				Size:   media.Variants.LowRes.Size,
+			}
+		}
+		
+		if media.Variants.MidRes != nil {
+			protoVariants.MidRes = &proto.MediaVariant{
+				Url:    media.Variants.MidRes.URL,
+				Width:  media.Variants.MidRes.Width,
+				Height: media.Variants.MidRes.Height,
+				Size:   media.Variants.MidRes.Size,
+			}
+		}
+		
+		if media.Variants.HighRes != nil {
+			protoVariants.HighRes = &proto.MediaVariant{
+				Url:    media.Variants.HighRes.URL,
+				Width:  media.Variants.HighRes.Width,
+				Height: media.Variants.HighRes.Height,
+				Size:   media.Variants.HighRes.Size,
+			}
+		}
+	}
+
 	return &proto.MediaFile{
-		Id:        media.ID,
-		Url:       media.URL,
-		Type:      media.Type,
-		AltText:   toString(media.AltText),
-		CreatedAt: media.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: media.CreatedAt.Format(time.RFC3339),
+		Id:          media.ID,
+		UserId:      media.UserID,
+		Filename:    media.Filename,
+		Url:         media.URL,
+		Type:        media.Type,
+		MimeType:    media.MimeType,
+		Size:        media.Size,
+		Status:      media.Status,
+		Width:       media.Width,
+		Height:      media.Height,
+		Duration:    media.Duration,
+		Variants:    protoVariants,
+		AltText:     toString(media.AltText),
+		ProcessedAt: formatTimePtr(media.ProcessedAt),
+		CreatedAt:   media.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   media.UpdatedAt.Format(time.RFC3339),
 	}, nil
+}
+
+// UpdateFile 更新文件记录
+func (r *mediaRepository) UpdateFile(ctx context.Context, file *proto.MediaFile) error {
+	updatedAt, _ := time.Parse(time.RFC3339, file.UpdatedAt)
+
+	updates := map[string]interface{}{
+		"url":          file.Url,
+		"type":         file.Type,
+		"alt_text":     &file.AltText,
+		"mime_type":    file.MimeType,
+		"status":       file.Status,
+		"variants":     file.Variants,
+		"processed_at": file.ProcessedAt,
+		"updated_at":   updatedAt,
+	}
+
+	return r.db.Model(&models.MediaAttachment{}).Where("id = ?", file.Id).Updates(updates).Error
 }
 
 // DeleteFile 删除文件记录
@@ -127,4 +245,12 @@ func toString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// formatTimePtr 将*time.Time转换为RFC3339格式字符串
+func formatTimePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format(time.RFC3339)
 }

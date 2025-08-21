@@ -122,6 +122,29 @@ type Media {
   id: ID!
   url: String!
   type: MediaType!
+  mimeType: String
+  width: Int
+  height: Int
+  variants: MediaVariants
+}
+
+type MediaVariants {
+  thumbnail: MediaVariant
+  small: MediaVariant
+  medium: MediaVariant
+  large: MediaVariant
+  original: MediaVariant
+  preview: MediaVariant
+  lowRes: MediaVariant
+  midRes: MediaVariant
+  highRes: MediaVariant
+}
+
+type MediaVariant {
+  url: String!
+  width: Int!
+  height: Int!
+  size: Int!
 }
 
 enum MediaType {

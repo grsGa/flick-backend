@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.7
-// source: services/media/proto/media.proto
+// source: proto/media.proto
 
 package proto
 
@@ -30,6 +30,10 @@ type MediaServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// 获取文件列表
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+	// 处理媒体文件生成多版本
+	ProcessMedia(ctx context.Context, in *ProcessMediaRequest, opts ...grpc.CallOption) (*ProcessMediaResponse, error)
+	// 获取媒体处理状态
+	GetProcessStatus(ctx context.Context, in *GetProcessStatusRequest, opts ...grpc.CallOption) (*GetProcessStatusResponse, error)
 }
 
 type mediaServiceClient struct {
@@ -76,6 +80,24 @@ func (c *mediaServiceClient) ListFiles(ctx context.Context, in *ListFilesRequest
 	return out, nil
 }
 
+func (c *mediaServiceClient) ProcessMedia(ctx context.Context, in *ProcessMediaRequest, opts ...grpc.CallOption) (*ProcessMediaResponse, error) {
+	out := new(ProcessMediaResponse)
+	err := c.cc.Invoke(ctx, "/media.MediaService/ProcessMedia", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mediaServiceClient) GetProcessStatus(ctx context.Context, in *GetProcessStatusRequest, opts ...grpc.CallOption) (*GetProcessStatusResponse, error) {
+	out := new(GetProcessStatusResponse)
+	err := c.cc.Invoke(ctx, "/media.MediaService/GetProcessStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MediaServiceServer is the server API for MediaService service.
 // All implementations must embed UnimplementedMediaServiceServer
 // for forward compatibility
@@ -88,6 +110,10 @@ type MediaServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// 获取文件列表
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
+	// 处理媒体文件生成多版本
+	ProcessMedia(context.Context, *ProcessMediaRequest) (*ProcessMediaResponse, error)
+	// 获取媒体处理状态
+	GetProcessStatus(context.Context, *GetProcessStatusRequest) (*GetProcessStatusResponse, error)
 	mustEmbedUnimplementedMediaServiceServer()
 }
 
@@ -106,6 +132,12 @@ func (UnimplementedMediaServiceServer) DeleteFile(context.Context, *DeleteFileRe
 }
 func (UnimplementedMediaServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
+}
+func (UnimplementedMediaServiceServer) ProcessMedia(context.Context, *ProcessMediaRequest) (*ProcessMediaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessMedia not implemented")
+}
+func (UnimplementedMediaServiceServer) GetProcessStatus(context.Context, *GetProcessStatusRequest) (*GetProcessStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProcessStatus not implemented")
 }
 func (UnimplementedMediaServiceServer) mustEmbedUnimplementedMediaServiceServer() {}
 
@@ -192,6 +224,42 @@ func _MediaService_ListFiles_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MediaService_ProcessMedia_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessMediaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MediaServiceServer).ProcessMedia(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/media.MediaService/ProcessMedia",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MediaServiceServer).ProcessMedia(ctx, req.(*ProcessMediaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MediaService_GetProcessStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProcessStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MediaServiceServer).GetProcessStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/media.MediaService/GetProcessStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MediaServiceServer).GetProcessStatus(ctx, req.(*GetProcessStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MediaService_ServiceDesc is the grpc.ServiceDesc for MediaService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -215,7 +283,15 @@ var MediaService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListFiles",
 			Handler:    _MediaService_ListFiles_Handler,
 		},
+		{
+			MethodName: "ProcessMedia",
+			Handler:    _MediaService_ProcessMedia_Handler,
+		},
+		{
+			MethodName: "GetProcessStatus",
+			Handler:    _MediaService_GetProcessStatus_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "services/media/proto/media.proto",
+	Metadata: "proto/media.proto",
 }
