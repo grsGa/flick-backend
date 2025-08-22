@@ -373,6 +373,56 @@ func (c *interactionServiceClient) CreateReport(ctx context.Context, in *interac
 	return c.client.CreateReport(ctx, in)
 }
 
+// CreateComment 创建评论
+func (c *interactionServiceClient) CreateComment(ctx context.Context, in *interaction_proto.CreateCommentRequest, opts ...interface{}) (*interaction_proto.CreateCommentResponse, error) {
+	return c.client.CreateComment(ctx, in)
+}
+
+// DeleteComment 删除评论
+func (c *interactionServiceClient) DeleteComment(ctx context.Context, in *interaction_proto.DeleteCommentRequest, opts ...interface{}) (*interaction_proto.DeleteCommentResponse, error) {
+	return c.client.DeleteComment(ctx, in)
+}
+
+// GetComments 获取评论列表
+func (c *interactionServiceClient) GetComments(ctx context.Context, in *interaction_proto.GetCommentsRequest, opts ...interface{}) (*interaction_proto.GetCommentsResponse, error) {
+	return c.client.GetComments(ctx, in)
+}
+
+// GetPostStats 获取帖子统计
+func (c *interactionServiceClient) GetPostStats(ctx context.Context, in *interaction_proto.GetPostStatsRequest, opts ...interface{}) (*interaction_proto.GetPostStatsResponse, error) {
+	return c.client.GetPostStats(ctx, in)
+}
+
+// UpdatePostStats 更新帖子统计
+func (c *interactionServiceClient) UpdatePostStats(ctx context.Context, in *interaction_proto.UpdatePostStatsRequest, opts ...interface{}) (*interaction_proto.UpdatePostStatsResponse, error) {
+	return c.client.UpdatePostStats(ctx, in)
+}
+
+// VotePoll 投票
+func (c *interactionServiceClient) VotePoll(ctx context.Context, in *interaction_proto.VotePollRequest, opts ...interface{}) (*interaction_proto.VotePollResponse, error) {
+	return c.client.VotePoll(ctx, in)
+}
+
+// CreateBookmark 创建收藏
+func (c *interactionServiceClient) CreateBookmark(ctx context.Context, in *interaction_proto.CreateBookmarkRequest, opts ...interface{}) (*interaction_proto.CreateBookmarkResponse, error) {
+	return c.client.CreateBookmark(ctx, in)
+}
+
+// DeleteBookmark 删除收藏
+func (c *interactionServiceClient) DeleteBookmark(ctx context.Context, in *interaction_proto.DeleteBookmarkRequest, opts ...interface{}) (*interaction_proto.DeleteBookmarkResponse, error) {
+	return c.client.DeleteBookmark(ctx, in)
+}
+
+// IsBookmarked 检查是否收藏
+func (c *interactionServiceClient) IsBookmarked(ctx context.Context, in *interaction_proto.IsBookmarkedRequest, opts ...interface{}) (*interaction_proto.IsBookmarkedResponse, error) {
+	return c.client.IsBookmarked(ctx, in)
+}
+
+// GetBookmarks 获取收藏列表
+func (c *interactionServiceClient) GetBookmarks(ctx context.Context, in *interaction_proto.GetBookmarksRequest, opts ...interface{}) (*interaction_proto.GetBookmarksResponse, error) {
+	return c.client.GetBookmarks(ctx, in)
+}
+
 // recommendationServiceClient 推荐服务gRPC客户端实现
 type recommendationServiceClient struct {
 	client recommendation_proto.RecommendationServiceClient

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/flick/backend/services/interaction/internal/repository"
 	"github.com/flick/backend/services/interaction/proto"
-	"github.com/google/uuid"
 )
 
 // interactionService 互动服务实现
@@ -34,13 +34,21 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 		}, err
 	}
 
-	// 如果已经关注，直接返回
+	// 如果已经关注，直接返回成功（幂等操作）
 	if isFollowing {
+		// 获取现有的关注记录
+		existingFollow, err := s.interactionRepo.GetFollow(ctx, req.FollowerId, req.FolloweeId)
+		if err != nil {
+			return &proto.CreateFollowResponse{
+				Error: &proto.Error{
+					Code:    500,
+					Message: "Failed to get existing follow: " + err.Error(),
+				},
+			}, err
+		}
+		
 		return &proto.CreateFollowResponse{
-			Error: &proto.Error{
-				Code:    400,
-				Message: "Already following",
-			},
+			Follow: existingFollow,
 		}, nil
 	}
 
@@ -309,5 +317,224 @@ func (s *interactionService) CreateReport(ctx context.Context, req *proto.Create
 
 	return &proto.CreateReportResponse{
 		Report: report,
+	}, nil
+}
+
+// CreateComment 创建评论
+func (s *interactionService) CreateComment(ctx context.Context, req *proto.CreateCommentRequest) (*proto.CreateCommentResponse, error) {
+	comment := &proto.Comment{
+		Id:              uuid.New().String(),
+		PostId:          req.PostId,
+		UserId:          req.UserId,
+		Content:         req.Content,
+		ParentCommentId: req.ParentCommentId,
+		CreatedAt:       time.Now().Format(time.RFC3339),
+		UpdatedAt:       time.Now().Format(time.RFC3339),
+	}
+
+	err := s.interactionRepo.CreateComment(ctx, comment)
+	if err != nil {
+		return &proto.CreateCommentResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to create comment: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.CreateCommentResponse{
+		Comment: comment,
+	}, nil
+}
+
+// DeleteComment 删除评论
+func (s *interactionService) DeleteComment(ctx context.Context, req *proto.DeleteCommentRequest) (*proto.DeleteCommentResponse, error) {
+	err := s.interactionRepo.DeleteComment(ctx, req.CommentId, req.UserId)
+	if err != nil {
+		return &proto.DeleteCommentResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to delete comment: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.DeleteCommentResponse{
+		Success: true,
+	}, nil
+}
+
+// GetComments 获取评论列表
+func (s *interactionService) GetComments(ctx context.Context, req *proto.GetCommentsRequest) (*proto.GetCommentsResponse, error) {
+	comments, nextCursor, hasMore, err := s.interactionRepo.GetComments(ctx, req.PostId, req.Limit, req.Cursor)
+	if err != nil {
+		return &proto.GetCommentsResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get comments: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetCommentsResponse{
+		Comments:   comments,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// GetPostStats 获取帖子统计
+func (s *interactionService) GetPostStats(ctx context.Context, req *proto.GetPostStatsRequest) (*proto.GetPostStatsResponse, error) {
+	stats, err := s.interactionRepo.GetPostStats(ctx, req.PostId)
+	if err != nil {
+		return &proto.GetPostStatsResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get post stats: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetPostStatsResponse{
+		Stats: stats,
+	}, nil
+}
+
+// UpdatePostStats 更新帖子统计
+func (s *interactionService) UpdatePostStats(ctx context.Context, req *proto.UpdatePostStatsRequest) (*proto.UpdatePostStatsResponse, error) {
+	stats, err := s.interactionRepo.UpdatePostStats(ctx, req.PostId, req.Action, req.Delta)
+	if err != nil {
+		return &proto.UpdatePostStatsResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to update post stats: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.UpdatePostStatsResponse{
+		Stats: stats,
+	}, nil
+}
+
+// VotePoll 投票
+func (s *interactionService) VotePoll(ctx context.Context, req *proto.VotePollRequest) (*proto.VotePollResponse, error) {
+	vote := &proto.PollVote{
+		Id:           uuid.New().String(),
+		PollId:       req.PollId,
+		PollOptionId: req.PollOptionId,
+		UserId:       req.UserId,
+		CreatedAt:    time.Now().Format(time.RFC3339),
+	}
+
+	err := s.interactionRepo.VotePoll(ctx, vote)
+	if err != nil {
+		return &proto.VotePollResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to vote poll: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.VotePollResponse{
+		Vote: vote,
+	}, nil
+}
+
+// CreateBookmark 创建收藏
+func (s *interactionService) CreateBookmark(ctx context.Context, req *proto.CreateBookmarkRequest) (*proto.CreateBookmarkResponse, error) {
+	// 检查是否已经收藏
+	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.CreateBookmarkResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to check bookmark status: " + err.Error(),
+			},
+		}, err
+	}
+
+	if isBookmarked {
+		return &proto.CreateBookmarkResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "Already bookmarked",
+			},
+		}, nil
+	}
+
+	bookmark := &proto.Bookmark{
+		Id:        uuid.New().String(),
+		UserId:    req.UserId,
+		PostId:    req.PostId,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	err = s.interactionRepo.CreateBookmark(ctx, bookmark)
+	if err != nil {
+		return &proto.CreateBookmarkResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to create bookmark: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.CreateBookmarkResponse{
+		Bookmark: bookmark,
+	}, nil
+}
+
+// DeleteBookmark 删除收藏
+func (s *interactionService) DeleteBookmark(ctx context.Context, req *proto.DeleteBookmarkRequest) (*proto.DeleteBookmarkResponse, error) {
+	err := s.interactionRepo.DeleteBookmark(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.DeleteBookmarkResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to delete bookmark: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.DeleteBookmarkResponse{
+		Success: true,
+	}, nil
+}
+
+// IsBookmarked 检查是否收藏
+func (s *interactionService) IsBookmarked(ctx context.Context, req *proto.IsBookmarkedRequest) (*proto.IsBookmarkedResponse, error) {
+	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.IsBookmarkedResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to check bookmark status: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.IsBookmarkedResponse{
+		IsBookmarked: isBookmarked,
+	}, nil
+}
+
+// GetBookmarks 获取收藏列表
+func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBookmarksRequest) (*proto.GetBookmarksResponse, error) {
+	bookmarks, nextCursor, hasMore, err := s.interactionRepo.GetBookmarks(ctx, req.UserId, req.Limit, req.Cursor)
+	if err != nil {
+		return &proto.GetBookmarksResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get bookmarks: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetBookmarksResponse{
+		Bookmarks:  bookmarks,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
 	}, nil
 }

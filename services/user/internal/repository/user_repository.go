@@ -364,16 +364,40 @@ func (r *userRepository) GetFollowing(ctx context.Context, userID string, first 
 	return pbUsers, pageInfo, nil
 }
 
-// FollowUser 关注用户
+// FollowUser 关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理）
 func (r *userRepository) FollowUser(ctx context.Context, followerID, followingID string) error {
-	follow := models.Follow{
-		FollowerID: followerID,
-		FolloweeID: followingID,
-	}
-	return r.db.Create(&follow).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Update follower's following count
+		if err := tx.Model(&models.User{}).Where("id = ?", followerID).
+			Update("following_count", gorm.Expr("following_count + ?", 1)).Error; err != nil {
+			return err
+		}
+
+		// Update followee's followers count
+		if err := tx.Model(&models.User{}).Where("id = ?", followingID).
+			Update("followers_count", gorm.Expr("followers_count + ?", 1)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
-// UnfollowUser 取消关注用户
+// UnfollowUser 取消关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理）
 func (r *userRepository) UnfollowUser(ctx context.Context, followerID, followingID string) error {
-	return r.db.Where("follower_id = ? AND followee_id = ?", followerID, followingID).Delete(&models.Follow{}).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Update follower's following count
+		if err := tx.Model(&models.User{}).Where("id = ?", followerID).
+			Update("following_count", gorm.Expr("following_count - ?", 1)).Error; err != nil {
+			return err
+		}
+
+		// Update followee's followers count
+		if err := tx.Model(&models.User{}).Where("id = ?", followingID).
+			Update("followers_count", gorm.Expr("followers_count - ?", 1)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

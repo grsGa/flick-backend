@@ -16,6 +16,7 @@ import (
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	"github.com/flick/backend/services/gateway/internal/middleware"
+	interaction_proto "github.com/flick/backend/services/interaction/proto"
 	user_proto "github.com/flick/backend/services/user/proto"
 )
 
@@ -285,46 +286,106 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 
 // FollowUser is the resolver for the followUser field.
 func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*model.User, error) {
+	fmt.Printf("[Gateway] FollowUser mutation received for userID: %s\n", userID)
+	
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
+		fmt.Printf("[Gateway] FollowUser unauthorized: no user claims found in context\n")
 		return nil, errors.New("unauthorized")
 	}
 	followerID := claims.UserID
+	fmt.Printf("[Gateway] FollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
-	res, err := r.UserServiceClient.FollowUser(ctx, &user_proto.FollowUserRequest{
-		FollowerId:  followerID,
-		FollowingId: userID,
+	// 调用interaction服务创建关注关系
+	followRes, err := r.InteractionServiceClient.CreateFollow(ctx, &interaction_proto.CreateFollowRequest{
+		FollowerId: followerID,
+		FolloweeId: userID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if res.Error != nil {
-		return nil, errors.New(res.Error.Message)
+	if followRes.Error != nil {
+		return nil, errors.New(followRes.Error.Message)
 	}
 
-	return r.userProtoToGql(res.User), nil
+	// 调用用户服务更新关注者计数
+	_, err = r.UserServiceClient.FollowUser(ctx, &user_proto.FollowUserRequest{
+		FollowerId:  followerID,
+		FollowingId: userID,
+	})
+	if err != nil {
+		fmt.Printf("[Gateway] Warning: Failed to update follower counts: %v\n", err)
+		// Continue execution even if count update fails
+	}
+
+	// 获取被关注用户的信息返回
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if userRes.Error != nil {
+		return nil, errors.New(userRes.Error.Message)
+	}
+
+	// 设置关注状态为true，因为刚刚执行了关注操作
+	user := userRes.User
+	user.IsFollowing = true
+
+	return r.userProtoToGql(user), nil
 }
 
 // UnfollowUser is the resolver for the unfollowUser field.
 func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*model.User, error) {
+	fmt.Printf("[Gateway] UnfollowUser mutation received for userID: %s\n", userID)
+	
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
+		fmt.Printf("[Gateway] UnfollowUser unauthorized: no user claims found in context\n")
 		return nil, errors.New("unauthorized")
 	}
 	followerID := claims.UserID
+	fmt.Printf("[Gateway] UnfollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
-	res, err := r.UserServiceClient.UnfollowUser(ctx, &user_proto.UnfollowUserRequest{
-		FollowerId:  followerID,
-		FollowingId: userID,
+	// 调用interaction服务删除关注关系
+	unfollowRes, err := r.InteractionServiceClient.DeleteFollow(ctx, &interaction_proto.DeleteFollowRequest{
+		FollowerId: followerID,
+		FolloweeId: userID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if res.Error != nil {
-		return nil, errors.New(res.Error.Message)
+	if unfollowRes.Error != nil {
+		return nil, errors.New(unfollowRes.Error.Message)
 	}
 
-	return r.userProtoToGql(res.User), nil
+	// 调用用户服务更新关注者计数
+	_, err = r.UserServiceClient.UnfollowUser(ctx, &user_proto.UnfollowUserRequest{
+		FollowerId:  followerID,
+		FollowingId: userID,
+	})
+	if err != nil {
+		fmt.Printf("[Gateway] Warning: Failed to update follower counts: %v\n", err)
+		// Continue execution even if count update fails
+	}
+
+	// 获取被取消关注用户的信息返回
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if userRes.Error != nil {
+		return nil, errors.New(userRes.Error.Message)
+	}
+
+	// 设置关注状态为false，因为刚刚执行了取消关注操作
+	user := userRes.User
+	user.IsFollowing = false
+
+	return r.userProtoToGql(user), nil
 }
 
 // Health is the resolver for the health field.
@@ -335,6 +396,8 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 
 // UserByUsername is the resolver for the userByUsername field.
 func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
+	fmt.Printf("[Gateway] UserByUsername query received for username: %s\n", username)
+	
 	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
 		Username: username,
 	})
@@ -348,7 +411,35 @@ func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*m
 		return nil, nil
 	}
 
-	return r.userProtoToGql(res.User), nil
+	user := res.User
+	
+	// Check if current user is following this user
+	claims := middleware.GetUserClaims(ctx)
+	if claims != nil && claims.UserID != user.Id {
+		fmt.Printf("[Gateway] UserByUsername checking follow status for follower: %s, followee: %s\n", claims.UserID, user.Id)
+		
+		followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_proto.IsFollowingRequest{
+			FollowerId: claims.UserID,
+			FolloweeId: user.Id,
+		})
+		if err != nil {
+			fmt.Printf("[Gateway] UserByUsername follow check failed: %v\n", err)
+			// Don't fail the query, just set isFollowing to false
+			user.IsFollowing = false
+		} else if followRes.Error != nil {
+			fmt.Printf("[Gateway] UserByUsername follow check error: %s\n", followRes.Error.Message)
+			user.IsFollowing = false
+		} else {
+			user.IsFollowing = followRes.IsFollowing
+			fmt.Printf("[Gateway] UserByUsername follow status: %v\n", user.IsFollowing)
+		}
+	} else {
+		// Not authenticated or viewing own profile
+		user.IsFollowing = false
+		fmt.Printf("[Gateway] UserByUsername no auth or self-view, setting isFollowing to false\n")
+	}
+
+	return r.userProtoToGql(user), nil
 }
 
 // Post is the resolver for the post field.

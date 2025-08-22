@@ -186,6 +186,7 @@ type Interaction {
   likeCount: Int!
   commentCount: Int!
   repostCount: Int!
+  viewCount: Int!
 }
 
 input LikePostInput {

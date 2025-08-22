@@ -199,6 +199,36 @@ type InteractionServiceClient interface {
 
 	// CreateReport 创建举报
 	CreateReport(ctx context.Context, in *interaction_proto.CreateReportRequest, opts ...interface{}) (*interaction_proto.CreateReportResponse, error)
+
+	// CreateComment 创建评论
+	CreateComment(ctx context.Context, in *interaction_proto.CreateCommentRequest, opts ...interface{}) (*interaction_proto.CreateCommentResponse, error)
+
+	// DeleteComment 删除评论
+	DeleteComment(ctx context.Context, in *interaction_proto.DeleteCommentRequest, opts ...interface{}) (*interaction_proto.DeleteCommentResponse, error)
+
+	// GetComments 获取评论列表
+	GetComments(ctx context.Context, in *interaction_proto.GetCommentsRequest, opts ...interface{}) (*interaction_proto.GetCommentsResponse, error)
+
+	// GetPostStats 获取帖子统计
+	GetPostStats(ctx context.Context, in *interaction_proto.GetPostStatsRequest, opts ...interface{}) (*interaction_proto.GetPostStatsResponse, error)
+
+	// UpdatePostStats 更新帖子统计
+	UpdatePostStats(ctx context.Context, in *interaction_proto.UpdatePostStatsRequest, opts ...interface{}) (*interaction_proto.UpdatePostStatsResponse, error)
+
+	// VotePoll 投票
+	VotePoll(ctx context.Context, in *interaction_proto.VotePollRequest, opts ...interface{}) (*interaction_proto.VotePollResponse, error)
+
+	// CreateBookmark 创建收藏
+	CreateBookmark(ctx context.Context, in *interaction_proto.CreateBookmarkRequest, opts ...interface{}) (*interaction_proto.CreateBookmarkResponse, error)
+
+	// DeleteBookmark 删除收藏
+	DeleteBookmark(ctx context.Context, in *interaction_proto.DeleteBookmarkRequest, opts ...interface{}) (*interaction_proto.DeleteBookmarkResponse, error)
+
+	// IsBookmarked 检查是否收藏
+	IsBookmarked(ctx context.Context, in *interaction_proto.IsBookmarkedRequest, opts ...interface{}) (*interaction_proto.IsBookmarkedResponse, error)
+
+	// GetBookmarks 获取收藏列表
+	GetBookmarks(ctx context.Context, in *interaction_proto.GetBookmarksRequest, opts ...interface{}) (*interaction_proto.GetBookmarksResponse, error)
 }
 
 // RecommendationServiceClient 定义推荐服务客户端接口

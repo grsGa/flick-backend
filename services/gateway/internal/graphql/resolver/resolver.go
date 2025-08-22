@@ -11,17 +11,19 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	AuthServiceClient    client.AuthServiceClient
-	UserServiceClient    client.UserServiceClient
-	ContentServiceClient client.ContentServiceClient
+	AuthServiceClient        client.AuthServiceClient
+	UserServiceClient        client.UserServiceClient
+	ContentServiceClient     client.ContentServiceClient
+	InteractionServiceClient client.InteractionServiceClient
 }
 
 // NewResolver creates a new resolver instance
-func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient) *Resolver {
+func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient, interactionServiceClient client.InteractionServiceClient) *Resolver {
 	return &Resolver{
-		AuthServiceClient:    authServiceClient,
-		UserServiceClient:    userServiceClient,
-		ContentServiceClient: contentServiceClient,
+		AuthServiceClient:        authServiceClient,
+		UserServiceClient:        userServiceClient,
+		ContentServiceClient:     contentServiceClient,
+		InteractionServiceClient: interactionServiceClient,
 	}
 }
 
@@ -53,10 +55,8 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 	}
 
 	// Convert bool to *bool for optional fields
-	var isFollowing, isVerified *bool
-	if user.IsFollowing {
-		isFollowing = &user.IsFollowing
-	}
+	var isVerified *bool
+	isFollowing := &user.IsFollowing // Always set isFollowing, regardless of value
 	if user.IsVerified {
 		isVerified = &user.IsVerified
 	}

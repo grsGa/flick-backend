@@ -105,6 +105,7 @@ func main() {
 	userClient := client.NewUserServiceClient(getServiceConnWithRetry(serviceDiscovery, "user-service", logger))
 	contentClient := client.NewContentServiceClient(getServiceConnWithRetry(serviceDiscovery, "content-service", logger))
 	mediaClient := client.NewMediaServiceClient(getServiceConnWithRetry(serviceDiscovery, "media-service", logger))
+	interactionClient := client.NewInteractionServiceClient(getServiceConnWithRetry(serviceDiscovery, "interaction-service", logger))
 
 	// Set gin run mode
 	gin.SetMode(gin.ReleaseMode)
@@ -119,6 +120,7 @@ func main() {
 	userServiceClient = userClient
 	contentServiceClient = contentClient
 	mediaServiceClient = mediaClient
+	interactionServiceClient = interactionClient
 
 	// Create Gin engine
 	r := gin.Default()
@@ -209,7 +211,7 @@ func setupRoutes(r *gin.Engine) {
 
 	// GraphQL endpoint
 	graphqlPath := "/graphql"
-	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient)}))
+	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient)}))
 	queryHandler.Use(extension.Introspection{})
 
 	// Add error handling
