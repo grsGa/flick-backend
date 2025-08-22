@@ -101,6 +101,7 @@ type ComplexityRoot struct {
 		IsReposted   func(childComplexity int) int
 		LikeCount    func(childComplexity int) int
 		RepostCount  func(childComplexity int) int
+		ViewCount    func(childComplexity int) int
 	}
 
 	Media struct {
@@ -592,6 +593,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Interaction.RepostCount(childComplexity), true
+
+	case "Interaction.viewCount":
+		if e.complexity.Interaction.ViewCount == nil {
+			break
+		}
+
+		return e.complexity.Interaction.ViewCount(childComplexity), true
 
 	case "Media.height":
 		if e.complexity.Media.Height == nil {
@@ -2112,6 +2120,7 @@ type Interaction {
   likeCount: Int!
   commentCount: Int!
   repostCount: Int!
+  viewCount: Int!
 }
 
 input LikePostInput {
@@ -3290,6 +3299,8 @@ func (ec *executionContext) fieldContext_Comment_interaction(_ context.Context, 
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -4338,6 +4349,50 @@ func (ec *executionContext) _Interaction_repostCount(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_Interaction_repostCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Interaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Interaction_viewCount(ctx context.Context, field graphql.CollectedField, obj *model.Interaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Interaction_viewCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ViewCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Interaction_viewCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Interaction",
 		Field:      field,
@@ -6445,6 +6500,8 @@ func (ec *executionContext) fieldContext_Mutation_likePost(ctx context.Context, 
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -6514,6 +6571,8 @@ func (ec *executionContext) fieldContext_Mutation_unlikePost(ctx context.Context
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -6583,6 +6642,8 @@ func (ec *executionContext) fieldContext_Mutation_bookmarkPost(ctx context.Conte
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -6652,6 +6713,8 @@ func (ec *executionContext) fieldContext_Mutation_unbookmarkPost(ctx context.Con
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -6721,6 +6784,8 @@ func (ec *executionContext) fieldContext_Mutation_repost(ctx context.Context, fi
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -6790,6 +6855,8 @@ func (ec *executionContext) fieldContext_Mutation_undoRepost(ctx context.Context
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -9140,6 +9207,8 @@ func (ec *executionContext) fieldContext_Post_interaction(_ context.Context, fie
 				return ec.fieldContext_Interaction_commentCount(ctx, field)
 			case "repostCount":
 				return ec.fieldContext_Interaction_repostCount(ctx, field)
+			case "viewCount":
+				return ec.fieldContext_Interaction_viewCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Interaction", field.Name)
 		},
@@ -15115,6 +15184,11 @@ func (ec *executionContext) _Interaction(ctx context.Context, sel ast.SelectionS
 			}
 		case "repostCount":
 			out.Values[i] = ec._Interaction_repostCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "viewCount":
+			out.Values[i] = ec._Interaction_viewCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

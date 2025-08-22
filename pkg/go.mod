@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/flick/backend/services/user/proto v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.29.1
 	github.com/spf13/viper v1.18.2
@@ -12,6 +11,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.40.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
@@ -59,7 +59,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
@@ -72,5 +71,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/flick/backend/services/user/proto => ../services/user/proto

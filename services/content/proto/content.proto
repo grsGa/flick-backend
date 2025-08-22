@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package content;
-option go_package = "./proto";
+option go_package = "github.com/flick/backend/services/content/proto";
 
 // ContentService 定义内容服务
 service ContentService {

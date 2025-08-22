@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package auth;
-option go_package = "./proto";
+option go_package = "github.com/flick/backend/services/auth/proto";
 
 // AuthService 定义认证服务
 service AuthService {

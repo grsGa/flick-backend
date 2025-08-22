@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package user;
-option go_package = "./proto";
+option go_package = "github.com/flick/backend/services/user/proto";
 
 // UserService 定义用户服务
 service UserService {

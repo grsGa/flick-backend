@@ -106,6 +106,7 @@ type Interaction struct {
 	LikeCount    int  `json:"likeCount"`
 	CommentCount int  `json:"commentCount"`
 	RepostCount  int  `json:"repostCount"`
+	ViewCount    int  `json:"viewCount"`
 }
 
 type LikePostInput struct {

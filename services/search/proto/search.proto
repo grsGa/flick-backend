@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package search;
-option go_package = "./proto";
+option go_package = "github.com/flick/backend/services/search/proto";
 
 // SearchService 定义搜索服务
 service SearchService {

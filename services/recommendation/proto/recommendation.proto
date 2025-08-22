@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package recommendation;
-option go_package = "./proto";
+option go_package = "github.com/flick/backend/services/recommendation/proto";
 
 // RecommendationService 定义推荐服务
 service RecommendationService {

@@ -56,7 +56,7 @@ func (d *ConsulServiceDiscovery) GetServiceConn(serviceName string) (*grpc.Clien
 
 	// Set max message size to 100MB for large file uploads
 	maxMsgSize := 100 * 1024 * 1024 // 100MB
-	conn, err := grpc.Dial(address, 
+	conn, err := grpc.Dial(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(maxMsgSize),

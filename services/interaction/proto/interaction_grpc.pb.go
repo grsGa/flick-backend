@@ -58,6 +58,14 @@ type InteractionServiceClient interface {
 	VotePoll(ctx context.Context, in *VotePollRequest, opts ...grpc.CallOption) (*VotePollResponse, error)
 	// 创建举报
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
+	// 创建收藏
+	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
+	// 删除收藏
+	DeleteBookmark(ctx context.Context, in *DeleteBookmarkRequest, opts ...grpc.CallOption) (*DeleteBookmarkResponse, error)
+	// 检查是否收藏
+	IsBookmarked(ctx context.Context, in *IsBookmarkedRequest, opts ...grpc.CallOption) (*IsBookmarkedResponse, error)
+	// 获取用户收藏列表
+	GetBookmarks(ctx context.Context, in *GetBookmarksRequest, opts ...grpc.CallOption) (*GetBookmarksResponse, error)
 }
 
 type interactionServiceClient struct {
@@ -230,6 +238,42 @@ func (c *interactionServiceClient) CreateReport(ctx context.Context, in *CreateR
 	return out, nil
 }
 
+func (c *interactionServiceClient) CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error) {
+	out := new(CreateBookmarkResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/CreateBookmark", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) DeleteBookmark(ctx context.Context, in *DeleteBookmarkRequest, opts ...grpc.CallOption) (*DeleteBookmarkResponse, error) {
+	out := new(DeleteBookmarkResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/DeleteBookmark", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) IsBookmarked(ctx context.Context, in *IsBookmarkedRequest, opts ...grpc.CallOption) (*IsBookmarkedResponse, error) {
+	out := new(IsBookmarkedResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/IsBookmarked", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) GetBookmarks(ctx context.Context, in *GetBookmarksRequest, opts ...grpc.CallOption) (*GetBookmarksResponse, error) {
+	out := new(GetBookmarksResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/GetBookmarks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InteractionServiceServer is the server API for InteractionService service.
 // All implementations must embed UnimplementedInteractionServiceServer
 // for forward compatibility
@@ -270,6 +314,14 @@ type InteractionServiceServer interface {
 	VotePoll(context.Context, *VotePollRequest) (*VotePollResponse, error)
 	// 创建举报
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
+	// 创建收藏
+	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
+	// 删除收藏
+	DeleteBookmark(context.Context, *DeleteBookmarkRequest) (*DeleteBookmarkResponse, error)
+	// 检查是否收藏
+	IsBookmarked(context.Context, *IsBookmarkedRequest) (*IsBookmarkedResponse, error)
+	// 获取用户收藏列表
+	GetBookmarks(context.Context, *GetBookmarksRequest) (*GetBookmarksResponse, error)
 	mustEmbedUnimplementedInteractionServiceServer()
 }
 
@@ -330,6 +382,18 @@ func (UnimplementedInteractionServiceServer) VotePoll(context.Context, *VotePoll
 }
 func (UnimplementedInteractionServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
+}
+func (UnimplementedInteractionServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
+}
+func (UnimplementedInteractionServiceServer) DeleteBookmark(context.Context, *DeleteBookmarkRequest) (*DeleteBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteBookmark not implemented")
+}
+func (UnimplementedInteractionServiceServer) IsBookmarked(context.Context, *IsBookmarkedRequest) (*IsBookmarkedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsBookmarked not implemented")
+}
+func (UnimplementedInteractionServiceServer) GetBookmarks(context.Context, *GetBookmarksRequest) (*GetBookmarksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBookmarks not implemented")
 }
 func (UnimplementedInteractionServiceServer) mustEmbedUnimplementedInteractionServiceServer() {}
 
@@ -668,6 +732,78 @@ func _InteractionService_CreateReport_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InteractionService_CreateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).CreateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/CreateBookmark",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).CreateBookmark(ctx, req.(*CreateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_DeleteBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).DeleteBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/DeleteBookmark",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).DeleteBookmark(ctx, req.(*DeleteBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_IsBookmarked_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsBookmarkedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).IsBookmarked(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/IsBookmarked",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).IsBookmarked(ctx, req.(*IsBookmarkedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_GetBookmarks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBookmarksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).GetBookmarks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/GetBookmarks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).GetBookmarks(ctx, req.(*GetBookmarksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InteractionService_ServiceDesc is the grpc.ServiceDesc for InteractionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -746,6 +882,22 @@ var InteractionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateReport",
 			Handler:    _InteractionService_CreateReport_Handler,
+		},
+		{
+			MethodName: "CreateBookmark",
+			Handler:    _InteractionService_CreateBookmark_Handler,
+		},
+		{
+			MethodName: "DeleteBookmark",
+			Handler:    _InteractionService_DeleteBookmark_Handler,
+		},
+		{
+			MethodName: "IsBookmarked",
+			Handler:    _InteractionService_IsBookmarked_Handler,
+		},
+		{
+			MethodName: "GetBookmarks",
+			Handler:    _InteractionService_GetBookmarks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
