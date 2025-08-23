@@ -16,8 +16,8 @@ import (
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	"github.com/flick/backend/services/gateway/internal/middleware"
-	interaction_proto "github.com/flick/backend/services/interaction/proto"
-	user_proto "github.com/flick/backend/services/user/proto"
+	interaction_pb "github.com/flick/backend/services/interaction/proto"
+	user_pb "github.com/flick/backend/services/user/proto"
 )
 
 // Login is the resolver for the login field.
@@ -27,7 +27,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 		return nil, errors.New("username is required")
 	}
 
-	res, err := r.UserServiceClient.Login(ctx, &user_proto.LoginRequest{
+	res, err := r.UserServiceClient.Login(ctx, &user_pb.LoginRequest{
 		Identifier: identifier,
 		Password:   input.Password,
 	})
@@ -51,7 +51,7 @@ func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInp
 		displayName = *input.DisplayName
 	}
 
-	res, err := r.UserServiceClient.Register(ctx, &user_proto.RegisterRequest{
+	res, err := r.UserServiceClient.Register(ctx, &user_pb.RegisterRequest{
 		Username:    input.Username,
 		Email:       input.Email,
 		Password:    input.Password,
@@ -258,7 +258,7 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 	fmt.Printf("  AvatarURL: %v\n", input.AvatarURL)
 	fmt.Printf("  BannerURL: %v\n", input.BannerURL)
 
-	req := &user_proto.UpdateProfileRequest{
+	req := &user_pb.UpdateProfileRequest{
 		UserId:      userID,
 		DisplayName: input.DisplayName,
 		Bio:         input.Bio,
@@ -297,7 +297,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	fmt.Printf("[Gateway] FollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
 	// 调用interaction服务创建关注关系
-	followRes, err := r.InteractionServiceClient.CreateFollow(ctx, &interaction_proto.CreateFollowRequest{
+	followRes, err := r.InteractionServiceClient.CreateFollow(ctx, &interaction_pb.CreateFollowRequest{
 		FollowerId: followerID,
 		FolloweeId: userID,
 	})
@@ -309,7 +309,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	}
 
 	// 调用用户服务更新关注者计数
-	_, err = r.UserServiceClient.FollowUser(ctx, &user_proto.FollowUserRequest{
+	_, err = r.UserServiceClient.FollowUser(ctx, &user_pb.FollowUserRequest{
 		FollowerId:  followerID,
 		FollowingId: userID,
 	})
@@ -319,7 +319,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	}
 
 	// 获取被关注用户的信息返回
-	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{
 		UserId: userID,
 	})
 	if err != nil {
@@ -349,7 +349,7 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	fmt.Printf("[Gateway] UnfollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
 	// 调用interaction服务删除关注关系
-	unfollowRes, err := r.InteractionServiceClient.DeleteFollow(ctx, &interaction_proto.DeleteFollowRequest{
+	unfollowRes, err := r.InteractionServiceClient.DeleteFollow(ctx, &interaction_pb.DeleteFollowRequest{
 		FollowerId: followerID,
 		FolloweeId: userID,
 	})
@@ -361,7 +361,7 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	}
 
 	// 调用用户服务更新关注者计数
-	_, err = r.UserServiceClient.UnfollowUser(ctx, &user_proto.UnfollowUserRequest{
+	_, err = r.UserServiceClient.UnfollowUser(ctx, &user_pb.UnfollowUserRequest{
 		FollowerId:  followerID,
 		FollowingId: userID,
 	})
@@ -371,7 +371,7 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	}
 
 	// 获取被取消关注用户的信息返回
-	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{
 		UserId: userID,
 	})
 	if err != nil {
@@ -398,7 +398,7 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
 	fmt.Printf("[Gateway] UserByUsername query received for username: %s\n", username)
 	
-	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
+	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_pb.GetUserByUsernameRequest{
 		Username: username,
 	})
 	if err != nil {
@@ -415,28 +415,35 @@ func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*m
 	
 	// Check if current user is following this user
 	claims := middleware.GetUserClaims(ctx)
-	if claims != nil && claims.UserID != user.Id {
-		fmt.Printf("[Gateway] UserByUsername checking follow status for follower: %s, followee: %s\n", claims.UserID, user.Id)
-		
-		followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_proto.IsFollowingRequest{
-			FollowerId: claims.UserID,
-			FolloweeId: user.Id,
-		})
-		if err != nil {
-			fmt.Printf("[Gateway] UserByUsername follow check failed: %v\n", err)
-			// Don't fail the query, just set isFollowing to false
+	if claims != nil {
+		if claims.UserID == user.Id {
+			// Viewing own profile - don't show follow button
 			user.IsFollowing = false
-		} else if followRes.Error != nil {
-			fmt.Printf("[Gateway] UserByUsername follow check error: %s\n", followRes.Error.Message)
-			user.IsFollowing = false
+			fmt.Printf("[Gateway] UserByUsername viewing own profile (%s), setting isFollowing to false\n", claims.UserID)
 		} else {
-			user.IsFollowing = followRes.IsFollowing
-			fmt.Printf("[Gateway] UserByUsername follow status: %v\n", user.IsFollowing)
+			// Viewing someone else's profile - check actual follow status
+			fmt.Printf("[Gateway] UserByUsername checking follow status for follower: %s, followee: %s\n", claims.UserID, user.Id)
+			
+			followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+				FollowerId: claims.UserID,
+				FolloweeId: user.Id,
+			})
+			if err != nil {
+				fmt.Printf("[Gateway] UserByUsername follow check failed: %v\n", err)
+				// Don't fail the query, just set isFollowing to false
+				user.IsFollowing = false
+			} else if followRes.Error != nil {
+				fmt.Printf("[Gateway] UserByUsername follow check error: %s\n", followRes.Error.Message)
+				user.IsFollowing = false
+			} else {
+				user.IsFollowing = followRes.IsFollowing
+				fmt.Printf("[Gateway] UserByUsername follow status result: %v for follower %s -> followee %s\n", user.IsFollowing, claims.UserID, user.Id)
+			}
 		}
 	} else {
-		// Not authenticated or viewing own profile
+		// Not authenticated - don't show follow button
 		user.IsFollowing = false
-		fmt.Printf("[Gateway] UserByUsername no auth or self-view, setting isFollowing to false\n")
+		fmt.Printf("[Gateway] UserByUsername no authentication, setting isFollowing to false\n")
 	}
 
 	return r.userProtoToGql(user), nil
@@ -463,7 +470,7 @@ func (r *queryResolver) UserPosts(ctx context.Context, username string, first in
 
 	// 通过用户服务获取用户ID
 	fmt.Printf("[Gateway] UserPosts calling user-service GetUserByUsername\n")
-	userRes, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
+	userRes, err := r.UserServiceClient.GetUserByUsername(ctx, &user_pb.GetUserByUsernameRequest{
 		Username: username,
 	})
 	if err != nil {
@@ -751,13 +758,82 @@ func (r *queryResolver) RecommendedPosts(ctx context.Context, first int) (*model
 func (r *queryResolver) Followers(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
 	fmt.Printf("[Gateway] Followers query received for userID: %s\n", userID)
 
-	// TODO: Implement actual followers fetching from user service
-	// For now, return empty connection to prevent 422 error
+	// Get followers from interaction service
+	req := &interaction_pb.GetFollowersRequest{
+		UserId:   userID,
+		Page:     1, // Start from page 1
+		PageSize: int32(first),
+	}
+
+	res, err := r.InteractionServiceClient.GetFollowers(ctx, req)
+	if err != nil {
+		fmt.Printf("[Gateway] Error fetching followers: %v\n", err)
+		return nil, fmt.Errorf("failed to fetch followers: %w", err)
+	}
+
+	// Convert to GraphQL format
+	edges := make([]model.UserEdge, len(res.Followers))
+	for i, follower := range res.Followers {
+		// Get full user details from user service
+		userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{UserId: follower.FollowerId})
+		if err != nil {
+			fmt.Printf("[Gateway] Error fetching user details for follower %s: %v\n", follower.FollowerId, err)
+			continue
+		}
+
+		// Check if current user is following this follower
+		claims := middleware.GetUserClaims(ctx)
+		isFollowing := false
+		if claims != nil {
+			fmt.Printf("[Gateway] Checking if user %s is following follower %s\n", claims.UserID, follower.FollowerId)
+			if claims.UserID == follower.FollowerId {
+				// Don't show follow button for self
+				isFollowing = false
+				fmt.Printf("[Gateway] Follower is self, setting isFollowing=false\n")
+			} else {
+				// Check if current user follows this follower
+				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+					FollowerId: claims.UserID,
+					FolloweeId: follower.FollowerId,
+				})
+				if err == nil {
+					isFollowing = followRes.IsFollowing
+					fmt.Printf("[Gateway] IsFollowing result: %v\n", isFollowing)
+				} else {
+					fmt.Printf("[Gateway] Error checking follow status: %v\n", err)
+				}
+			}
+		}
+
+		edges[i] = model.UserEdge{
+			Node: &model.User{
+				ID:          userRes.User.Id,
+				Username:    userRes.User.Username,
+				DisplayName: &userRes.User.DisplayName,
+				Bio:         &userRes.User.Bio,
+				AvatarURL:   &userRes.User.AvatarUrl,
+				IsFollowing: &isFollowing,
+				IsVerified:  &userRes.User.IsVerified,
+			},
+			Cursor: follower.FollowerId, // Use user ID as cursor
+		}
+	}
+
+	// Calculate pagination info
+	hasNextPage := false
+	var endCursor *string
+	if len(res.Followers) > 0 {
+		lastFollower := res.Followers[len(res.Followers)-1]
+		endCursor = &lastFollower.FollowerId
+		// Simple pagination logic - if we got the full page size, assume there might be more
+		hasNextPage = len(res.Followers) == int(req.PageSize)
+	}
+
 	return &model.UserConnection{
-		Edges: []model.UserEdge{},
+		Edges: edges,
 		PageInfo: &model.PageInfo{
-			HasNextPage: false,
-			EndCursor:   nil,
+			HasNextPage: hasNextPage,
+			EndCursor:   endCursor,
 		},
 	}, nil
 }
@@ -766,13 +842,83 @@ func (r *queryResolver) Followers(ctx context.Context, userID string, first int,
 func (r *queryResolver) Following(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error) {
 	fmt.Printf("[Gateway] Following query received for userID: %s\n", userID)
 
-	// TODO: Implement actual following fetching from user service
-	// For now, return empty connection to prevent 422 error
+	// Get following from interaction service
+	req := &interaction_pb.GetFollowingRequest{
+		UserId:   userID,
+		Page:     1, // Start from page 1
+		PageSize: int32(first),
+	}
+
+	res, err := r.InteractionServiceClient.GetFollowing(ctx, req)
+	if err != nil {
+		fmt.Printf("[Gateway] Error fetching following: %v\n", err)
+		return nil, fmt.Errorf("failed to fetch following: %w", err)
+	}
+
+	// Convert to GraphQL format
+	edges := make([]model.UserEdge, len(res.Following))
+	for i, followee := range res.Following {
+		// Get full user details from user service
+		userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{UserId: followee.FolloweeId})
+		if err != nil {
+			fmt.Printf("[Gateway] Error fetching user details for followee %s: %v\n", followee.FolloweeId, err)
+			continue
+		}
+
+		// Determine follow status based on context
+		claims := middleware.GetUserClaims(ctx)
+		isFollowing := false
+		
+		if claims != nil {
+			fmt.Printf("[Gateway] Checking follow status for followee %s, viewer %s, profile owner %s\n", followee.FolloweeId, claims.UserID, userID)
+			if claims.UserID == followee.FolloweeId {
+				// Don't show follow button for self
+				isFollowing = false
+				fmt.Printf("[Gateway] Followee is self, setting isFollowing=false\n")
+			} else {
+				// Check if current user follows this followee
+				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+					FollowerId: claims.UserID,
+					FolloweeId: followee.FolloweeId,
+				})
+				if err == nil {
+					isFollowing = followRes.IsFollowing
+					fmt.Printf("[Gateway] IsFollowing result: %v\n", isFollowing)
+				} else {
+					fmt.Printf("[Gateway] Error checking follow status: %v\n", err)
+				}
+			}
+		}
+
+		edges[i] = model.UserEdge{
+			Node: &model.User{
+				ID:          userRes.User.Id,
+				Username:    userRes.User.Username,
+				DisplayName: &userRes.User.DisplayName,
+				Bio:         &userRes.User.Bio,
+				AvatarURL:   &userRes.User.AvatarUrl,
+				IsFollowing: &isFollowing,
+				IsVerified:  &userRes.User.IsVerified,
+			},
+			Cursor: followee.FolloweeId, // Use user ID as cursor
+		}
+	}
+
+	// Calculate pagination info
+	hasNextPage := false
+	var endCursor *string
+	if len(res.Following) > 0 {
+		lastFollowee := res.Following[len(res.Following)-1]
+		endCursor = &lastFollowee.FolloweeId
+		// Simple pagination logic - if we got the full page size, assume there might be more
+		hasNextPage = len(res.Following) == int(req.PageSize)
+	}
+
 	return &model.UserConnection{
-		Edges: []model.UserEdge{},
+		Edges: edges,
 		PageInfo: &model.PageInfo{
-			HasNextPage: false,
-			EndCursor:   nil,
+			HasNextPage: hasNextPage,
+			EndCursor:   endCursor,
 		},
 	}, nil
 }
