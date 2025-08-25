@@ -222,24 +222,25 @@ type PollOption struct {
 }
 
 type Post struct {
-	ID               string            `json:"id"`
-	Content          string            `json:"content"`
-	Author           *User             `json:"author"`
-	Visibility       PostVisibility    `json:"visibility"`
-	ReplyPermission  ReplyPermission   `json:"replyPermission"`
-	ParentID         *string           `json:"parentId,omitempty"`
-	RepostID         *string           `json:"repostId,omitempty"`
-	HasMedia         bool              `json:"hasMedia"`
-	HasPoll          bool              `json:"hasPoll"`
-	Media            []Media           `json:"media"`
-	MediaAttachments []MediaAttachment `json:"mediaAttachments"`
-	MentionedUsers   []string          `json:"mentionedUsers"`
-	Tags             []string          `json:"tags"`
-	Poll             *Poll             `json:"poll,omitempty"`
-	Stats            *PostStats        `json:"stats"`
-	Interaction      *Interaction      `json:"interaction"`
-	CreatedAt        string            `json:"createdAt"`
-	UpdatedAt        string            `json:"updatedAt"`
+	ID               string             `json:"id"`
+	Content          string             `json:"content"`
+	Author           *User              `json:"author"`
+	Visibility       PostVisibility     `json:"visibility"`
+	ReplyPermission  ReplyPermission    `json:"replyPermission"`
+	ParentID         *string            `json:"parentId,omitempty"`
+	RepostID         *string            `json:"repostId,omitempty"`
+	HasMedia         bool               `json:"hasMedia"`
+	HasPoll          bool               `json:"hasPoll"`
+	Media            []Media            `json:"media"`
+	MediaAttachments []MediaAttachment  `json:"mediaAttachments"`
+	MentionedUsers   []string           `json:"mentionedUsers"`
+	Tags             []string           `json:"tags"`
+	Poll             *Poll              `json:"poll,omitempty"`
+	Stats            *PostStats         `json:"stats"`
+	Interaction      *Interaction       `json:"interaction"`
+	Comments         *CommentConnection `json:"comments,omitempty"`
+	CreatedAt        string             `json:"createdAt"`
+	UpdatedAt        string             `json:"updatedAt"`
 }
 
 func (Post) IsNotificationEntity() {}

@@ -41,6 +41,7 @@ type Post {
   poll: Poll
   stats: PostStats!
   interaction: Interaction!
+  comments(first: Int!, after: String): CommentConnection
   createdAt: String!
   updatedAt: String!
 }

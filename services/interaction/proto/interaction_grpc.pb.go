@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.7
-// source: services/interaction/proto/interaction.proto
+// source: proto/interaction.proto
 
 package proto
 
@@ -66,6 +66,10 @@ type InteractionServiceClient interface {
 	IsBookmarked(ctx context.Context, in *IsBookmarkedRequest, opts ...grpc.CallOption) (*IsBookmarkedResponse, error)
 	// 获取用户收藏列表
 	GetBookmarks(ctx context.Context, in *GetBookmarksRequest, opts ...grpc.CallOption) (*GetBookmarksResponse, error)
+	// 点赞帖子 (高级接口，包含统计更新)
+	LikePost(ctx context.Context, in *LikePostRequest, opts ...grpc.CallOption) (*LikePostResponse, error)
+	// 取消点赞帖子 (高级接口，包含统计更新)
+	UnlikePost(ctx context.Context, in *UnlikePostRequest, opts ...grpc.CallOption) (*UnlikePostResponse, error)
 }
 
 type interactionServiceClient struct {
@@ -274,6 +278,24 @@ func (c *interactionServiceClient) GetBookmarks(ctx context.Context, in *GetBook
 	return out, nil
 }
 
+func (c *interactionServiceClient) LikePost(ctx context.Context, in *LikePostRequest, opts ...grpc.CallOption) (*LikePostResponse, error) {
+	out := new(LikePostResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/LikePost", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *interactionServiceClient) UnlikePost(ctx context.Context, in *UnlikePostRequest, opts ...grpc.CallOption) (*UnlikePostResponse, error) {
+	out := new(UnlikePostResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/UnlikePost", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InteractionServiceServer is the server API for InteractionService service.
 // All implementations must embed UnimplementedInteractionServiceServer
 // for forward compatibility
@@ -322,6 +344,10 @@ type InteractionServiceServer interface {
 	IsBookmarked(context.Context, *IsBookmarkedRequest) (*IsBookmarkedResponse, error)
 	// 获取用户收藏列表
 	GetBookmarks(context.Context, *GetBookmarksRequest) (*GetBookmarksResponse, error)
+	// 点赞帖子 (高级接口，包含统计更新)
+	LikePost(context.Context, *LikePostRequest) (*LikePostResponse, error)
+	// 取消点赞帖子 (高级接口，包含统计更新)
+	UnlikePost(context.Context, *UnlikePostRequest) (*UnlikePostResponse, error)
 	mustEmbedUnimplementedInteractionServiceServer()
 }
 
@@ -394,6 +420,12 @@ func (UnimplementedInteractionServiceServer) IsBookmarked(context.Context, *IsBo
 }
 func (UnimplementedInteractionServiceServer) GetBookmarks(context.Context, *GetBookmarksRequest) (*GetBookmarksResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBookmarks not implemented")
+}
+func (UnimplementedInteractionServiceServer) LikePost(context.Context, *LikePostRequest) (*LikePostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LikePost not implemented")
+}
+func (UnimplementedInteractionServiceServer) UnlikePost(context.Context, *UnlikePostRequest) (*UnlikePostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnlikePost not implemented")
 }
 func (UnimplementedInteractionServiceServer) mustEmbedUnimplementedInteractionServiceServer() {}
 
@@ -804,6 +836,42 @@ func _InteractionService_GetBookmarks_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InteractionService_LikePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LikePostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).LikePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/LikePost",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).LikePost(ctx, req.(*LikePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InteractionService_UnlikePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlikePostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).UnlikePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interaction.InteractionService/UnlikePost",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).UnlikePost(ctx, req.(*UnlikePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InteractionService_ServiceDesc is the grpc.ServiceDesc for InteractionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -899,7 +967,15 @@ var InteractionService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetBookmarks",
 			Handler:    _InteractionService_GetBookmarks_Handler,
 		},
+		{
+			MethodName: "LikePost",
+			Handler:    _InteractionService_LikePost_Handler,
+		},
+		{
+			MethodName: "UnlikePost",
+			Handler:    _InteractionService_UnlikePost_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "services/interaction/proto/interaction.proto",
+	Metadata: "proto/interaction.proto",
 }

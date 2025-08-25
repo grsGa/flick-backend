@@ -229,6 +229,12 @@ type InteractionServiceClient interface {
 
 	// GetBookmarks 获取收藏列表
 	GetBookmarks(ctx context.Context, in *interaction_proto.GetBookmarksRequest, opts ...interface{}) (*interaction_proto.GetBookmarksResponse, error)
+
+	// LikePost 点赞帖子 (高级接口，包含统计更新)
+	LikePost(ctx context.Context, in *interaction_proto.LikePostRequest, opts ...interface{}) (*interaction_proto.LikePostResponse, error)
+
+	// UnlikePost 取消点赞帖子 (高级接口，包含统计更新)
+	UnlikePost(ctx context.Context, in *interaction_proto.UnlikePostRequest, opts ...interface{}) (*interaction_proto.UnlikePostResponse, error)
 }
 
 // RecommendationServiceClient 定义推荐服务客户端接口

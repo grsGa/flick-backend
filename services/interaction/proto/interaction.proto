@@ -70,6 +70,12 @@ service InteractionService {
   
   // 获取用户收藏列表
   rpc GetBookmarks(GetBookmarksRequest) returns (GetBookmarksResponse);
+  
+  // 点赞帖子 (高级接口，包含统计更新)
+  rpc LikePost(LikePostRequest) returns (LikePostResponse);
+  
+  // 取消点赞帖子 (高级接口，包含统计更新)
+  rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse);
 }
 
 // 关注关系
@@ -425,6 +431,32 @@ message GetBookmarksResponse {
   string next_cursor = 2;
   bool has_more = 3;
   Error error = 4;
+}
+
+// 点赞帖子请求
+message LikePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+// 点赞帖子响应
+message LikePostResponse {
+  bool is_liked = 1;
+  int32 like_count = 2;
+  Error error = 3;
+}
+
+// 取消点赞帖子请求
+message UnlikePostRequest {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+// 取消点赞帖子响应
+message UnlikePostResponse {
+  bool is_liked = 1;
+  int32 like_count = 2;
+  Error error = 3;
 }
 
 // 错误信息

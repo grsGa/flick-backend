@@ -423,6 +423,16 @@ func (c *interactionServiceClient) GetBookmarks(ctx context.Context, in *interac
 	return c.client.GetBookmarks(ctx, in)
 }
 
+// LikePost 点赞帖子 (高级接口，包含统计更新)
+func (c *interactionServiceClient) LikePost(ctx context.Context, in *interaction_proto.LikePostRequest, opts ...interface{}) (*interaction_proto.LikePostResponse, error) {
+	return c.client.LikePost(ctx, in)
+}
+
+// UnlikePost 取消点赞帖子 (高级接口，包含统计更新)
+func (c *interactionServiceClient) UnlikePost(ctx context.Context, in *interaction_proto.UnlikePostRequest, opts ...interface{}) (*interaction_proto.UnlikePostResponse, error) {
+	return c.client.UnlikePost(ctx, in)
+}
+
 // recommendationServiceClient 推荐服务gRPC客户端实现
 type recommendationServiceClient struct {
 	client recommendation_proto.RecommendationServiceClient

@@ -538,3 +538,122 @@ func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBoo
 		HasMore:    hasMore,
 	}, nil
 }
+
+// LikePost 点赞帖子 (高级接口，包含统计更新)
+func (s *interactionService) LikePost(ctx context.Context, req *proto.LikePostRequest) (*proto.LikePostResponse, error) {
+	// 检查是否已经点赞
+	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.LikePostResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to check like status: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 如果已经点赞，返回当前状态
+	if isLiked {
+		// 获取当前点赞数
+		stats, err := s.interactionRepo.GetPostStats(ctx, req.PostId)
+		if err != nil {
+			return &proto.LikePostResponse{
+				IsLiked:   true,
+				LikeCount: 0, // 默认值
+			}, nil
+		}
+		return &proto.LikePostResponse{
+			IsLiked:   true,
+			LikeCount: stats.LikeCount,
+		}, nil
+	}
+
+	// 创建点赞记录
+	like := &proto.Like{
+		Id:        uuid.New().String(),
+		UserId:    req.UserId,
+		PostId:    req.PostId,
+		CreatedAt: time.Now().Format(time.RFC3339),
+	}
+
+	err = s.interactionRepo.CreateLike(ctx, like)
+	if err != nil {
+		return &proto.LikePostResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to create like: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 更新帖子统计
+	stats, err := s.interactionRepo.UpdatePostStats(ctx, req.PostId, "like", 1)
+	if err != nil {
+		// 即使统计更新失败，点赞操作已成功，返回成功状态
+		return &proto.LikePostResponse{
+			IsLiked:   true,
+			LikeCount: 1, // 至少有当前用户的点赞
+		}, nil
+	}
+
+	return &proto.LikePostResponse{
+		IsLiked:   true,
+		LikeCount: stats.LikeCount,
+	}, nil
+}
+
+// UnlikePost 取消点赞帖子 (高级接口，包含统计更新)
+func (s *interactionService) UnlikePost(ctx context.Context, req *proto.UnlikePostRequest) (*proto.UnlikePostResponse, error) {
+	// 检查是否已经点赞
+	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.UnlikePostResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to check like status: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 如果没有点赞，返回当前状态
+	if !isLiked {
+		// 获取当前点赞数
+		stats, err := s.interactionRepo.GetPostStats(ctx, req.PostId)
+		if err != nil {
+			return &proto.UnlikePostResponse{
+				IsLiked:   false,
+				LikeCount: 0, // 默认值
+			}, nil
+		}
+		return &proto.UnlikePostResponse{
+			IsLiked:   false,
+			LikeCount: stats.LikeCount,
+		}, nil
+	}
+
+	// 删除点赞记录
+	err = s.interactionRepo.DeleteLike(ctx, req.UserId, req.PostId)
+	if err != nil {
+		return &proto.UnlikePostResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to delete like: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 更新帖子统计
+	stats, err := s.interactionRepo.UpdatePostStats(ctx, req.PostId, "unlike", -1)
+	if err != nil {
+		// 即使统计更新失败，取消点赞操作已成功，返回成功状态
+		return &proto.UnlikePostResponse{
+			IsLiked:   false,
+			LikeCount: 0, // 保守估计
+		}, nil
+	}
+
+	return &proto.UnlikePostResponse{
+		IsLiked:   false,
+		LikeCount: stats.LikeCount,
+	}, nil
+}

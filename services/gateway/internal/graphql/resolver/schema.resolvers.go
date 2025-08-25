@@ -173,17 +173,87 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID string) (bool,
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateCommentInput) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
+	fmt.Printf("[Gateway] CreateComment mutation received for post %s\n", input.PostID)
+
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// For now, return a mock comment since the content service doesn't support comments yet
+	// In a real implementation, this would call the content service to create the comment
+	return &model.Comment{
+		ID:      "mock-comment-id",
+		Content: input.Content,
+		Author: &model.User{
+			ID:          claims.UserID,
+			Username:    claims.Username,
+			DisplayName: &claims.Username, // Use username as display name for now
+		},
+		CreatedAt: "2024-01-01T00:00:00Z", // Mock timestamp
+	}, nil
 }
 
 // LikePost is the resolver for the likePost field.
 func (r *mutationResolver) LikePost(ctx context.Context, input model.LikePostInput) (*model.Interaction, error) {
-	panic(fmt.Errorf("not implemented: LikePost - likePost"))
+	fmt.Printf("[Gateway] LikePost mutation received for post %s\n", input.PostID)
+
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Call interaction service to like the post
+	res, err := r.InteractionServiceClient.LikePost(ctx, &interaction_pb.LikePostRequest{
+		PostId: input.PostID,
+		UserId: claims.UserID,
+	})
+	if err != nil {
+		fmt.Printf("[Gateway] LikePost failed: %v\n", err)
+		return nil, fmt.Errorf("failed to like post: %w", err)
+	}
+	if res.Error != nil {
+		fmt.Printf("[Gateway] LikePost error: %s\n", res.Error.Message)
+		return nil, errors.New(res.Error.Message)
+	}
+
+	fmt.Printf("[Gateway] LikePost successful: liked=%v, count=%d\n", res.IsLiked, res.LikeCount)
+
+	return &model.Interaction{
+		IsLiked:   res.IsLiked,
+		LikeCount: int(res.LikeCount),
+	}, nil
 }
 
 // UnlikePost is the resolver for the unlikePost field.
 func (r *mutationResolver) UnlikePost(ctx context.Context, input model.LikePostInput) (*model.Interaction, error) {
-	panic(fmt.Errorf("not implemented: UnlikePost - unlikePost"))
+	fmt.Printf("[Gateway] UnlikePost mutation received for post %s\n", input.PostID)
+
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return nil, fmt.Errorf("user not authenticated")
+	}
+
+	// Call interaction service to unlike the post
+	res, err := r.InteractionServiceClient.UnlikePost(ctx, &interaction_pb.UnlikePostRequest{
+		PostId: input.PostID,
+		UserId: claims.UserID,
+	})
+	if err != nil {
+		fmt.Printf("[Gateway] UnlikePost failed: %v\n", err)
+		return nil, fmt.Errorf("failed to unlike post: %w", err)
+	}
+	if res.Error != nil {
+		fmt.Printf("[Gateway] UnlikePost error: %s\n", res.Error.Message)
+		return nil, errors.New(res.Error.Message)
+	}
+
+	fmt.Printf("[Gateway] UnlikePost successful: liked=%v, count=%d\n", res.IsLiked, res.LikeCount)
+
+	return &model.Interaction{
+		IsLiked:   res.IsLiked,
+		LikeCount: int(res.LikeCount),
+	}, nil
 }
 
 // BookmarkPost is the resolver for the bookmarkPost field.
@@ -287,7 +357,7 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 // FollowUser is the resolver for the followUser field.
 func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*model.User, error) {
 	fmt.Printf("[Gateway] FollowUser mutation received for userID: %s\n", userID)
-	
+
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
 		fmt.Printf("[Gateway] FollowUser unauthorized: no user claims found in context\n")
@@ -339,7 +409,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 // UnfollowUser is the resolver for the unfollowUser field.
 func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*model.User, error) {
 	fmt.Printf("[Gateway] UnfollowUser mutation received for userID: %s\n", userID)
-	
+
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
 		fmt.Printf("[Gateway] UnfollowUser unauthorized: no user claims found in context\n")
@@ -397,7 +467,7 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 // UserByUsername is the resolver for the userByUsername field.
 func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
 	fmt.Printf("[Gateway] UserByUsername query received for username: %s\n", username)
-	
+
 	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_pb.GetUserByUsernameRequest{
 		Username: username,
 	})
@@ -412,7 +482,7 @@ func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*m
 	}
 
 	user := res.User
-	
+
 	// Check if current user is following this user
 	claims := middleware.GetUserClaims(ctx)
 	if claims != nil {
@@ -423,7 +493,7 @@ func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*m
 		} else {
 			// Viewing someone else's profile - check actual follow status
 			fmt.Printf("[Gateway] UserByUsername checking follow status for follower: %s, followee: %s\n", claims.UserID, user.Id)
-			
+
 			followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
 				FollowerId: claims.UserID,
 				FolloweeId: user.Id,
@@ -868,7 +938,7 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 		// Determine follow status based on context
 		claims := middleware.GetUserClaims(ctx)
 		isFollowing := false
-		
+
 		if claims != nil {
 			fmt.Printf("[Gateway] Checking follow status for followee %s, viewer %s, profile owner %s\n", followee.FolloweeId, claims.UserID, userID)
 			if claims.UserID == followee.FolloweeId {
