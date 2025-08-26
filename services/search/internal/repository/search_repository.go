@@ -67,9 +67,9 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 		var likeCount int64
 		r.db.Model(&models.Like{}).Where("post_id = ?", post.ID).Count(&likeCount)
 
-		// 获取评论数
-		var commentCount int64
-		r.db.Model(&models.Post{}).Where("parent_id = ?", post.ID).Count(&commentCount)
+		// 获取回复数
+		var replyCount int64
+		r.db.Model(&models.Post{}).Where("parent_id = ?", post.ID).Count(&replyCount)
 
 		items[i] = &proto.SearchResultItem{
 			Id:           post.ID,
@@ -78,7 +78,7 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 			Author:       user.Username,
 			AvatarUrl:    user.AvatarURL,
 			LikeCount:    int32(likeCount),
-			CommentCount: int32(commentCount),
+			ReplyCount:   int32(replyCount),
 			CreatedAt:    post.CreatedAt.Format(time.RFC3339),
 			Hashtags:     []string{}, // 简化处理，实际应从内容中提取标签
 		}

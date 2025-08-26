@@ -32,14 +32,14 @@ service InteractionService {
   // 获取点赞列表
   rpc GetLikes(GetLikesRequest) returns (GetLikesResponse);
   
-  // 创建评论
-  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse);
+  // 创建回复
+  rpc CreateReply(CreateReplyRequest) returns (CreateReplyResponse);
   
-  // 删除评论
-  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+  // 删除回复
+  rpc DeleteReply(DeleteReplyRequest) returns (DeleteReplyResponse);
   
-  // 获取评论列表
-  rpc GetComments(GetCommentsRequest) returns (GetCommentsResponse);
+  // 获取回复列表
+  rpc GetReplies(GetRepliesRequest) returns (GetRepliesResponse);
   
   // 创建转发
   rpc CreateRepost(CreateRepostRequest) returns (CreateRepostResponse);
@@ -94,13 +94,13 @@ message Like {
   string created_at = 4;
 }
 
-// 评论
-message Comment {
+// 回复
+message Reply {
   string id = 1;
   string post_id = 2;
   string user_id = 3;
   string content = 4;
-  string parent_comment_id = 5; // 楼中楼回复
+  string parent_reply_id = 5; // 楼中楼回复
   string created_at = 6;
   string updated_at = 7;
 }
@@ -110,7 +110,7 @@ message Repost {
   string id = 1;
   string user_id = 2;
   string post_id = 3;
-  string comment = 4;
+  string reply = 4;
   string created_at = 5;
 }
 
@@ -118,7 +118,7 @@ message Repost {
 message PostStats {
   string post_id = 1;
   int32 like_count = 2;
-  int32 comment_count = 3;
+  int32 reply_count = 3;
   int32 repost_count = 4;
   int32 view_count = 5;
   string updated_at = 6;
@@ -138,7 +138,7 @@ message Report {
   string id = 1;
   string user_id = 2;
   string target_id = 3;
-  string target_type = 4; // post, user, comment
+  string target_type = 4; // post, user, reply
   string reason = 5;
   string created_at = 6;
 }
@@ -269,7 +269,7 @@ message GetLikesResponse {
 message CreateRepostRequest {
   string user_id = 1;
   string post_id = 2;
-  string comment = 3;
+  string reply = 3;
 }
 
 // 创建转发响应
@@ -290,42 +290,42 @@ message DeleteRepostResponse {
   Error error = 2;
 }
 
-// 创建评论请求
-message CreateCommentRequest {
+// 创建回复请求
+message CreateReplyRequest {
   string post_id = 1;
   string user_id = 2;
   string content = 3;
-  string parent_comment_id = 4; // 可选，楼中楼回复
+  string parent_reply_id = 4; // 可选，楼中楼回复
 }
 
-// 创建评论响应
-message CreateCommentResponse {
-  Comment comment = 1;
+// 创建回复响应
+message CreateReplyResponse {
+  Reply reply = 1;
   Error error = 2;
 }
 
-// 删除评论请求
-message DeleteCommentRequest {
-  string comment_id = 1;
+// 删除回复请求
+message DeleteReplyRequest {
+  string reply_id = 1;
   string user_id = 2; // 验证权限
 }
 
-// 删除评论响应
-message DeleteCommentResponse {
+// 删除回复响应
+message DeleteReplyResponse {
   bool success = 1;
   Error error = 2;
 }
 
-// 获取评论列表请求
-message GetCommentsRequest {
+// 获取回复列表请求
+message GetRepliesRequest {
   string post_id = 1;
   int32 limit = 2;
   string cursor = 3; // 分页游标
 }
 
-// 获取评论列表响应
-message GetCommentsResponse {
-  repeated Comment comments = 1;
+// 获取回复列表响应
+message GetRepliesResponse {
+  repeated Reply replies = 1;
   string next_cursor = 2;
   bool has_more = 3;
   Error error = 4;
@@ -345,7 +345,7 @@ message GetPostStatsResponse {
 // 更新帖子统计请求
 message UpdatePostStatsRequest {
   string post_id = 1;
-  string action = 2; // like, unlike, comment, uncomment, repost, unrepost, view
+  string action = 2; // like, unlike, reply, unreply, repost, unrepost, view
   int32 delta = 3; // +1 or -1
 }
 

@@ -26,37 +26,12 @@ type BookmarkPostInput struct {
 	PostID string `json:"postId"`
 }
 
-type Comment struct {
-	ID          string       `json:"id"`
-	Content     string       `json:"content"`
-	Author      *User        `json:"author"`
-	CreatedAt   string       `json:"createdAt"`
-	Interaction *Interaction `json:"interaction"`
-}
-
-func (Comment) IsNotificationEntity() {}
-
-type CommentConnection struct {
-	Edges    []CommentEdge `json:"edges"`
-	PageInfo *PageInfo     `json:"pageInfo"`
-}
-
-type CommentEdge struct {
-	Node   *Comment `json:"node"`
-	Cursor string   `json:"cursor"`
-}
-
 type Conversation struct {
 	ID           string   `json:"id"`
 	Participants []User   `json:"participants"`
 	LastMessage  *Message `json:"lastMessage,omitempty"`
 	UnreadCount  int      `json:"unreadCount"`
 	CreatedAt    string   `json:"createdAt"`
-}
-
-type CreateCommentInput struct {
-	Content string `json:"content"`
-	PostID  string `json:"postId"`
 }
 
 type CreateConversationInput struct {
@@ -79,6 +54,11 @@ type CreatePostInput struct {
 	MentionedUsers  []string         `json:"mentionedUsers,omitempty"`
 	Tags            []string         `json:"tags,omitempty"`
 	PollData        *PollDataInput   `json:"pollData,omitempty"`
+}
+
+type CreateReplyInput struct {
+	Content string `json:"content"`
+	PostID  string `json:"postId"`
 }
 
 type Hashtag struct {
@@ -104,7 +84,7 @@ type Interaction struct {
 	IsBookmarked bool `json:"isBookmarked"`
 	IsReposted   bool `json:"isReposted"`
 	LikeCount    int  `json:"likeCount"`
-	CommentCount int  `json:"commentCount"`
+	ReplyCount   int  `json:"replyCount"`
 	RepostCount  int  `json:"repostCount"`
 	ViewCount    int  `json:"viewCount"`
 }
@@ -222,25 +202,25 @@ type PollOption struct {
 }
 
 type Post struct {
-	ID               string             `json:"id"`
-	Content          string             `json:"content"`
-	Author           *User              `json:"author"`
-	Visibility       PostVisibility     `json:"visibility"`
-	ReplyPermission  ReplyPermission    `json:"replyPermission"`
-	ParentID         *string            `json:"parentId,omitempty"`
-	RepostID         *string            `json:"repostId,omitempty"`
-	HasMedia         bool               `json:"hasMedia"`
-	HasPoll          bool               `json:"hasPoll"`
-	Media            []Media            `json:"media"`
-	MediaAttachments []MediaAttachment  `json:"mediaAttachments"`
-	MentionedUsers   []string           `json:"mentionedUsers"`
-	Tags             []string           `json:"tags"`
-	Poll             *Poll              `json:"poll,omitempty"`
-	Stats            *PostStats         `json:"stats"`
-	Interaction      *Interaction       `json:"interaction"`
-	Comments         *CommentConnection `json:"comments,omitempty"`
-	CreatedAt        string             `json:"createdAt"`
-	UpdatedAt        string             `json:"updatedAt"`
+	ID               string            `json:"id"`
+	Content          string            `json:"content"`
+	Author           *User             `json:"author"`
+	Visibility       PostVisibility    `json:"visibility"`
+	ReplyPermission  ReplyPermission   `json:"replyPermission"`
+	ParentID         *string           `json:"parentId,omitempty"`
+	RepostID         *string           `json:"repostId,omitempty"`
+	HasMedia         bool              `json:"hasMedia"`
+	HasPoll          bool              `json:"hasPoll"`
+	Media            []Media           `json:"media"`
+	MediaAttachments []MediaAttachment `json:"mediaAttachments"`
+	MentionedUsers   []string          `json:"mentionedUsers"`
+	Tags             []string          `json:"tags"`
+	Poll             *Poll             `json:"poll,omitempty"`
+	Stats            *PostStats        `json:"stats"`
+	Interaction      *Interaction      `json:"interaction"`
+	Replies          *ReplyConnection  `json:"replies,omitempty"`
+	CreatedAt        string            `json:"createdAt"`
+	UpdatedAt        string            `json:"updatedAt"`
 }
 
 func (Post) IsNotificationEntity() {}
@@ -258,10 +238,10 @@ type PostEdge struct {
 }
 
 type PostStats struct {
-	LikeCount    int `json:"likeCount"`
-	CommentCount int `json:"commentCount"`
-	RepostCount  int `json:"repostCount"`
-	ViewCount    int `json:"viewCount"`
+	LikeCount   int `json:"likeCount"`
+	ReplyCount  int `json:"replyCount"`
+	RepostCount int `json:"repostCount"`
+	ViewCount   int `json:"viewCount"`
 }
 
 type Query struct {
@@ -280,6 +260,26 @@ type RegisterInput struct {
 	Password    string  `json:"password"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Phone       *string `json:"phone,omitempty"`
+}
+
+type Reply struct {
+	ID          string       `json:"id"`
+	Content     string       `json:"content"`
+	Author      *User        `json:"author"`
+	CreatedAt   string       `json:"createdAt"`
+	Interaction *Interaction `json:"interaction"`
+}
+
+func (Reply) IsNotificationEntity() {}
+
+type ReplyConnection struct {
+	Edges    []ReplyEdge `json:"edges"`
+	PageInfo *PageInfo   `json:"pageInfo"`
+}
+
+type ReplyEdge struct {
+	Node   *Reply `json:"node"`
+	Cursor string `json:"cursor"`
 }
 
 type RepostInput struct {
@@ -397,7 +397,7 @@ type NotificationType string
 
 const (
 	NotificationTypeLike     NotificationType = "LIKE"
-	NotificationTypeComment  NotificationType = "COMMENT"
+	NotificationTypeReply    NotificationType = "REPLY"
 	NotificationTypeFollow   NotificationType = "FOLLOW"
 	NotificationTypeRepost   NotificationType = "REPOST"
 	NotificationTypeBookmark NotificationType = "BOOKMARK"
@@ -405,7 +405,7 @@ const (
 
 var AllNotificationType = []NotificationType{
 	NotificationTypeLike,
-	NotificationTypeComment,
+	NotificationTypeReply,
 	NotificationTypeFollow,
 	NotificationTypeRepost,
 	NotificationTypeBookmark,
@@ -413,7 +413,7 @@ var AllNotificationType = []NotificationType{
 
 func (e NotificationType) IsValid() bool {
 	switch e {
-	case NotificationTypeLike, NotificationTypeComment, NotificationTypeFollow, NotificationTypeRepost, NotificationTypeBookmark:
+	case NotificationTypeLike, NotificationTypeReply, NotificationTypeFollow, NotificationTypeRepost, NotificationTypeBookmark:
 		return true
 	}
 	return false

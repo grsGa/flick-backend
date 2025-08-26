@@ -40,7 +40,7 @@ message GetRecommendationsResponse {
 message RecordUserActionRequest {
   string user_id = 1;
   string post_id = 2;
-  string action_type = 3; // view, like, share, comment
+  string action_type = 3; // view, like, share, reply
   double weight = 4;
 }
 

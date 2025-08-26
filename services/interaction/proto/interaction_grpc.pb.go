@@ -40,12 +40,12 @@ type InteractionServiceClient interface {
 	IsLiked(ctx context.Context, in *IsLikedRequest, opts ...grpc.CallOption) (*IsLikedResponse, error)
 	// 获取点赞列表
 	GetLikes(ctx context.Context, in *GetLikesRequest, opts ...grpc.CallOption) (*GetLikesResponse, error)
-	// 创建评论
-	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
-	// 删除评论
-	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error)
-	// 获取评论列表
-	GetComments(ctx context.Context, in *GetCommentsRequest, opts ...grpc.CallOption) (*GetCommentsResponse, error)
+	// 创建回复
+	CreateReply(ctx context.Context, in *CreateReplyRequest, opts ...grpc.CallOption) (*CreateReplyResponse, error)
+	// 删除回复
+	DeleteReply(ctx context.Context, in *DeleteReplyRequest, opts ...grpc.CallOption) (*DeleteReplyResponse, error)
+	// 获取回复列表
+	GetReplies(ctx context.Context, in *GetRepliesRequest, opts ...grpc.CallOption) (*GetRepliesResponse, error)
 	// 创建转发
 	CreateRepost(ctx context.Context, in *CreateRepostRequest, opts ...grpc.CallOption) (*CreateRepostResponse, error)
 	// 删除转发
@@ -161,27 +161,27 @@ func (c *interactionServiceClient) GetLikes(ctx context.Context, in *GetLikesReq
 	return out, nil
 }
 
-func (c *interactionServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error) {
-	out := new(CreateCommentResponse)
-	err := c.cc.Invoke(ctx, "/interaction.InteractionService/CreateComment", in, out, opts...)
+func (c *interactionServiceClient) CreateReply(ctx context.Context, in *CreateReplyRequest, opts ...grpc.CallOption) (*CreateReplyResponse, error) {
+	out := new(CreateReplyResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/CreateReply", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *interactionServiceClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error) {
-	out := new(DeleteCommentResponse)
-	err := c.cc.Invoke(ctx, "/interaction.InteractionService/DeleteComment", in, out, opts...)
+func (c *interactionServiceClient) DeleteReply(ctx context.Context, in *DeleteReplyRequest, opts ...grpc.CallOption) (*DeleteReplyResponse, error) {
+	out := new(DeleteReplyResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/DeleteReply", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *interactionServiceClient) GetComments(ctx context.Context, in *GetCommentsRequest, opts ...grpc.CallOption) (*GetCommentsResponse, error) {
-	out := new(GetCommentsResponse)
-	err := c.cc.Invoke(ctx, "/interaction.InteractionService/GetComments", in, out, opts...)
+func (c *interactionServiceClient) GetReplies(ctx context.Context, in *GetRepliesRequest, opts ...grpc.CallOption) (*GetRepliesResponse, error) {
+	out := new(GetRepliesResponse)
+	err := c.cc.Invoke(ctx, "/interaction.InteractionService/GetReplies", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -318,12 +318,12 @@ type InteractionServiceServer interface {
 	IsLiked(context.Context, *IsLikedRequest) (*IsLikedResponse, error)
 	// 获取点赞列表
 	GetLikes(context.Context, *GetLikesRequest) (*GetLikesResponse, error)
-	// 创建评论
-	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
-	// 删除评论
-	DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error)
-	// 获取评论列表
-	GetComments(context.Context, *GetCommentsRequest) (*GetCommentsResponse, error)
+	// 创建回复
+	CreateReply(context.Context, *CreateReplyRequest) (*CreateReplyResponse, error)
+	// 删除回复
+	DeleteReply(context.Context, *DeleteReplyRequest) (*DeleteReplyResponse, error)
+	// 获取回复列表
+	GetReplies(context.Context, *GetRepliesRequest) (*GetRepliesResponse, error)
 	// 创建转发
 	CreateRepost(context.Context, *CreateRepostRequest) (*CreateRepostResponse, error)
 	// 删除转发
@@ -382,14 +382,14 @@ func (UnimplementedInteractionServiceServer) IsLiked(context.Context, *IsLikedRe
 func (UnimplementedInteractionServiceServer) GetLikes(context.Context, *GetLikesRequest) (*GetLikesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLikes not implemented")
 }
-func (UnimplementedInteractionServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
+func (UnimplementedInteractionServiceServer) CreateReply(context.Context, *CreateReplyRequest) (*CreateReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReply not implemented")
 }
-func (UnimplementedInteractionServiceServer) DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
+func (UnimplementedInteractionServiceServer) DeleteReply(context.Context, *DeleteReplyRequest) (*DeleteReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteReply not implemented")
 }
-func (UnimplementedInteractionServiceServer) GetComments(context.Context, *GetCommentsRequest) (*GetCommentsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetComments not implemented")
+func (UnimplementedInteractionServiceServer) GetReplies(context.Context, *GetRepliesRequest) (*GetRepliesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReplies not implemented")
 }
 func (UnimplementedInteractionServiceServer) CreateRepost(context.Context, *CreateRepostRequest) (*CreateRepostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRepost not implemented")
@@ -602,56 +602,56 @@ func _InteractionService_GetLikes_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InteractionService_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateCommentRequest)
+func _InteractionService_CreateReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InteractionServiceServer).CreateComment(ctx, in)
+		return srv.(InteractionServiceServer).CreateReply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/interaction.InteractionService/CreateComment",
+		FullMethod: "/interaction.InteractionService/CreateReply",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InteractionServiceServer).CreateComment(ctx, req.(*CreateCommentRequest))
+		return srv.(InteractionServiceServer).CreateReply(ctx, req.(*CreateReplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InteractionService_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteCommentRequest)
+func _InteractionService_DeleteReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReplyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InteractionServiceServer).DeleteComment(ctx, in)
+		return srv.(InteractionServiceServer).DeleteReply(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/interaction.InteractionService/DeleteComment",
+		FullMethod: "/interaction.InteractionService/DeleteReply",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InteractionServiceServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
+		return srv.(InteractionServiceServer).DeleteReply(ctx, req.(*DeleteReplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InteractionService_GetComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCommentsRequest)
+func _InteractionService_GetReplies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRepliesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InteractionServiceServer).GetComments(ctx, in)
+		return srv.(InteractionServiceServer).GetReplies(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/interaction.InteractionService/GetComments",
+		FullMethod: "/interaction.InteractionService/GetReplies",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InteractionServiceServer).GetComments(ctx, req.(*GetCommentsRequest))
+		return srv.(InteractionServiceServer).GetReplies(ctx, req.(*GetRepliesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -916,16 +916,16 @@ var InteractionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _InteractionService_GetLikes_Handler,
 		},
 		{
-			MethodName: "CreateComment",
-			Handler:    _InteractionService_CreateComment_Handler,
+			MethodName: "CreateReply",
+			Handler:    _InteractionService_CreateReply_Handler,
 		},
 		{
-			MethodName: "DeleteComment",
-			Handler:    _InteractionService_DeleteComment_Handler,
+			MethodName: "DeleteReply",
+			Handler:    _InteractionService_DeleteReply_Handler,
 		},
 		{
-			MethodName: "GetComments",
-			Handler:    _InteractionService_GetComments_Handler,
+			MethodName: "GetReplies",
+			Handler:    _InteractionService_GetReplies_Handler,
 		},
 		{
 			MethodName: "CreateRepost",

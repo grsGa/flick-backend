@@ -133,35 +133,35 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				fmt.Printf("[Content Repository] CreatePost - Invalid media URL format: %s\n", mediaURL)
 				continue
 			}
-			
+
 			// 提取文件ID (倒数第二个路径段)
 			fileID := parts[len(parts)-2]
 			fmt.Printf("[Content Repository] CreatePost - Extracted file ID from URL: %s -> %s\n", mediaURL, fileID)
-			
+
 			// 查询Media服务获取完整的媒体信息，带重试逻辑等待variants处理完成
 			mediaReq := &media_proto.GetFileRequest{
 				FileId: fileID,
 			}
-			
+
 			var mediaResp *media_proto.GetFileResponse
 			var err error
-			
+
 			// 重试逻辑：最多等待6秒让Media服务完成variants处理
 			maxRetries := 3
 			retryDelay := 2 * time.Second
-			
+
 			for attempt := 0; attempt <= maxRetries; attempt++ {
 				if attempt > 0 {
 					fmt.Printf("[Content Repository] CreatePost - Waiting %v for media processing (attempt %d/%d)\n", retryDelay, attempt, maxRetries)
 					time.Sleep(retryDelay)
 				}
-				
+
 				mediaResp, err = r.mediaClient.GetFile(ctx, mediaReq)
 				if err == nil && mediaResp.File != nil && mediaResp.File.Variants != nil {
 					fmt.Printf("[Content Repository] CreatePost - Successfully got variants on attempt %d\n", attempt+1)
 					break
 				}
-				
+
 				if attempt < maxRetries {
 					fmt.Printf("[Content Repository] CreatePost - No variants yet on attempt %d, retrying...\n", attempt+1)
 				}
@@ -171,7 +171,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				// 如果无法从Media服务获取，则创建基本记录
 				mediaType := "image"
 				mimeType := "image/jpeg"
-				
+
 				if strings.Contains(mediaURL, ".mp4") {
 					mediaType = "video"
 					mimeType = "video/mp4"
@@ -198,7 +198,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 					Status:    "active",
 					CreatedAt: time.Now(),
 				}
-				
+
 				if err := tx.Create(media).Error; err != nil {
 					fmt.Printf("[Content Repository] CreatePost - Failed to create media attachment: %v\n", err)
 					tx.Rollback()
@@ -207,15 +207,15 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				fmt.Printf("[Content Repository] CreatePost - Created fallback media attachment with ID: %s\n", media.ID)
 				continue
 			}
-			
+
 			if mediaResp.Error != nil {
 				fmt.Printf("[Content Repository] CreatePost - Media service returned error: %s\n", mediaResp.Error.Message)
 				continue
 			}
-			
+
 			// 使用Media服务返回的完整信息创建媒体附件记录
 			mediaFile := mediaResp.File
-			
+
 			// 转换variants到数据库格式
 			var variants models.MediaVariants
 			if mediaFile.Variants != nil {
@@ -260,7 +260,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 					}
 				}
 			}
-			
+
 			var processedAt *time.Time
 			if mediaFile.ProcessedAt != "" {
 				if t, err := time.Parse(time.RFC3339, mediaFile.ProcessedAt); err == nil {
@@ -285,10 +285,10 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				"processed_at": processedAt,
 				"updated_at":   time.Now(),
 			}
-			
-			fmt.Printf("[Content Repository] CreatePost - Updating existing media attachment: ID=%s, URL=%s, HasVariants=%t\n", 
+
+			fmt.Printf("[Content Repository] CreatePost - Updating existing media attachment: ID=%s, URL=%s, HasVariants=%t\n",
 				mediaFile.Id, mediaURL, mediaFile.Variants != nil)
-			
+
 			if err := tx.Model(&models.MediaAttachment{}).Where("id = ?", mediaFile.Id).Updates(updateData).Error; err != nil {
 				fmt.Printf("[Content Repository] CreatePost - Failed to update media attachment: %v\n", err)
 				tx.Rollback()
@@ -686,10 +686,10 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 
 	// 构建统计信息（临时数据）
 	stats := &content_proto.PostStats{
-		LikeCount:    0,
-		CommentCount: 0,
-		RepostCount:  0,
-		ViewCount:    0,
+		LikeCount:   0,
+		ReplyCount:  0,
+		RepostCount: 0,
+		ViewCount:   0,
 	}
 
 	// 构建作者信息（从用户服务获取真实数据）

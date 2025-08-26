@@ -254,7 +254,7 @@ func (s *interactionService) CreateRepost(ctx context.Context, req *proto.Create
 		Id:        uuid.New().String(),
 		UserId:    req.UserId,
 		PostId:    req.PostId,
-		Comment:   req.Comment,
+		Reply:     req.Reply,
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
@@ -320,64 +320,100 @@ func (s *interactionService) CreateReport(ctx context.Context, req *proto.Create
 	}, nil
 }
 
-// CreateComment 创建评论
-func (s *interactionService) CreateComment(ctx context.Context, req *proto.CreateCommentRequest) (*proto.CreateCommentResponse, error) {
-	comment := &proto.Comment{
-		Id:              uuid.New().String(),
-		PostId:          req.PostId,
-		UserId:          req.UserId,
-		Content:         req.Content,
-		ParentCommentId: req.ParentCommentId,
-		CreatedAt:       time.Now().Format(time.RFC3339),
-		UpdatedAt:       time.Now().Format(time.RFC3339),
-	}
-
-	err := s.interactionRepo.CreateComment(ctx, comment)
+// IsBookmarked 检查是否收藏
+func (s *interactionService) IsBookmarked(ctx context.Context, req *proto.IsBookmarkedRequest) (*proto.IsBookmarkedResponse, error) {
+	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
 	if err != nil {
-		return &proto.CreateCommentResponse{
+		return &proto.IsBookmarkedResponse{
 			Error: &proto.Error{
 				Code:    500,
-				Message: "Failed to create comment: " + err.Error(),
+				Message: "Failed to check bookmark status: " + err.Error(),
 			},
 		}, err
 	}
 
-	return &proto.CreateCommentResponse{
-		Comment: comment,
+	return &proto.IsBookmarkedResponse{
+		IsBookmarked: isBookmarked,
 	}, nil
 }
 
-// DeleteComment 删除评论
-func (s *interactionService) DeleteComment(ctx context.Context, req *proto.DeleteCommentRequest) (*proto.DeleteCommentResponse, error) {
-	err := s.interactionRepo.DeleteComment(ctx, req.CommentId, req.UserId)
+// GetBookmarks 获取收藏列表
+func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBookmarksRequest) (*proto.GetBookmarksResponse, error) {
+	bookmarks, nextCursor, hasMore, err := s.interactionRepo.GetBookmarks(ctx, req.UserId, req.Limit, req.Cursor)
 	if err != nil {
-		return &proto.DeleteCommentResponse{
+		return &proto.GetBookmarksResponse{
 			Error: &proto.Error{
 				Code:    500,
-				Message: "Failed to delete comment: " + err.Error(),
+				Message: "Failed to get bookmarks: " + err.Error(),
 			},
 		}, err
 	}
 
-	return &proto.DeleteCommentResponse{
+	return &proto.GetBookmarksResponse{
+		Bookmarks:  bookmarks,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// CreateReply 创建回复
+func (s *interactionService) CreateReply(ctx context.Context, req *proto.CreateReplyRequest) (*proto.CreateReplyResponse, error) {
+	reply := &proto.Reply{
+		Id:            uuid.New().String(),
+		PostId:        req.PostId,
+		UserId:        req.UserId,
+		Content:       req.Content,
+		ParentReplyId: req.ParentReplyId,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+		UpdatedAt:     time.Now().Format(time.RFC3339),
+	}
+
+	err := s.interactionRepo.CreateReply(ctx, reply)
+	if err != nil {
+		return &proto.CreateReplyResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to create reply: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.CreateReplyResponse{
+		Reply: reply,
+	}, nil
+}
+
+// DeleteReply 删除回复
+func (s *interactionService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+	err := s.interactionRepo.DeleteReply(ctx, req.ReplyId, req.UserId)
+	if err != nil {
+		return &proto.DeleteReplyResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to delete reply: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.DeleteReplyResponse{
 		Success: true,
 	}, nil
 }
 
-// GetComments 获取评论列表
-func (s *interactionService) GetComments(ctx context.Context, req *proto.GetCommentsRequest) (*proto.GetCommentsResponse, error) {
-	comments, nextCursor, hasMore, err := s.interactionRepo.GetComments(ctx, req.PostId, req.Limit, req.Cursor)
+// GetReplies 获取回复列表
+func (s *interactionService) GetReplies(ctx context.Context, req *proto.GetRepliesRequest) (*proto.GetRepliesResponse, error) {
+	replies, nextCursor, hasMore, err := s.interactionRepo.GetReplies(ctx, req.PostId, req.Limit, req.Cursor)
 	if err != nil {
-		return &proto.GetCommentsResponse{
+		return &proto.GetRepliesResponse{
 			Error: &proto.Error{
 				Code:    500,
-				Message: "Failed to get comments: " + err.Error(),
+				Message: "Failed to get replies: " + err.Error(),
 			},
 		}, err
 	}
 
-	return &proto.GetCommentsResponse{
-		Comments:   comments,
+	return &proto.GetRepliesResponse{
+		Replies:    replies,
 		NextCursor: nextCursor,
 		HasMore:    hasMore,
 	}, nil
@@ -500,42 +536,6 @@ func (s *interactionService) DeleteBookmark(ctx context.Context, req *proto.Dele
 
 	return &proto.DeleteBookmarkResponse{
 		Success: true,
-	}, nil
-}
-
-// IsBookmarked 检查是否收藏
-func (s *interactionService) IsBookmarked(ctx context.Context, req *proto.IsBookmarkedRequest) (*proto.IsBookmarkedResponse, error) {
-	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
-	if err != nil {
-		return &proto.IsBookmarkedResponse{
-			Error: &proto.Error{
-				Code:    500,
-				Message: "Failed to check bookmark status: " + err.Error(),
-			},
-		}, err
-	}
-
-	return &proto.IsBookmarkedResponse{
-		IsBookmarked: isBookmarked,
-	}, nil
-}
-
-// GetBookmarks 获取收藏列表
-func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBookmarksRequest) (*proto.GetBookmarksResponse, error) {
-	bookmarks, nextCursor, hasMore, err := s.interactionRepo.GetBookmarks(ctx, req.UserId, req.Limit, req.Cursor)
-	if err != nil {
-		return &proto.GetBookmarksResponse{
-			Error: &proto.Error{
-				Code:    500,
-				Message: "Failed to get bookmarks: " + err.Error(),
-			},
-		}, err
-	}
-
-	return &proto.GetBookmarksResponse{
-		Bookmarks:  bookmarks,
-		NextCursor: nextCursor,
-		HasMore:    hasMore,
 	}, nil
 }
 

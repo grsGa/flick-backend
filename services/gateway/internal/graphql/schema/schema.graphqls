@@ -41,7 +41,7 @@ type Post {
   poll: Poll
   stats: PostStats!
   interaction: Interaction!
-  comments(first: Int!, after: String): CommentConnection
+  replies(first: Int!, after: String): ReplyConnection
   createdAt: String!
   updatedAt: String!
 }
@@ -69,7 +69,7 @@ type PollOption {
 
 type PostStats {
   likeCount: Int!
-  commentCount: Int!
+  replyCount: Int!
   repostCount: Int!
   viewCount: Int!
 }
@@ -105,7 +105,7 @@ input PollDataInput {
 }
 
 
-type Comment {
+type Reply {
   id: ID!
   content: String!
   author: User!
@@ -114,7 +114,7 @@ type Comment {
 }
 
 
-input CreateCommentInput {
+input CreateReplyInput {
   content: String!
   postId: ID!
 }
@@ -168,13 +168,13 @@ type PostConnection {
   pageInfo: PageInfo!
 }
 
-type CommentEdge {
-  node: Comment!
+type ReplyEdge {
+  node: Reply!
   cursor: String!
 }
 
-type CommentConnection {
-  edges: [CommentEdge!]!
+type ReplyConnection {
+  edges: [ReplyEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -185,7 +185,7 @@ type Interaction {
   isBookmarked: Boolean!
   isReposted: Boolean!
   likeCount: Int!
-  commentCount: Int!
+  replyCount: Int!
   repostCount: Int!
   viewCount: Int!
 }
@@ -256,13 +256,13 @@ type Notification {
 
 enum NotificationType {
   LIKE
-  COMMENT
+  REPLY
   FOLLOW
   REPOST
   BOOKMARK
 }
 
-union NotificationEntity = Post | Comment | User
+union NotificationEntity = Post | Reply | User
 
 type NotificationEdge {
   node: Notification!
@@ -398,7 +398,7 @@ type Mutation {
   # Post mutations
   createPost(input: CreatePostInput!): Post!
   deletePost(postId: ID!): Boolean!
-  createComment(input: CreateCommentInput!): Comment!
+  createReply(input: CreateReplyInput!): Reply!
   likePost(input: LikePostInput!): Interaction!
   unlikePost(input: LikePostInput!): Interaction!
   bookmarkPost(input: BookmarkPostInput!): Interaction!

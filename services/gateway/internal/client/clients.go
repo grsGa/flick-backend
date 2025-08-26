@@ -373,19 +373,19 @@ func (c *interactionServiceClient) CreateReport(ctx context.Context, in *interac
 	return c.client.CreateReport(ctx, in)
 }
 
-// CreateComment 创建评论
-func (c *interactionServiceClient) CreateComment(ctx context.Context, in *interaction_proto.CreateCommentRequest, opts ...interface{}) (*interaction_proto.CreateCommentResponse, error) {
-	return c.client.CreateComment(ctx, in)
+// CreateReply 创建回复
+func (c *interactionServiceClient) CreateReply(ctx context.Context, in *interaction_proto.CreateReplyRequest, opts ...interface{}) (*interaction_proto.CreateReplyResponse, error) {
+	return c.client.CreateReply(ctx, in)
 }
 
-// DeleteComment 删除评论
-func (c *interactionServiceClient) DeleteComment(ctx context.Context, in *interaction_proto.DeleteCommentRequest, opts ...interface{}) (*interaction_proto.DeleteCommentResponse, error) {
-	return c.client.DeleteComment(ctx, in)
+// DeleteReply 删除回复
+func (c *interactionServiceClient) DeleteReply(ctx context.Context, in *interaction_proto.DeleteReplyRequest, opts ...interface{}) (*interaction_proto.DeleteReplyResponse, error) {
+	return c.client.DeleteReply(ctx, in)
 }
 
-// GetComments 获取评论列表
-func (c *interactionServiceClient) GetComments(ctx context.Context, in *interaction_proto.GetCommentsRequest, opts ...interface{}) (*interaction_proto.GetCommentsResponse, error) {
-	return c.client.GetComments(ctx, in)
+// GetReplies 获取回复列表
+func (c *interactionServiceClient) GetReplies(ctx context.Context, in *interaction_proto.GetRepliesRequest, opts ...interface{}) (*interaction_proto.GetRepliesResponse, error) {
+	return c.client.GetReplies(ctx, in)
 }
 
 // GetPostStats 获取帖子统计

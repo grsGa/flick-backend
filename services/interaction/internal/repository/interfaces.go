@@ -44,14 +44,14 @@ type InteractionRepository interface {
 	// DeleteRepost 删除转发
 	DeleteRepost(ctx context.Context, userID, postID string) error
 
-	// CreateComment 创建评论
-	CreateComment(ctx context.Context, comment *proto.Comment) error
+	// CreateReply 创建回复
+	CreateReply(ctx context.Context, reply *proto.Reply) error
 
-	// DeleteComment 删除评论
-	DeleteComment(ctx context.Context, commentID, userID string) error
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, replyID, userID string) error
 
-	// GetComments 获取评论列表
-	GetComments(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Comment, string, bool, error)
+	// GetReplies 获取回复列表
+	GetReplies(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Reply, string, bool, error)
 
 	// GetPostStats 获取帖子统计
 	GetPostStats(ctx context.Context, postID string) (*proto.PostStats, error)

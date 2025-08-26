@@ -110,7 +110,7 @@ message PollOption {
 // 帖子统计
 message PostStats {
   int32 like_count = 1;
-  int32 comment_count = 2;
+  int32 reply_count = 2;
   int32 repost_count = 3;
   int32 view_count = 4;
 }

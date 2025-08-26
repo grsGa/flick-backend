@@ -1,8 +1,8 @@
 package resolver
 
 import (
-	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	content_proto "github.com/flick/backend/services/content/proto"
+	"github.com/flick/backend/services/gateway/internal/graphql/model"
 )
 
 // postProtoToGql converts content service proto Post to GraphQL model
@@ -44,14 +44,14 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 
 	// Convert post stats - always provide default values
 	stats := &model.PostStats{
-		LikeCount:    0,
-		CommentCount: 0,
-		RepostCount:  0,
-		ViewCount:    0,
+		LikeCount:   0,
+		ReplyCount:  0,
+		RepostCount: 0,
+		ViewCount:   0,
 	}
 	if post.Stats != nil {
 		stats.LikeCount = int(post.Stats.LikeCount)
-		stats.CommentCount = int(post.Stats.CommentCount)
+		stats.ReplyCount = int(post.Stats.ReplyCount)
 		stats.RepostCount = int(post.Stats.RepostCount)
 		stats.ViewCount = int(post.Stats.ViewCount)
 	}
@@ -86,7 +86,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 		FollowingCount: 0,
 		CreatedAt:      post.CreatedAt, // Use post creation time as fallback
 	}
-	
+
 	if post.Author != nil {
 		author.ID = post.Author.Id
 		author.Username = post.Author.Username
@@ -111,12 +111,12 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 		if attachment.Type == "video" {
 			mediaType = model.MediaTypeVideo
 		}
-		
+
 		// 构建variants信息
 		var variants *model.MediaVariants
 		if attachment.Variants != nil {
 			variants = &model.MediaVariants{}
-			
+
 			if attachment.Variants.Thumbnail != nil {
 				variants.Thumbnail = &model.MediaVariant{
 					URL:    attachment.Variants.Thumbnail.Url,
@@ -158,7 +158,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 				}
 			}
 		}
-		
+
 		// 构建完整的Media对象
 		var mimeType *string
 		if attachment.MimeType != "" {
@@ -173,7 +173,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 			h := int(attachment.Height)
 			height = &h
 		}
-		
+
 		media[i] = model.Media{
 			ID:       attachment.Id,
 			URL:      attachment.Url,
@@ -191,7 +191,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 		IsBookmarked: false, // TODO: Get actual user interaction status
 		IsReposted:   false, // TODO: Get actual user interaction status
 		LikeCount:    stats.LikeCount,
-		CommentCount: stats.CommentCount,
+		ReplyCount:   stats.ReplyCount,
 		RepostCount:  stats.RepostCount,
 	}
 

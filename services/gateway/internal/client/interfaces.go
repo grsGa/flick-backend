@@ -200,14 +200,14 @@ type InteractionServiceClient interface {
 	// CreateReport 创建举报
 	CreateReport(ctx context.Context, in *interaction_proto.CreateReportRequest, opts ...interface{}) (*interaction_proto.CreateReportResponse, error)
 
-	// CreateComment 创建评论
-	CreateComment(ctx context.Context, in *interaction_proto.CreateCommentRequest, opts ...interface{}) (*interaction_proto.CreateCommentResponse, error)
+	// CreateReply 创建回复
+	CreateReply(ctx context.Context, in *interaction_proto.CreateReplyRequest, opts ...interface{}) (*interaction_proto.CreateReplyResponse, error)
 
-	// DeleteComment 删除评论
-	DeleteComment(ctx context.Context, in *interaction_proto.DeleteCommentRequest, opts ...interface{}) (*interaction_proto.DeleteCommentResponse, error)
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, in *interaction_proto.DeleteReplyRequest, opts ...interface{}) (*interaction_proto.DeleteReplyResponse, error)
 
-	// GetComments 获取评论列表
-	GetComments(ctx context.Context, in *interaction_proto.GetCommentsRequest, opts ...interface{}) (*interaction_proto.GetCommentsResponse, error)
+	// GetReplies 获取回复列表
+	GetReplies(ctx context.Context, in *interaction_proto.GetRepliesRequest, opts ...interface{}) (*interaction_proto.GetRepliesResponse, error)
 
 	// GetPostStats 获取帖子统计
 	GetPostStats(ctx context.Context, in *interaction_proto.GetPostStatsRequest, opts ...interface{}) (*interaction_proto.GetPostStatsResponse, error)

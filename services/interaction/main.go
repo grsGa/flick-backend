@@ -82,19 +82,19 @@ func (s *interactionServiceServer) DeleteRepost(ctx context.Context, req *proto.
 	return s.service.DeleteRepost(ctx, req)
 }
 
-// CreateComment 创建评论
-func (s *interactionServiceServer) CreateComment(ctx context.Context, req *proto.CreateCommentRequest) (*proto.CreateCommentResponse, error) {
-	return s.service.CreateComment(ctx, req)
+// CreateReply 创建回复
+func (s *interactionServiceServer) CreateReply(ctx context.Context, req *proto.CreateReplyRequest) (*proto.CreateReplyResponse, error) {
+	return s.service.CreateReply(ctx, req)
 }
 
-// DeleteComment 删除评论
-func (s *interactionServiceServer) DeleteComment(ctx context.Context, req *proto.DeleteCommentRequest) (*proto.DeleteCommentResponse, error) {
-	return s.service.DeleteComment(ctx, req)
+// DeleteReply 删除回复
+func (s *interactionServiceServer) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+	return s.service.DeleteReply(ctx, req)
 }
 
-// GetComments 获取评论列表
-func (s *interactionServiceServer) GetComments(ctx context.Context, req *proto.GetCommentsRequest) (*proto.GetCommentsResponse, error) {
-	return s.service.GetComments(ctx, req)
+// GetReplies 获取回复列表
+func (s *interactionServiceServer) GetReplies(ctx context.Context, req *proto.GetRepliesRequest) (*proto.GetRepliesResponse, error) {
+	return s.service.GetReplies(ctx, req)
 }
 
 // GetPostStats 获取帖子统计
@@ -155,7 +155,7 @@ func main() {
 		&models.Follow{},
 		&models.Like{},
 		&models.Repost{},
-		&models.Comment{},
+		&models.Reply{},
 		&models.PostStats{},
 		&models.PollVote{},
 		&models.Bookmark{},

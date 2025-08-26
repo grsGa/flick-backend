@@ -223,8 +223,8 @@ func (r *postgresRepository) CreateRepost(ctx context.Context, repost *proto.Rep
 		PostID:    repost.PostId,
 		CreatedAt: time.Now(),
 	}
-	if repost.Comment != "" {
-		model.Comment = &repost.Comment
+	if repost.Reply != "" {
+		model.Reply = &repost.Reply
 	}
 	return r.db.WithContext(ctx).Create(model).Error
 }
@@ -236,31 +236,31 @@ func (r *postgresRepository) DeleteRepost(ctx context.Context, userID, postID st
 		Delete(&models.Repost{}).Error
 }
 
-// CreateComment 创建评论
-func (r *postgresRepository) CreateComment(ctx context.Context, comment *proto.Comment) error {
-	model := &models.Comment{
-		PostID:    comment.PostId,
-		UserID:    comment.UserId,
-		Content:   comment.Content,
+// CreateReply 创建回复
+func (r *postgresRepository) CreateReply(ctx context.Context, reply *proto.Reply) error {
+	model := &models.Reply{
+		PostID:    reply.PostId,
+		UserID:    reply.UserId,
+		Content:   reply.Content,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	if comment.ParentCommentId != "" {
-		model.ParentCommentID = &comment.ParentCommentId
+	if reply.ParentReplyId != "" {
+		model.ParentReplyID = &reply.ParentReplyId
 	}
 	return r.db.WithContext(ctx).Create(model).Error
 }
 
-// DeleteComment 删除评论
-func (r *postgresRepository) DeleteComment(ctx context.Context, commentID, userID string) error {
+// DeleteReply 删除回复
+func (r *postgresRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
 	return r.db.WithContext(ctx).
-		Where("id = ? AND user_id = ?", commentID, userID).
-		Delete(&models.Comment{}).Error
+		Where("id = ? AND user_id = ?", replyID, userID).
+		Delete(&models.Reply{}).Error
 }
 
-// GetComments 获取评论列表
-func (r *postgresRepository) GetComments(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Comment, string, bool, error) {
-	var comments []models.Comment
+// GetReplies 获取回复列表
+func (r *postgresRepository) GetReplies(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Reply, string, bool, error) {
+	var replies []models.Reply
 	query := r.db.WithContext(ctx).Where("post_id = ?", postID)
 
 	// 处理游标分页
@@ -278,37 +278,37 @@ func (r *postgresRepository) GetComments(ctx context.Context, postID string, lim
 	if err := query.
 		Order("created_at DESC").
 		Limit(int(limit + 1)). // 多查一条用于判断是否有更多数据
-		Find(&comments).Error; err != nil {
+		Find(&replies).Error; err != nil {
 		return nil, "", false, err
 	}
 
-	hasMore := len(comments) > int(limit)
+	hasMore := len(replies) > int(limit)
 	if hasMore {
-		comments = comments[:limit] // 移除多查的那一条
+		replies = replies[:limit] // 移除多查的那一条
 	}
 
 	// 转换为proto格式
-	result := make([]*proto.Comment, len(comments))
-	for i, comment := range comments {
-		protoComment := &proto.Comment{
-			Id:        comment.ID,
-			PostId:    comment.PostID,
-			UserId:    comment.UserID,
-			Content:   comment.Content,
-			CreatedAt: comment.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: comment.UpdatedAt.Format(time.RFC3339),
+	result := make([]*proto.Reply, len(replies))
+	for i, reply := range replies {
+		protoReply := &proto.Reply{
+			Id:        reply.ID,
+			PostId:    reply.PostID,
+			UserId:    reply.UserID,
+			Content:   reply.Content,
+			CreatedAt: reply.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: reply.UpdatedAt.Format(time.RFC3339),
 		}
-		if comment.ParentCommentID != nil {
-			protoComment.ParentCommentId = *comment.ParentCommentID
+		if reply.ParentReplyID != nil {
+			protoReply.ParentReplyId = *reply.ParentReplyID
 		}
-		result[i] = protoComment
+		result[i] = protoReply
 	}
 
 	// 生成下一页游标
 	var nextCursor string
-	if hasMore && len(comments) > 0 {
-		lastComment := comments[len(comments)-1]
-		timestamp := lastComment.CreatedAt.UnixNano()
+	if hasMore && len(replies) > 0 {
+		lastReply := replies[len(replies)-1]
+		timestamp := lastReply.CreatedAt.UnixNano()
 		nextCursor = base64.StdEncoding.EncodeToString([]byte(strconv.FormatInt(timestamp, 10)))
 	}
 
@@ -323,12 +323,12 @@ func (r *postgresRepository) GetPostStats(ctx context.Context, postID string) (*
 		if err == gorm.ErrRecordNotFound {
 			// 如果统计记录不存在，创建一个默认的
 			stats = models.PostStats{
-				PostID:       postID,
-				LikeCount:    0,
-				CommentCount: 0,
-				RepostCount:  0,
-				ViewCount:    0,
-				UpdatedAt:    time.Now(),
+				PostID:      postID,
+				LikeCount:   0,
+				ReplyCount:  0,
+				RepostCount: 0,
+				ViewCount:   0,
+				UpdatedAt:   time.Now(),
 			}
 			r.db.WithContext(ctx).Create(&stats)
 		} else {
@@ -337,31 +337,31 @@ func (r *postgresRepository) GetPostStats(ctx context.Context, postID string) (*
 	}
 
 	return &proto.PostStats{
-		PostId:       stats.PostID,
-		LikeCount:    int32(stats.LikeCount),
-		CommentCount: int32(stats.CommentCount),
-		RepostCount:  int32(stats.RepostCount),
-		ViewCount:    int32(stats.ViewCount),
-		UpdatedAt:    stats.UpdatedAt.Format(time.RFC3339),
+		PostId:      stats.PostID,
+		LikeCount:   int32(stats.LikeCount),
+		ReplyCount:  int32(stats.ReplyCount),
+		RepostCount: int32(stats.RepostCount),
+		ViewCount:   int32(stats.ViewCount),
+		UpdatedAt:   stats.UpdatedAt.Format(time.RFC3339),
 	}, nil
 }
 
 // UpdatePostStats 更新帖子统计
 func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action string, delta int32) (*proto.PostStats, error) {
 	var stats models.PostStats
-	
+
 	// 使用事务确保原子性
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 先查询或创建统计记录
 		err := tx.Where("post_id = ?", postID).First(&stats).Error
 		if err == gorm.ErrRecordNotFound {
 			stats = models.PostStats{
-				PostID:       postID,
-				LikeCount:    0,
-				CommentCount: 0,
-				RepostCount:  0,
-				ViewCount:    0,
-				UpdatedAt:    time.Now(),
+				PostID:      postID,
+				LikeCount:   0,
+				ReplyCount:  0,
+				RepostCount: 0,
+				ViewCount:   0,
+				UpdatedAt:   time.Now(),
 			}
 			if err := tx.Create(&stats).Error; err != nil {
 				return err
@@ -379,9 +379,9 @@ func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action
 		case "like", "unlike":
 			stats.LikeCount += int(delta)
 			updates["like_count"] = stats.LikeCount
-		case "comment", "uncomment":
-			stats.CommentCount += int(delta)
-			updates["comment_count"] = stats.CommentCount
+		case "reply", "unreply":
+			stats.ReplyCount += int(delta)
+			updates["reply_count"] = stats.ReplyCount
 		case "repost", "unrepost":
 			stats.RepostCount += int(delta)
 			updates["repost_count"] = stats.RepostCount
@@ -400,12 +400,12 @@ func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action
 	}
 
 	return &proto.PostStats{
-		PostId:       stats.PostID,
-		LikeCount:    int32(stats.LikeCount),
-		CommentCount: int32(stats.CommentCount),
-		RepostCount:  int32(stats.RepostCount),
-		ViewCount:    int32(stats.ViewCount),
-		UpdatedAt:    stats.UpdatedAt.Format(time.RFC3339),
+		PostId:      stats.PostID,
+		LikeCount:   int32(stats.LikeCount),
+		ReplyCount:  int32(stats.ReplyCount),
+		RepostCount: int32(stats.RepostCount),
+		ViewCount:   int32(stats.ViewCount),
+		UpdatedAt:   stats.UpdatedAt.Format(time.RFC3339),
 	}, nil
 }
 

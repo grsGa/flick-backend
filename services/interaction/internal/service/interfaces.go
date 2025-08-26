@@ -41,14 +41,14 @@ type InteractionService interface {
 	// DeleteRepost 删除转发
 	DeleteRepost(ctx context.Context, req *proto.DeleteRepostRequest) (*proto.DeleteRepostResponse, error)
 
-	// CreateComment 创建评论
-	CreateComment(ctx context.Context, req *proto.CreateCommentRequest) (*proto.CreateCommentResponse, error)
+	// CreateReply 创建回复
+	CreateReply(ctx context.Context, req *proto.CreateReplyRequest) (*proto.CreateReplyResponse, error)
 
-	// DeleteComment 删除评论
-	DeleteComment(ctx context.Context, req *proto.DeleteCommentRequest) (*proto.DeleteCommentResponse, error)
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error)
 
-	// GetComments 获取评论列表
-	GetComments(ctx context.Context, req *proto.GetCommentsRequest) (*proto.GetCommentsResponse, error)
+	// GetReplies 获取回复列表
+	GetReplies(ctx context.Context, req *proto.GetRepliesRequest) (*proto.GetRepliesResponse, error)
 
 	// GetPostStats 获取帖子统计
 	GetPostStats(ctx context.Context, req *proto.GetPostStatsRequest) (*proto.GetPostStatsResponse, error)

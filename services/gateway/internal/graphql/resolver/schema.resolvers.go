@@ -171,19 +171,19 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID string) (bool,
 	panic(fmt.Errorf("not implemented: DeletePost - deletePost"))
 }
 
-// CreateComment is the resolver for the createComment field.
-func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateCommentInput) (*model.Comment, error) {
-	fmt.Printf("[Gateway] CreateComment mutation received for post %s\n", input.PostID)
+// CreateReply is the resolver for the createReply field.
+func (r *mutationResolver) CreateReply(ctx context.Context, input model.CreateReplyInput) (*model.Reply, error) {
+	fmt.Printf("[Gateway] CreateReply mutation received for post %s\n", input.PostID)
 
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// For now, return a mock comment since the content service doesn't support comments yet
-	// In a real implementation, this would call the content service to create the comment
-	return &model.Comment{
-		ID:      "mock-comment-id",
+	// For now, return a mock reply since the content service doesn't support replies yet
+	// In a real implementation, this would call the content service to create the reply
+	return &model.Reply{
+		ID:      "mock-reply-id",
 		Content: input.Content,
 		Author: &model.User{
 			ID:          claims.UserID,

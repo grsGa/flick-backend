@@ -24,7 +24,7 @@ message SearchResultItem {
   string author = 5;
   string avatar_url = 6;
   int32 like_count = 7;
-  int32 comment_count = 8;
+  int32 reply_count = 8;
   string created_at = 9;
   repeated string hashtags = 10;
 }
