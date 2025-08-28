@@ -24,6 +24,19 @@ type PostService interface {
 	
 	// CheckReplyPermission 检查回复权限
 	CheckReplyPermission(ctx context.Context, req *proto.CheckReplyPermissionRequest) (*proto.CheckReplyPermissionResponse, error)
+	
+	// 回复相关方法
+	// GetPostReplies 获取帖子回复
+	GetPostReplies(ctx context.Context, req *proto.GetPostRepliesRequest) (*proto.GetPostRepliesResponse, error)
+	
+	// GetConversationThread 获取对话线程
+	GetConversationThread(ctx context.Context, req *proto.GetConversationThreadRequest) (*proto.GetConversationThreadResponse, error)
+	
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error)
+	
+	// GetReplyMention 获取回复提及信息
+	GetReplyMention(ctx context.Context, req *proto.GetReplyMentionRequest) (*proto.GetReplyMentionResponse, error)
 }
 
 // ContentService 定义内容服务接口（保持兼容性）

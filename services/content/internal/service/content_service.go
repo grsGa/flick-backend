@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	
-	"github.com/google/uuid"
+
 	"github.com/flick/backend/services/content/internal/repository"
 	"github.com/flick/backend/services/content/proto"
+	"github.com/google/uuid"
 )
 
 // postService 帖子服务实现
@@ -31,7 +31,7 @@ func (s *postService) CreatePost(ctx context.Context, req *proto.CreatePostReque
 	fmt.Printf("  Content: %s\n", req.Content)
 	fmt.Printf("  MediaUrls: %v\n", req.MediaUrls)
 	fmt.Printf("  ParentId: %s\n", req.ParentId)
-	
+
 	// 验证请求参数
 	if err := s.validateCreatePostRequest(req); err != nil {
 		fmt.Printf("[Content Service] Validation failed: %v\n", err)
@@ -117,9 +117,9 @@ func (s *postService) GetUserPosts(ctx context.Context, req *proto.GetUserPostsR
 	}
 
 	return &proto.GetUserPostsResponse{
-		Posts: posts,
+		Posts:      posts,
 		NextCursor: nextCursor,
-		HasMore: hasMore,
+		HasMore:    hasMore,
 	}, nil
 }
 
@@ -136,9 +136,9 @@ func (s *postService) GetTimeline(ctx context.Context, req *proto.GetTimelineReq
 	}
 
 	return &proto.GetTimelineResponse{
-		Posts: posts,
+		Posts:      posts,
 		NextCursor: nextCursor,
-		HasMore: hasMore,
+		HasMore:    hasMore,
 	}, nil
 }
 
@@ -175,7 +175,7 @@ func (s *postService) CheckReplyPermission(ctx context.Context, req *proto.Check
 
 	return &proto.CheckReplyPermissionResponse{
 		CanReply: canReply,
-		Reason: reason,
+		Reason:   reason,
 	}, nil
 }
 
@@ -269,7 +269,7 @@ func (s *contentService) GetContent(ctx context.Context, req *proto.GetPostReque
 			},
 		}, err
 	}
-	
+
 	return &proto.GetPostResponse{
 		Post: content,
 	}, nil
@@ -279,15 +279,15 @@ func (s *contentService) GetContent(ctx context.Context, req *proto.GetPostReque
 func (s *contentService) CreateContent(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
 	// 创建帖子对象
 	post := &proto.Post{
-		Id:        uuid.New().String(),
-		UserId:    req.UserId,
-		Content:   req.Content,
-		Visibility: req.Visibility,
+		Id:              uuid.New().String(),
+		UserId:          req.UserId,
+		Content:         req.Content,
+		Visibility:      req.Visibility,
 		ReplyPermission: req.ReplyPermission,
-		CreatedAt: time.Now().Format(time.RFC3339),
-		UpdatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt:       time.Now().Format(time.RFC3339),
+		UpdatedAt:       time.Now().Format(time.RFC3339),
 	}
-	
+
 	// 保存到数据库
 	err := s.contentRepo.CreateContent(ctx, post)
 	if err != nil {
@@ -298,7 +298,7 @@ func (s *contentService) CreateContent(ctx context.Context, req *proto.CreatePos
 			},
 		}, err
 	}
-	
+
 	return &proto.CreatePostResponse{
 		Post: post,
 	}, nil
@@ -316,14 +316,14 @@ func (s *contentService) UpdateContent(ctx context.Context, req *proto.CreatePos
 			},
 		}, err
 	}
-	
+
 	// 更新内容字段
 	if req.Content != "" {
 		content.Content = req.Content
 	}
-	
+
 	content.UpdatedAt = time.Now().Format(time.RFC3339)
-	
+
 	// 保存到数据库
 	err = s.contentRepo.UpdateContent(ctx, content)
 	if err != nil {
@@ -334,7 +334,7 @@ func (s *contentService) UpdateContent(ctx context.Context, req *proto.CreatePos
 			},
 		}, err
 	}
-	
+
 	return &proto.CreatePostResponse{
 		Post: content,
 	}, nil
@@ -351,7 +351,7 @@ func (s *contentService) DeleteContent(ctx context.Context, req *proto.DeletePos
 			},
 		}, err
 	}
-	
+
 	return &proto.DeletePostResponse{
 		Success: true,
 	}, nil
@@ -368,9 +368,148 @@ func (s *contentService) ListContent(ctx context.Context, req *proto.GetUserPost
 			},
 		}, err
 	}
-	
+
 	return &proto.GetUserPostsResponse{
 		Posts:   contents,
 		HasMore: total > int32(len(contents)),
+	}, nil
+}
+
+// GetPostReplies 获取帖子回复
+func (s *postService) GetPostReplies(ctx context.Context, req *proto.GetPostRepliesRequest) (*proto.GetPostRepliesResponse, error) {
+	// 验证请求参数
+	if req.PostId == "" {
+		return &proto.GetPostRepliesResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "Post ID is required",
+			},
+		}, fmt.Errorf("post ID is required")
+	}
+
+	// 调用repository获取回复
+	replies, nextCursor, hasMore, err := s.postRepo.GetPostReplies(ctx, req.PostId, "", req.Limit, req.Cursor)
+	if err != nil {
+		return &proto.GetPostRepliesResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get post replies: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 构建响应
+	response := &proto.GetPostRepliesResponse{
+		Replies: replies,
+		HasMore: hasMore,
+	}
+
+	// 如果有更多数据，设置下一个游标
+	if hasMore {
+		response.NextCursor = nextCursor
+	}
+
+	return response, nil
+}
+
+// GetConversationThread 获取对话线程
+func (s *postService) GetConversationThread(ctx context.Context, req *proto.GetConversationThreadRequest) (*proto.GetConversationThreadResponse, error) {
+	// 验证请求参数
+	if req.RootId == "" {
+		return &proto.GetConversationThreadResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "Root ID is required",
+			},
+		}, fmt.Errorf("root ID is required")
+	}
+
+	// 调用repository获取对话线程
+	posts, nextCursor, hasMore, err := s.postRepo.GetConversationThread(ctx, req.RootId, "", req.Limit, req.Cursor)
+	if err != nil {
+		return &proto.GetConversationThreadResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get conversation thread: " + err.Error(),
+			},
+		}, err
+	}
+
+	// 构建响应
+	response := &proto.GetConversationThreadResponse{
+		Posts:   posts,
+		HasMore: hasMore,
+	}
+
+	// 如果有更多数据，设置下一个游标
+	if hasMore {
+		response.NextCursor = nextCursor
+	}
+
+	return response, nil
+}
+
+// DeleteReply 删除回复
+func (s *postService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+	// 验证请求参数
+	if req.ReplyId == "" {
+		return &proto.DeleteReplyResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "Reply ID is required",
+			},
+		}, fmt.Errorf("reply ID is required")
+	}
+
+	if req.UserId == "" {
+		return &proto.DeleteReplyResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "User ID is required",
+			},
+		}, fmt.Errorf("user ID is required")
+	}
+
+	// 调用repository删除回复
+	err := s.postRepo.DeleteReply(ctx, req.ReplyId, req.UserId)
+	if err != nil {
+		return &proto.DeleteReplyResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to delete reply: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.DeleteReplyResponse{
+		Success: true,
+	}, nil
+}
+
+// GetReplyMention 获取回复提及信息
+func (s *postService) GetReplyMention(ctx context.Context, req *proto.GetReplyMentionRequest) (*proto.GetReplyMentionResponse, error) {
+	// 验证请求参数
+	if req.ReplyId == "" {
+		return &proto.GetReplyMentionResponse{
+			Error: &proto.Error{
+				Code:    400,
+				Message: "Reply ID is required",
+			},
+		}, fmt.Errorf("reply ID is required")
+	}
+
+	// 调用repository获取回复提及信息
+	replyMention, err := s.postRepo.GetReplyMention(ctx, req.ReplyId)
+	if err != nil {
+		return &proto.GetReplyMentionResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "Reply mention not found: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetReplyMentionResponse{
+		ReplyMention: replyMention,
 	}, nil
 }

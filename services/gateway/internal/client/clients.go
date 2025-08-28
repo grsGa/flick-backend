@@ -123,6 +123,26 @@ func (c *contentServiceClient) CheckReplyPermission(ctx context.Context, in *con
 	return c.client.CheckReplyPermission(ctx, in, opts...)
 }
 
+// GetPostReplies 获取帖子回复
+func (c *contentServiceClient) GetPostReplies(ctx context.Context, in *content_proto.GetPostRepliesRequest, opts ...grpc.CallOption) (*content_proto.GetPostRepliesResponse, error) {
+	return c.client.GetPostReplies(ctx, in, opts...)
+}
+
+// GetConversationThread 获取对话线程
+func (c *contentServiceClient) GetConversationThread(ctx context.Context, in *content_proto.GetConversationThreadRequest, opts ...grpc.CallOption) (*content_proto.GetConversationThreadResponse, error) {
+	return c.client.GetConversationThread(ctx, in, opts...)
+}
+
+// DeleteReply 删除回复
+func (c *contentServiceClient) DeleteReply(ctx context.Context, in *content_proto.DeleteReplyRequest, opts ...grpc.CallOption) (*content_proto.DeleteReplyResponse, error) {
+	return c.client.DeleteReply(ctx, in, opts...)
+}
+
+// GetReplyMention 获取回复提及信息
+func (c *contentServiceClient) GetReplyMention(ctx context.Context, in *content_proto.GetReplyMentionRequest, opts ...grpc.CallOption) (*content_proto.GetReplyMentionResponse, error) {
+	return c.client.GetReplyMention(ctx, in, opts...)
+}
+
 // authServiceClient 认证服务gRPC客户端实现
 type authServiceClient struct {
 	client auth_proto.AuthServiceClient

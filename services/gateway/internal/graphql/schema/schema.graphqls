@@ -31,7 +31,10 @@ type Post {
   visibility: PostVisibility!
   replyPermission: ReplyPermission!
   parentId: ID
+  rootId: ID
   repostId: ID
+  isReply: Boolean!
+  replyLevel: Int!
   hasMedia: Boolean!
   hasPoll: Boolean!
   media: [Media!]!
@@ -41,7 +44,9 @@ type Post {
   poll: Poll
   stats: PostStats!
   interaction: Interaction!
-  replies(first: Int!, after: String): ReplyConnection
+  replies(first: Int!, after: String): PostConnection
+  parentPost: Post
+  replyMention: User
   createdAt: String!
   updatedAt: String!
 }
@@ -105,18 +110,12 @@ input PollDataInput {
 }
 
 
-type Reply {
-  id: ID!
-  content: String!
-  author: User!
-  createdAt: String!
-  interaction: Interaction!
-}
-
-
 input CreateReplyInput {
   content: String!
   postId: ID!
+  parentReplyId: ID
+  mediaUrls: [String!]
+  mentionedUsers: [ID!]
 }
 
 type Media {
@@ -168,15 +167,7 @@ type PostConnection {
   pageInfo: PageInfo!
 }
 
-type ReplyEdge {
-  node: Reply!
-  cursor: String!
-}
-
-type ReplyConnection {
-  edges: [ReplyEdge!]!
-  pageInfo: PageInfo!
-}
+# Reply types removed - using Post type for replies instead
 
 # Interaction related GraphQL types
 
@@ -262,7 +253,7 @@ enum NotificationType {
   BOOKMARK
 }
 
-union NotificationEntity = Post | Reply | User
+union NotificationEntity = Post | User
 
 type NotificationEdge {
   node: Notification!
@@ -379,6 +370,8 @@ type Query {
   userMedia(userId: ID!, first: Int!, after: String): PostConnection
   userLikes(userId: ID!, first: Int!, after: String): PostConnection
   homeFeed(first: Int!, after: String): PostConnection
+  postReplies(postId: ID!, first: Int!, after: String): PostConnection
+  conversationThread(rootId: ID!, first: Int!, after: String): PostConnection
   notifications(first: Int!, after: String): NotificationConnection
   conversations: [Conversation!]!
   conversation(id: ID!): Conversation
@@ -398,7 +391,8 @@ type Mutation {
   # Post mutations
   createPost(input: CreatePostInput!): Post!
   deletePost(postId: ID!): Boolean!
-  createReply(input: CreateReplyInput!): Reply!
+  createReply(input: CreateReplyInput!): Post!
+  deleteReply(replyId: ID!): Boolean!
   likePost(input: LikePostInput!): Interaction!
   unlikePost(input: LikePostInput!): Interaction!
   bookmarkPost(input: BookmarkPostInput!): Interaction!

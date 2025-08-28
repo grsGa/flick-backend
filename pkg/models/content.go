@@ -15,7 +15,10 @@ type Post struct {
 	Visibility      string    `gorm:"type:varchar(20);not null;check:visibility IN ('public', 'private', 'followers');default:'public'" json:"visibility"`
 	ReplyPermission string    `gorm:"type:varchar(20);not null;check:reply_permission IN ('EVERYONE', 'FOLLOWING', 'MENTIONED_ONLY');default:'EVERYONE'" json:"reply_permission"`
 	ParentID        *string   `gorm:"type:uuid;index" json:"parent_id,omitempty"`
+	RootID          *string   `gorm:"type:uuid;index" json:"root_id,omitempty"` // 根帖子ID，用于两层回复结构
 	RepostID        *string   `gorm:"type:uuid;index" json:"repost_id,omitempty"`
+	IsReply         bool      `gorm:"default:false;index" json:"is_reply"` // 是否为回复
+	ReplyLevel      int       `gorm:"default:0;index" json:"reply_level"` // 回复层级：0=原帖，1=顶级回复，2=次级回复
 	HasMedia        bool      `gorm:"default:false" json:"has_media"`
 	HasPoll         bool      `gorm:"default:false" json:"has_poll"`
 	CreatedAt       time.Time `gorm:"not null" json:"created_at"`
@@ -110,6 +113,14 @@ type PostTag struct {
 	PostID    string    `gorm:"type:uuid;not null;index" json:"post_id"`
 	Tag       string    `gorm:"type:varchar(100);not null;index" json:"tag"`
 	CreatedAt time.Time `gorm:"not null" json:"created_at"`
+}
+
+// ReplyMention 回复提及模型 - 用于次级回复中的"回复@某人"功能
+type ReplyMention struct {
+	ID             string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ReplyID        string    `gorm:"type:uuid;not null;index" json:"reply_id"` // 回复帖子ID
+	MentionedUserID string    `gorm:"type:uuid;not null;index" json:"mentioned_user_id"` // 被回复的用户ID
+	CreatedAt      time.Time `gorm:"not null" json:"created_at"`
 }
 
 // Poll 投票模型

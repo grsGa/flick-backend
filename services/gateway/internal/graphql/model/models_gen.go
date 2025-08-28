@@ -57,8 +57,11 @@ type CreatePostInput struct {
 }
 
 type CreateReplyInput struct {
-	Content string `json:"content"`
-	PostID  string `json:"postId"`
+	Content        string   `json:"content"`
+	PostID         string   `json:"postId"`
+	ParentReplyID  *string  `json:"parentReplyId,omitempty"`
+	MediaUrls      []string `json:"mediaUrls,omitempty"`
+	MentionedUsers []string `json:"mentionedUsers,omitempty"`
 }
 
 type Hashtag struct {
@@ -208,7 +211,10 @@ type Post struct {
 	Visibility       PostVisibility    `json:"visibility"`
 	ReplyPermission  ReplyPermission   `json:"replyPermission"`
 	ParentID         *string           `json:"parentId,omitempty"`
+	RootID           *string           `json:"rootId,omitempty"`
 	RepostID         *string           `json:"repostId,omitempty"`
+	IsReply          bool              `json:"isReply"`
+	ReplyLevel       int               `json:"replyLevel"`
 	HasMedia         bool              `json:"hasMedia"`
 	HasPoll          bool              `json:"hasPoll"`
 	Media            []Media           `json:"media"`
@@ -218,7 +224,9 @@ type Post struct {
 	Poll             *Poll             `json:"poll,omitempty"`
 	Stats            *PostStats        `json:"stats"`
 	Interaction      *Interaction      `json:"interaction"`
-	Replies          *ReplyConnection  `json:"replies,omitempty"`
+	Replies          *PostConnection   `json:"replies,omitempty"`
+	ParentPost       *Post             `json:"parentPost,omitempty"`
+	ReplyMention     *User             `json:"replyMention,omitempty"`
 	CreatedAt        string            `json:"createdAt"`
 	UpdatedAt        string            `json:"updatedAt"`
 }
@@ -260,26 +268,6 @@ type RegisterInput struct {
 	Password    string  `json:"password"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Phone       *string `json:"phone,omitempty"`
-}
-
-type Reply struct {
-	ID          string       `json:"id"`
-	Content     string       `json:"content"`
-	Author      *User        `json:"author"`
-	CreatedAt   string       `json:"createdAt"`
-	Interaction *Interaction `json:"interaction"`
-}
-
-func (Reply) IsNotificationEntity() {}
-
-type ReplyConnection struct {
-	Edges    []ReplyEdge `json:"edges"`
-	PageInfo *PageInfo   `json:"pageInfo"`
-}
-
-type ReplyEdge struct {
-	Node   *Reply `json:"node"`
-	Cursor string `json:"cursor"`
 }
 
 type RepostInput struct {

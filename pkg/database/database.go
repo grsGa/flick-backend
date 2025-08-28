@@ -58,6 +58,7 @@ func InitDB(cfg *config.Config, autoMigrate bool) error {
 			&models.MediaAttachment{},
 			&models.PostMention{},
 			&models.PostTag{},
+			&models.ReplyMention{},
 			&models.Poll{},
 			&models.PollOption{},
 			&models.Notification{},

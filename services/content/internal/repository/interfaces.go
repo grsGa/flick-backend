@@ -24,6 +24,19 @@ type PostRepository interface {
 	
 	// CheckReplyPermission 检查回复权限
 	CheckReplyPermission(ctx context.Context, postID, userID string) (bool, string, error)
+	
+	// 回复相关方法
+	// GetPostReplies 获取帖子的回复列表
+	GetPostReplies(ctx context.Context, postID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
+	
+	// GetConversationThread 获取完整对话线程
+	GetConversationThread(ctx context.Context, rootID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
+	
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, replyID, userID string) error
+	
+	// GetReplyMention 获取回复提及信息
+	GetReplyMention(ctx context.Context, replyID string) (*content_proto.ReplyMention, error)
 }
 
 // MentionRepository 定义提及仓储接口

@@ -70,6 +70,18 @@ type ContentServiceClient interface {
 
 	// CheckReplyPermission 检查回复权限
 	CheckReplyPermission(ctx context.Context, in *content_proto.CheckReplyPermissionRequest, opts ...grpc.CallOption) (*content_proto.CheckReplyPermissionResponse, error)
+
+	// GetPostReplies 获取帖子回复
+	GetPostReplies(ctx context.Context, in *content_proto.GetPostRepliesRequest, opts ...grpc.CallOption) (*content_proto.GetPostRepliesResponse, error)
+
+	// GetConversationThread 获取对话线程
+	GetConversationThread(ctx context.Context, in *content_proto.GetConversationThreadRequest, opts ...grpc.CallOption) (*content_proto.GetConversationThreadResponse, error)
+
+	// DeleteReply 删除回复
+	DeleteReply(ctx context.Context, in *content_proto.DeleteReplyRequest, opts ...grpc.CallOption) (*content_proto.DeleteReplyResponse, error)
+
+	// GetReplyMention 获取回复提及信息
+	GetReplyMention(ctx context.Context, in *content_proto.GetReplyMentionRequest, opts ...grpc.CallOption) (*content_proto.GetReplyMentionResponse, error)
 }
 
 // AuthServiceClient 定义认证服务客户端接口

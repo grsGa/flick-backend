@@ -83,6 +83,26 @@ func (s *grpcServer) CheckReplyPermission(ctx context.Context, req *proto.CheckR
 	return s.postService.CheckReplyPermission(ctx, req)
 }
 
+// GetPostReplies 实现获取帖子回复接口
+func (s *grpcServer) GetPostReplies(ctx context.Context, req *proto.GetPostRepliesRequest) (*proto.GetPostRepliesResponse, error) {
+	return s.postService.GetPostReplies(ctx, req)
+}
+
+// GetConversationThread 实现获取对话线程接口
+func (s *grpcServer) GetConversationThread(ctx context.Context, req *proto.GetConversationThreadRequest) (*proto.GetConversationThreadResponse, error) {
+	return s.postService.GetConversationThread(ctx, req)
+}
+
+// DeleteReply 实现删除回复接口
+func (s *grpcServer) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+	return s.postService.DeleteReply(ctx, req)
+}
+
+// GetReplyMention 实现获取回复提及接口
+func (s *grpcServer) GetReplyMention(ctx context.Context, req *proto.GetReplyMentionRequest) (*proto.GetReplyMentionResponse, error) {
+	return s.postService.GetReplyMention(ctx, req)
+}
+
 // Run 启动gRPC服务
 func (s *grpcServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)

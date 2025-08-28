@@ -22,6 +22,12 @@ service ContentService {
   
   // 检查回复权限
   rpc CheckReplyPermission(CheckReplyPermissionRequest) returns (CheckReplyPermissionResponse);
+  
+  // 回复相关方法
+  rpc GetPostReplies(GetPostRepliesRequest) returns (GetPostRepliesResponse);
+  rpc GetConversationThread(GetConversationThreadRequest) returns (GetConversationThreadResponse);
+  rpc DeleteReply(DeleteReplyRequest) returns (DeleteReplyResponse);
+  rpc GetReplyMention(GetReplyMentionRequest) returns (GetReplyMentionResponse);
 }
 
 // 帖子信息
@@ -32,17 +38,20 @@ message Post {
   string visibility = 4; // public, private, followers
   string reply_permission = 5; // EVERYONE, FOLLOWING, MENTIONED_ONLY
   string parent_id = 6; // 回复的帖子ID
-  string repost_id = 7; // 转发的帖子ID
-  bool has_media = 8;
-  bool has_poll = 9;
-  repeated MediaAttachment media_attachments = 10;
-  repeated string mentioned_users = 11; // 被@的用户ID列表
-  repeated string tags = 12; // 标签列表
-  Poll poll = 13; // 投票信息
-  PostStats stats = 14; // 统计信息
-  string created_at = 15;
-  string updated_at = 16;
-  Author author = 17; // 作者信息
+  string root_id = 7; // 根帖子ID，用于两层回复结构
+  string repost_id = 8; // 转发的帖子ID
+  bool is_reply = 9; // 是否为回复
+  int32 reply_level = 10; // 回复层级：0=原帖，1=顶级回复，2=次级回复
+  bool has_media = 11;
+  bool has_poll = 12;
+  repeated MediaAttachment media_attachments = 13;
+  repeated string mentioned_users = 14; // 被@的用户ID列表
+  repeated string tags = 15; // 标签列表
+  Poll poll = 16; // 投票信息
+  PostStats stats = 17; // 统计信息
+  string created_at = 18;
+  string updated_at = 19;
+  Author author = 20; // 作者信息
 }
 
 // 作者信息
@@ -208,6 +217,69 @@ message CheckReplyPermissionResponse {
   bool can_reply = 1;
   string reason = 2; // 如果不能回复，说明原因
   Error error = 3;
+}
+
+// 获取帖子回复请求
+message GetPostRepliesRequest {
+  string post_id = 1;
+  string requesting_user_id = 2; // 用于权限检查
+  int32 limit = 3;
+  string cursor = 4; // 分页游标
+}
+
+// 获取帖子回复响应
+message GetPostRepliesResponse {
+  repeated Post replies = 1;
+  string next_cursor = 2;
+  bool has_more = 3;
+  Error error = 4;
+}
+
+// 获取对话线程请求
+message GetConversationThreadRequest {
+  string root_id = 1; // 根帖子ID
+  string requesting_user_id = 2; // 用于权限检查
+  int32 limit = 3;
+  string cursor = 4; // 分页游标
+}
+
+// 获取对话线程响应
+message GetConversationThreadResponse {
+  repeated Post posts = 1;
+  string next_cursor = 2;
+  bool has_more = 3;
+  Error error = 4;
+}
+
+// 删除回复请求
+message DeleteReplyRequest {
+  string reply_id = 1;
+  string user_id = 2; // 验证权限
+}
+
+// 删除回复响应
+message DeleteReplyResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+// 获取回复提及请求
+message GetReplyMentionRequest {
+  string reply_id = 1;
+}
+
+// 回复提及信息
+message ReplyMention {
+  string id = 1;
+  string reply_id = 2;
+  string mentioned_user_id = 3;
+  string created_at = 4;
+}
+
+// 获取回复提及响应
+message GetReplyMentionResponse {
+  ReplyMention reply_mention = 1;
+  Error error = 2;
 }
 
 // 错误信息

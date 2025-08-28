@@ -34,6 +34,11 @@ type ContentServiceClient interface {
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	// 检查回复权限
 	CheckReplyPermission(ctx context.Context, in *CheckReplyPermissionRequest, opts ...grpc.CallOption) (*CheckReplyPermissionResponse, error)
+	// 回复相关方法
+	GetPostReplies(ctx context.Context, in *GetPostRepliesRequest, opts ...grpc.CallOption) (*GetPostRepliesResponse, error)
+	GetConversationThread(ctx context.Context, in *GetConversationThreadRequest, opts ...grpc.CallOption) (*GetConversationThreadResponse, error)
+	DeleteReply(ctx context.Context, in *DeleteReplyRequest, opts ...grpc.CallOption) (*DeleteReplyResponse, error)
+	GetReplyMention(ctx context.Context, in *GetReplyMentionRequest, opts ...grpc.CallOption) (*GetReplyMentionResponse, error)
 }
 
 type contentServiceClient struct {
@@ -98,6 +103,42 @@ func (c *contentServiceClient) CheckReplyPermission(ctx context.Context, in *Che
 	return out, nil
 }
 
+func (c *contentServiceClient) GetPostReplies(ctx context.Context, in *GetPostRepliesRequest, opts ...grpc.CallOption) (*GetPostRepliesResponse, error) {
+	out := new(GetPostRepliesResponse)
+	err := c.cc.Invoke(ctx, "/content.ContentService/GetPostReplies", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contentServiceClient) GetConversationThread(ctx context.Context, in *GetConversationThreadRequest, opts ...grpc.CallOption) (*GetConversationThreadResponse, error) {
+	out := new(GetConversationThreadResponse)
+	err := c.cc.Invoke(ctx, "/content.ContentService/GetConversationThread", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contentServiceClient) DeleteReply(ctx context.Context, in *DeleteReplyRequest, opts ...grpc.CallOption) (*DeleteReplyResponse, error) {
+	out := new(DeleteReplyResponse)
+	err := c.cc.Invoke(ctx, "/content.ContentService/DeleteReply", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contentServiceClient) GetReplyMention(ctx context.Context, in *GetReplyMentionRequest, opts ...grpc.CallOption) (*GetReplyMentionResponse, error) {
+	out := new(GetReplyMentionResponse)
+	err := c.cc.Invoke(ctx, "/content.ContentService/GetReplyMention", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContentServiceServer is the server API for ContentService service.
 // All implementations must embed UnimplementedContentServiceServer
 // for forward compatibility
@@ -114,6 +155,11 @@ type ContentServiceServer interface {
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	// 检查回复权限
 	CheckReplyPermission(context.Context, *CheckReplyPermissionRequest) (*CheckReplyPermissionResponse, error)
+	// 回复相关方法
+	GetPostReplies(context.Context, *GetPostRepliesRequest) (*GetPostRepliesResponse, error)
+	GetConversationThread(context.Context, *GetConversationThreadRequest) (*GetConversationThreadResponse, error)
+	DeleteReply(context.Context, *DeleteReplyRequest) (*DeleteReplyResponse, error)
+	GetReplyMention(context.Context, *GetReplyMentionRequest) (*GetReplyMentionResponse, error)
 	mustEmbedUnimplementedContentServiceServer()
 }
 
@@ -138,6 +184,18 @@ func (UnimplementedContentServiceServer) DeletePost(context.Context, *DeletePost
 }
 func (UnimplementedContentServiceServer) CheckReplyPermission(context.Context, *CheckReplyPermissionRequest) (*CheckReplyPermissionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckReplyPermission not implemented")
+}
+func (UnimplementedContentServiceServer) GetPostReplies(context.Context, *GetPostRepliesRequest) (*GetPostRepliesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPostReplies not implemented")
+}
+func (UnimplementedContentServiceServer) GetConversationThread(context.Context, *GetConversationThreadRequest) (*GetConversationThreadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConversationThread not implemented")
+}
+func (UnimplementedContentServiceServer) DeleteReply(context.Context, *DeleteReplyRequest) (*DeleteReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteReply not implemented")
+}
+func (UnimplementedContentServiceServer) GetReplyMention(context.Context, *GetReplyMentionRequest) (*GetReplyMentionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReplyMention not implemented")
 }
 func (UnimplementedContentServiceServer) mustEmbedUnimplementedContentServiceServer() {}
 
@@ -260,6 +318,78 @@ func _ContentService_CheckReplyPermission_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContentService_GetPostReplies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostRepliesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).GetPostReplies(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.ContentService/GetPostReplies",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).GetPostReplies(ctx, req.(*GetPostRepliesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContentService_GetConversationThread_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConversationThreadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).GetConversationThread(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.ContentService/GetConversationThread",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).GetConversationThread(ctx, req.(*GetConversationThreadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContentService_DeleteReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).DeleteReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.ContentService/DeleteReply",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).DeleteReply(ctx, req.(*DeleteReplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContentService_GetReplyMention_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReplyMentionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).GetReplyMention(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.ContentService/GetReplyMention",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).GetReplyMention(ctx, req.(*GetReplyMentionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContentService_ServiceDesc is the grpc.ServiceDesc for ContentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -290,6 +420,22 @@ var ContentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckReplyPermission",
 			Handler:    _ContentService_CheckReplyPermission_Handler,
+		},
+		{
+			MethodName: "GetPostReplies",
+			Handler:    _ContentService_GetPostReplies_Handler,
+		},
+		{
+			MethodName: "GetConversationThread",
+			Handler:    _ContentService_GetConversationThread_Handler,
+		},
+		{
+			MethodName: "DeleteReply",
+			Handler:    _ContentService_DeleteReply_Handler,
+		},
+		{
+			MethodName: "GetReplyMention",
+			Handler:    _ContentService_GetReplyMention_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

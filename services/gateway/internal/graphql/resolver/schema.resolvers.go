@@ -172,7 +172,7 @@ func (r *mutationResolver) DeletePost(ctx context.Context, postID string) (bool,
 }
 
 // CreateReply is the resolver for the createReply field.
-func (r *mutationResolver) CreateReply(ctx context.Context, input model.CreateReplyInput) (*model.Reply, error) {
+func (r *mutationResolver) CreateReply(ctx context.Context, input model.CreateReplyInput) (*model.Post, error) {
 	fmt.Printf("[Gateway] CreateReply mutation received for post %s\n", input.PostID)
 
 	claims := middleware.GetUserClaims(ctx)
@@ -180,18 +180,53 @@ func (r *mutationResolver) CreateReply(ctx context.Context, input model.CreateRe
 		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// For now, return a mock reply since the content service doesn't support replies yet
-	// In a real implementation, this would call the content service to create the reply
-	return &model.Reply{
-		ID:      "mock-reply-id",
-		Content: input.Content,
-		Author: &model.User{
-			ID:          claims.UserID,
-			Username:    claims.Username,
-			DisplayName: &claims.Username, // Use username as display name for now
-		},
-		CreatedAt: "2024-01-01T00:00:00Z", // Mock timestamp
-	}, nil
+	// Prepare the create post request with parent ID to make it a reply
+	req := &content_proto.CreatePostRequest{
+		UserId:   claims.UserID,
+		Content:  input.Content,
+		ParentId: input.PostID, // This makes it a reply
+	}
+
+	// Add media URLs if provided
+	if input.MediaUrls != nil {
+		req.MediaUrls = input.MediaUrls
+	}
+
+	// Call content service to create the reply
+	res, err := r.ContentServiceClient.CreatePost(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reply: %w", err)
+	}
+	if res.Error != nil {
+		return nil, fmt.Errorf("content service error: %s", res.Error.Message)
+	}
+
+	// Convert proto to GraphQL model
+	return r.postProtoToGql(res.Post), nil
+}
+
+// DeleteReply is the resolver for the deleteReply field.
+func (r *mutationResolver) DeleteReply(ctx context.Context, replyID string) (bool, error) {
+	fmt.Printf("[Gateway] DeleteReply mutation received for reply %s\n", replyID)
+
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return false, fmt.Errorf("user not authenticated")
+	}
+
+	// Call content service to delete the reply
+	res, err := r.ContentServiceClient.DeleteReply(ctx, &content_proto.DeleteReplyRequest{
+		ReplyId: replyID,
+		UserId:  claims.UserID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete reply: %w", err)
+	}
+	if res.Error != nil {
+		return false, fmt.Errorf("content service error: %s", res.Error.Message)
+	}
+
+	return res.Success, nil
 }
 
 // LikePost is the resolver for the likePost field.
@@ -751,6 +786,155 @@ func (r *queryResolver) HomeFeed(ctx context.Context, first int, after *string) 
 			HasNextPage: res.HasMore,
 			EndCursor:   nil,
 		},
+	}, nil
+}
+
+// PostReplies is the resolver for the postReplies field.
+func (r *queryResolver) PostReplies(ctx context.Context, postID string, first int, after *string) (*model.PostConnection, error) {
+	fmt.Printf("[Gateway] PostReplies query received for post %s\n", postID)
+
+	// Prepare the request
+	req := &content_proto.GetPostRepliesRequest{
+		PostId: postID,
+		Limit:  int32(first),
+	}
+	if after != nil {
+		req.Cursor = *after
+	}
+
+	// Call content service
+	res, err := r.ContentServiceClient.GetPostReplies(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get post replies: %w", err)
+	}
+	if res.Error != nil {
+		return nil, fmt.Errorf("content service error: %s", res.Error.Message)
+	}
+
+	// Convert posts to edges with parent post data
+	edges := make([]model.PostEdge, len(res.Replies))
+	for i, post := range res.Replies {
+		gqlPost := r.postProtoToGql(post)
+
+		// Handle parent post data based on reply level
+		if post.ParentId != "" {
+			if post.ReplyLevel == 2 {
+				// For level 2 replies, try to get the original replied user via ReplyMention
+				replyMentionReq := &content_proto.GetReplyMentionRequest{
+					ReplyId: post.Id,
+				}
+				replyMentionRes, err := r.ContentServiceClient.GetReplyMention(ctx, replyMentionReq)
+				if err == nil && replyMentionRes.ReplyMention != nil {
+					// Get the original replied user info
+					userReq := &user_pb.GetUserRequest{
+						UserId: replyMentionRes.ReplyMention.MentionedUserId,
+					}
+					userRes, err := r.UserServiceClient.GetUser(ctx, userReq)
+					if err == nil && userRes.User != nil {
+						// Create a virtual parent post with the original replied user
+						gqlPost.ParentPost = &model.Post{
+							ID: replyMentionRes.ReplyMention.MentionedUserId, // Use user ID as placeholder
+							Author: &model.User{
+								ID:       userRes.User.Id,
+								Username: userRes.User.Username,
+								DisplayName: &userRes.User.DisplayName,
+							},
+							ReplyLevel: 1, // Mark as level 1 for display purposes
+						}
+						fmt.Printf("[Gateway] Created virtual parentPost for level 2 reply %s -> original user %s\n",
+							post.Id, userRes.User.Username)
+					}
+				}
+				
+				// Fallback: use actual parent post if ReplyMention lookup fails
+				if gqlPost.ParentPost == nil {
+					parentReq := &content_proto.GetPostRequest{
+						PostId: post.ParentId,
+					}
+					parentRes, err := r.ContentServiceClient.GetPost(ctx, parentReq)
+					if err == nil && parentRes.Post != nil {
+						gqlPost.ParentPost = r.postProtoToGql(parentRes.Post)
+						fmt.Printf("[Gateway] Fallback: used actual parent post for level 2 reply %s\n", post.Id)
+					}
+				}
+			} else {
+				// For level 1 replies, use actual parent post
+				parentReq := &content_proto.GetPostRequest{
+					PostId: post.ParentId,
+				}
+				parentRes, err := r.ContentServiceClient.GetPost(ctx, parentReq)
+				if err == nil && parentRes.Post != nil {
+					gqlPost.ParentPost = r.postProtoToGql(parentRes.Post)
+					fmt.Printf("[Gateway] Populated parentPost for level 1 reply %s -> parent %s (author: %s)\n",
+						post.Id, parentRes.Post.Id, parentRes.Post.Author.Username)
+				} else {
+					fmt.Printf("[Gateway] Failed to get parent post %s for reply %s: %v\n", post.ParentId, post.Id, err)
+				}
+			}
+		}
+
+		edges[i] = model.PostEdge{
+			Node:   gqlPost,
+			Cursor: post.CreatedAt,
+		}
+	}
+
+	// Build page info
+	pageInfo := &model.PageInfo{
+		HasNextPage: res.HasMore,
+	}
+	if res.NextCursor != "" {
+		pageInfo.EndCursor = &res.NextCursor
+	}
+
+	return &model.PostConnection{
+		Edges:    edges,
+		PageInfo: pageInfo,
+	}, nil
+}
+
+// ConversationThread is the resolver for the conversationThread field.
+func (r *queryResolver) ConversationThread(ctx context.Context, rootID string, first int, after *string) (*model.PostConnection, error) {
+	fmt.Printf("[Gateway] ConversationThread query received for root %s\n", rootID)
+
+	// Prepare the request
+	req := &content_proto.GetConversationThreadRequest{
+		RootId: rootID,
+		Limit:  int32(first),
+	}
+	if after != nil {
+		req.Cursor = *after
+	}
+
+	// Call content service
+	res, err := r.ContentServiceClient.GetConversationThread(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get conversation thread: %w", err)
+	}
+	if res.Error != nil {
+		return nil, fmt.Errorf("content service error: %s", res.Error.Message)
+	}
+
+	// Convert posts to edges
+	edges := make([]model.PostEdge, len(res.Posts))
+	for i, post := range res.Posts {
+		edges[i] = model.PostEdge{
+			Node:   r.postProtoToGql(post),
+			Cursor: post.CreatedAt,
+		}
+	}
+
+	// Build page info
+	pageInfo := &model.PageInfo{
+		HasNextPage: res.HasMore,
+	}
+	if res.NextCursor != "" {
+		pageInfo.EndCursor = &res.NextCursor
+	}
+
+	return &model.PostConnection{
+		Edges:    edges,
+		PageInfo: pageInfo,
 	}, nil
 }
 
