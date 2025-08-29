@@ -73,6 +73,11 @@ func (s *grpcServer) GetTimeline(ctx context.Context, req *proto.GetTimelineRequ
 	return s.postService.GetTimeline(ctx, req)
 }
 
+// GetFollowingTimeline 实现获取关注用户时间线接口
+func (s *grpcServer) GetFollowingTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
+	return s.postService.GetFollowingTimeline(ctx, req)
+}
+
 // DeletePost 实现删除帖子接口
 func (s *grpcServer) DeletePost(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error) {
 	return s.postService.DeletePost(ctx, req)

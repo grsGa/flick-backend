@@ -112,9 +112,10 @@ type Media struct {
 }
 
 type MediaAttachment struct {
-	ID   string `json:"id"`
-	URL  string `json:"url"`
-	Type string `json:"type"`
+	ID       string         `json:"id"`
+	URL      string         `json:"url"`
+	Type     string         `json:"type"`
+	Variants *MediaVariants `json:"variants,omitempty"`
 }
 
 type MediaVariant struct {

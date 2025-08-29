@@ -113,6 +113,11 @@ func (c *contentServiceClient) GetTimeline(ctx context.Context, in *content_prot
 	return c.client.GetTimeline(ctx, in, opts...)
 }
 
+// GetFollowingTimeline 获取关注用户时间线
+func (c *contentServiceClient) GetFollowingTimeline(ctx context.Context, in *content_proto.GetTimelineRequest, opts ...grpc.CallOption) (*content_proto.GetTimelineResponse, error) {
+	return c.client.GetFollowingTimeline(ctx, in, opts...)
+}
+
 // DeletePost 删除帖子
 func (c *contentServiceClient) DeletePost(ctx context.Context, in *content_proto.DeletePostRequest, opts ...grpc.CallOption) (*content_proto.DeletePostResponse, error) {
 	return c.client.DeletePost(ctx, in, opts...)

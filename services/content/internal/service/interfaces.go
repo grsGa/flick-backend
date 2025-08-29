@@ -16,8 +16,11 @@ type PostService interface {
 	// GetUserPosts 获取用户帖子列表
 	GetUserPosts(ctx context.Context, req *proto.GetUserPostsRequest) (*proto.GetUserPostsResponse, error)
 	
-	// GetTimeline 获取时间线
+	// GetTimeline 获取时间线 (For you feed)
 	GetTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error)
+	
+	// GetFollowingTimeline 获取关注用户时间线 (Following feed)
+	GetFollowingTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error)
 	
 	// DeletePost 删除帖子
 	DeletePost(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error)

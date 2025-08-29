@@ -14,8 +14,11 @@ service ContentService {
   // 获取用户帖子列表
   rpc GetUserPosts(GetUserPostsRequest) returns (GetUserPostsResponse);
   
-  // 获取时间线
+  // 获取时间线 (For you feed)
   rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);
+  
+  // 获取关注用户时间线 (Following feed)
+  rpc GetFollowingTimeline(GetTimelineRequest) returns (GetTimelineResponse);
   
   // 删除帖子
   rpc DeletePost(DeletePostRequest) returns (DeletePostResponse);

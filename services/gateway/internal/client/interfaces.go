@@ -65,6 +65,9 @@ type ContentServiceClient interface {
 	// GetTimeline 获取时间线
 	GetTimeline(ctx context.Context, in *content_proto.GetTimelineRequest, opts ...grpc.CallOption) (*content_proto.GetTimelineResponse, error)
 
+	// GetFollowingTimeline 获取关注用户时间线
+	GetFollowingTimeline(ctx context.Context, in *content_proto.GetTimelineRequest, opts ...grpc.CallOption) (*content_proto.GetTimelineResponse, error)
+
 	// DeletePost 删除帖子
 	DeletePost(ctx context.Context, in *content_proto.DeletePostRequest, opts ...grpc.CallOption) (*content_proto.DeletePostResponse, error)
 

@@ -661,13 +661,60 @@ func (r *queryResolver) Timeline(ctx context.Context, first int, after *string) 
 		return nil, errors.New("unauthorized")
 	}
 
+	cursor := ""
+	if after != nil {
+		cursor = *after
+	}
+
 	res, err := r.ContentServiceClient.GetTimeline(ctx, &content_proto.GetTimelineRequest{
 		UserId: claims.UserID,
 		Limit:  int32(first),
-		Cursor: "", // 简化处理
+		Cursor: cursor, // 简化处理
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get timeline: %w", err)
+	}
+	if res.Error != nil {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	// 转换为GraphQL连接类型
+	edges := make([]model.PostEdge, len(res.Posts))
+	for i, post := range res.Posts {
+		edges[i] = model.PostEdge{
+			Node:   r.postProtoToGql(post),
+			Cursor: post.Id,
+		}
+	}
+
+	return &model.PostConnection{
+		Edges: edges,
+		PageInfo: &model.PageInfo{
+			HasNextPage: len(res.Posts) == int(first),
+			EndCursor:   nil,
+		},
+	}, nil
+}
+
+// FollowingTimeline is the resolver for the followingTimeline field.
+func (r *queryResolver) FollowingTimeline(ctx context.Context, first int, after *string) (*model.PostConnection, error) {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	cursor := ""
+	if after != nil {
+		cursor = *after
+	}
+
+	res, err := r.ContentServiceClient.GetFollowingTimeline(ctx, &content_proto.GetTimelineRequest{
+		UserId: claims.UserID,
+		Limit:  int32(first),
+		Cursor: cursor,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get following timeline: %w", err)
 	}
 	if res.Error != nil {
 		return nil, errors.New(res.Error.Message)
@@ -835,8 +882,8 @@ func (r *queryResolver) PostReplies(ctx context.Context, postID string, first in
 						gqlPost.ParentPost = &model.Post{
 							ID: replyMentionRes.ReplyMention.MentionedUserId, // Use user ID as placeholder
 							Author: &model.User{
-								ID:       userRes.User.Id,
-								Username: userRes.User.Username,
+								ID:          userRes.User.Id,
+								Username:    userRes.User.Username,
 								DisplayName: &userRes.User.DisplayName,
 							},
 							ReplyLevel: 1, // Mark as level 1 for display purposes
@@ -845,7 +892,7 @@ func (r *queryResolver) PostReplies(ctx context.Context, postID string, first in
 							post.Id, userRes.User.Username)
 					}
 				}
-				
+
 				// Fallback: use actual parent post if ReplyMention lookup fails
 				if gqlPost.ParentPost == nil {
 					parentReq := &content_proto.GetPostRequest{

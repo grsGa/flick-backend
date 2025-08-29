@@ -16,8 +16,11 @@ type PostRepository interface {
 	// GetUserPosts 获取用户帖子列表
 	GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
 	
-	// GetTimeline 获取时间线
+	// GetTimeline 获取时间线 (For you feed)
 	GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
+	
+	// GetFollowingTimeline 获取关注用户时间线 (Following feed)
+	GetFollowingTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error)
 	
 	// DeletePost 删除帖子
 	DeletePost(ctx context.Context, postID, userID string) error

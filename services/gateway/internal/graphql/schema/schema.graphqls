@@ -55,6 +55,7 @@ type MediaAttachment {
   id: ID!
   url: String!
   type: String!
+  variants: MediaVariants
 }
 
 type Poll {
@@ -365,6 +366,7 @@ type Query {
   post(id: ID!): Post
   userPosts(username: String!, first: Int!, after: String): PostConnection
   timeline(first: Int!, after: String): PostConnection
+  followingTimeline(first: Int!, after: String): PostConnection
   checkReplyPermission(postId: ID!): Boolean!
   userReplies(userId: ID!, first: Int!, after: String): PostConnection
   userMedia(userId: ID!, first: Int!, after: String): PostConnection

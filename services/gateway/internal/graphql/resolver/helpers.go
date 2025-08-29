@@ -14,10 +14,57 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 	// Convert media attachments
 	mediaAttachments := make([]model.MediaAttachment, len(post.MediaAttachments))
 	for i, media := range post.MediaAttachments {
+		// Convert variants if available
+		var variants *model.MediaVariants
+		if media.Variants != nil {
+			variants = &model.MediaVariants{}
+			if media.Variants.Thumbnail != nil {
+				variants.Thumbnail = &model.MediaVariant{
+					URL:    media.Variants.Thumbnail.Url,
+					Width:  int(media.Variants.Thumbnail.Width),
+					Height: int(media.Variants.Thumbnail.Height),
+					Size:   int(media.Variants.Thumbnail.Size),
+				}
+			}
+			if media.Variants.Small != nil {
+				variants.Small = &model.MediaVariant{
+					URL:    media.Variants.Small.Url,
+					Width:  int(media.Variants.Small.Width),
+					Height: int(media.Variants.Small.Height),
+					Size:   int(media.Variants.Small.Size),
+				}
+			}
+			if media.Variants.Medium != nil {
+				variants.Medium = &model.MediaVariant{
+					URL:    media.Variants.Medium.Url,
+					Width:  int(media.Variants.Medium.Width),
+					Height: int(media.Variants.Medium.Height),
+					Size:   int(media.Variants.Medium.Size),
+				}
+			}
+			if media.Variants.Large != nil {
+				variants.Large = &model.MediaVariant{
+					URL:    media.Variants.Large.Url,
+					Width:  int(media.Variants.Large.Width),
+					Height: int(media.Variants.Large.Height),
+					Size:   int(media.Variants.Large.Size),
+				}
+			}
+			if media.Variants.Original != nil {
+				variants.Original = &model.MediaVariant{
+					URL:    media.Variants.Original.Url,
+					Width:  int(media.Variants.Original.Width),
+					Height: int(media.Variants.Original.Height),
+					Size:   int(media.Variants.Original.Size),
+				}
+			}
+		}
+
 		mediaAttachments[i] = model.MediaAttachment{
-			ID:   media.Id,
-			URL:  media.Url,
-			Type: media.Type,
+			ID:       media.Id,
+			URL:      media.Url,
+			Type:     media.Type,
+			Variants: variants,
 		}
 	}
 

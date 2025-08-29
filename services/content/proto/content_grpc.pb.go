@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.7
-// source: proto/content.proto
+// source: content.proto
 
 package proto
 
@@ -28,8 +28,10 @@ type ContentServiceClient interface {
 	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error)
 	// 获取用户帖子列表
 	GetUserPosts(ctx context.Context, in *GetUserPostsRequest, opts ...grpc.CallOption) (*GetUserPostsResponse, error)
-	// 获取时间线
+	// 获取时间线 (For you feed)
 	GetTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*GetTimelineResponse, error)
+	// 获取关注用户时间线 (Following feed)
+	GetFollowingTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*GetTimelineResponse, error)
 	// 删除帖子
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	// 检查回复权限
@@ -79,6 +81,15 @@ func (c *contentServiceClient) GetUserPosts(ctx context.Context, in *GetUserPost
 func (c *contentServiceClient) GetTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*GetTimelineResponse, error) {
 	out := new(GetTimelineResponse)
 	err := c.cc.Invoke(ctx, "/content.ContentService/GetTimeline", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *contentServiceClient) GetFollowingTimeline(ctx context.Context, in *GetTimelineRequest, opts ...grpc.CallOption) (*GetTimelineResponse, error) {
+	out := new(GetTimelineResponse)
+	err := c.cc.Invoke(ctx, "/content.ContentService/GetFollowingTimeline", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +160,10 @@ type ContentServiceServer interface {
 	GetPost(context.Context, *GetPostRequest) (*GetPostResponse, error)
 	// 获取用户帖子列表
 	GetUserPosts(context.Context, *GetUserPostsRequest) (*GetUserPostsResponse, error)
-	// 获取时间线
+	// 获取时间线 (For you feed)
 	GetTimeline(context.Context, *GetTimelineRequest) (*GetTimelineResponse, error)
+	// 获取关注用户时间线 (Following feed)
+	GetFollowingTimeline(context.Context, *GetTimelineRequest) (*GetTimelineResponse, error)
 	// 删除帖子
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	// 检查回复权限
@@ -178,6 +191,9 @@ func (UnimplementedContentServiceServer) GetUserPosts(context.Context, *GetUserP
 }
 func (UnimplementedContentServiceServer) GetTimeline(context.Context, *GetTimelineRequest) (*GetTimelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTimeline not implemented")
+}
+func (UnimplementedContentServiceServer) GetFollowingTimeline(context.Context, *GetTimelineRequest) (*GetTimelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFollowingTimeline not implemented")
 }
 func (UnimplementedContentServiceServer) DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePost not implemented")
@@ -278,6 +294,24 @@ func _ContentService_GetTimeline_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ContentServiceServer).GetTimeline(ctx, req.(*GetTimelineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ContentService_GetFollowingTimeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTimelineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).GetFollowingTimeline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/content.ContentService/GetFollowingTimeline",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).GetFollowingTimeline(ctx, req.(*GetTimelineRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -414,6 +448,10 @@ var ContentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ContentService_GetTimeline_Handler,
 		},
 		{
+			MethodName: "GetFollowingTimeline",
+			Handler:    _ContentService_GetFollowingTimeline_Handler,
+		},
+		{
 			MethodName: "DeletePost",
 			Handler:    _ContentService_DeletePost_Handler,
 		},
@@ -439,5 +477,5 @@ var ContentService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/content.proto",
+	Metadata: "content.proto",
 }

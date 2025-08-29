@@ -123,7 +123,7 @@ func (s *postService) GetUserPosts(ctx context.Context, req *proto.GetUserPostsR
 	}, nil
 }
 
-// GetTimeline 获取时间线
+// GetTimeline 获取时间线 (For you feed)
 func (s *postService) GetTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
 	posts, nextCursor, hasMore, err := s.postRepo.GetTimeline(ctx, req.UserId, req.Limit, req.Cursor)
 	if err != nil {
@@ -131,6 +131,25 @@ func (s *postService) GetTimeline(ctx context.Context, req *proto.GetTimelineReq
 			Error: &proto.Error{
 				Code:    500,
 				Message: "Failed to get timeline: " + err.Error(),
+			},
+		}, err
+	}
+
+	return &proto.GetTimelineResponse{
+		Posts:      posts,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}, nil
+}
+
+// GetFollowingTimeline 获取关注用户时间线 (Following feed)
+func (s *postService) GetFollowingTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
+	posts, nextCursor, hasMore, err := s.postRepo.GetFollowingTimeline(ctx, req.UserId, req.Limit, req.Cursor)
+	if err != nil {
+		return &proto.GetTimelineResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to get following timeline: " + err.Error(),
 			},
 		}, err
 	}

@@ -97,9 +97,10 @@ type ComplexityRoot struct {
 	}
 
 	MediaAttachment struct {
-		ID   func(childComplexity int) int
-		Type func(childComplexity int) int
-		URL  func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Type     func(childComplexity int) int
+		URL      func(childComplexity int) int
+		Variants func(childComplexity int) int
 	}
 
 	MediaVariant struct {
@@ -255,6 +256,7 @@ type ComplexityRoot struct {
 		Conversations        func(childComplexity int) int
 		Followers            func(childComplexity int, userID string, first int, after *string) int
 		Following            func(childComplexity int, userID string, first int, after *string) int
+		FollowingTimeline    func(childComplexity int, first int, after *string) int
 		Health               func(childComplexity int) int
 		HomeFeed             func(childComplexity int, first int, after *string) int
 		Messages             func(childComplexity int, conversationID string, first int, after *string) int
@@ -347,6 +349,7 @@ type QueryResolver interface {
 	Post(ctx context.Context, id string) (*model.Post, error)
 	UserPosts(ctx context.Context, username string, first int, after *string) (*model.PostConnection, error)
 	Timeline(ctx context.Context, first int, after *string) (*model.PostConnection, error)
+	FollowingTimeline(ctx context.Context, first int, after *string) (*model.PostConnection, error)
 	CheckReplyPermission(ctx context.Context, postID string) (bool, error)
 	UserReplies(ctx context.Context, userID string, first int, after *string) (*model.PostConnection, error)
 	UserMedia(ctx context.Context, userID string, first int, after *string) (*model.PostConnection, error)
@@ -601,6 +604,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MediaAttachment.URL(childComplexity), true
+
+	case "MediaAttachment.variants":
+		if e.complexity.MediaAttachment.Variants == nil {
+			break
+		}
+
+		return e.complexity.MediaAttachment.Variants(childComplexity), true
 
 	case "MediaVariant.height":
 		if e.complexity.MediaVariant.Height == nil {
@@ -1460,6 +1470,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Following(childComplexity, args["userId"].(string), args["first"].(int), args["after"].(*string)), true
 
+	case "Query.followingTimeline":
+		if e.complexity.Query.FollowingTimeline == nil {
+			break
+		}
+
+		args, err := ec.field_Query_followingTimeline_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FollowingTimeline(childComplexity, args["first"].(int), args["after"].(*string)), true
+
 	case "Query.health":
 		if e.complexity.Query.Health == nil {
 			break
@@ -2003,6 +2025,7 @@ type MediaAttachment {
   id: ID!
   url: String!
   type: String!
+  variants: MediaVariants
 }
 
 type Poll {
@@ -2313,6 +2336,7 @@ type Query {
   post(id: ID!): Post
   userPosts(username: String!, first: Int!, after: String): PostConnection
   timeline(first: Int!, after: String): PostConnection
+  followingTimeline(first: Int!, after: String): PostConnection
   checkReplyPermission(postId: ID!): Boolean!
   userReplies(userId: ID!, first: Int!, after: String): PostConnection
   userMedia(userId: ID!, first: Int!, after: String): PostConnection
@@ -2690,6 +2714,22 @@ func (ec *executionContext) field_Query_followers_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["after"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_followingTimeline_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "first", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "after", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg1
 	return args, nil
 }
 
@@ -4462,6 +4502,67 @@ func (ec *executionContext) fieldContext_MediaAttachment_type(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaAttachment_variants(ctx context.Context, field graphql.CollectedField, obj *model.MediaAttachment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaAttachment_variants(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Variants, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariants)
+	fc.Result = res
+	return ec.marshalOMediaVariants2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariants(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaAttachment_variants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaAttachment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "thumbnail":
+				return ec.fieldContext_MediaVariants_thumbnail(ctx, field)
+			case "small":
+				return ec.fieldContext_MediaVariants_small(ctx, field)
+			case "medium":
+				return ec.fieldContext_MediaVariants_medium(ctx, field)
+			case "large":
+				return ec.fieldContext_MediaVariants_large(ctx, field)
+			case "original":
+				return ec.fieldContext_MediaVariants_original(ctx, field)
+			case "preview":
+				return ec.fieldContext_MediaVariants_preview(ctx, field)
+			case "lowRes":
+				return ec.fieldContext_MediaVariants_lowRes(ctx, field)
+			case "midRes":
+				return ec.fieldContext_MediaVariants_midRes(ctx, field)
+			case "highRes":
+				return ec.fieldContext_MediaVariants_highRes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariants", field.Name)
 		},
 	}
 	return fc, nil
@@ -8800,6 +8901,8 @@ func (ec *executionContext) fieldContext_Post_mediaAttachments(_ context.Context
 				return ec.fieldContext_MediaAttachment_url(ctx, field)
 			case "type":
 				return ec.fieldContext_MediaAttachment_type(ctx, field)
+			case "variants":
+				return ec.fieldContext_MediaAttachment_variants(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MediaAttachment", field.Name)
 		},
@@ -10117,6 +10220,64 @@ func (ec *executionContext) fieldContext_Query_timeline(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_timeline_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_followingTimeline(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_followingTimeline(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().FollowingTimeline(rctx, fc.Args["first"].(int), fc.Args["after"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PostConnection)
+	fc.Result = res
+	return ec.marshalOPostConnection2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_followingTimeline(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_PostConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_PostConnection_pageInfo(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PostConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_followingTimeline_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15371,6 +15532,8 @@ func (ec *executionContext) _MediaAttachment(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "variants":
+			out.Values[i] = ec._MediaAttachment_variants(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16529,6 +16692,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_timeline(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "followingTimeline":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_followingTimeline(ctx, field)
 				return res
 			}
 

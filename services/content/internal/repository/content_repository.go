@@ -582,19 +582,18 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 	// 如果返回的帖子数少于limit，说明已经到底了
 	hasMore := limit > 0 && len(posts) == int(limit)
 	if hasMore && len(posts) > 0 {
-		nextCursor = posts[len(posts)-1].ID // 使用post ID作为cursor，与处理逻辑一致
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
 
 	fmt.Printf("[Content Repository] GetUserPosts result: posts=%d, hasMore=%t, nextCursor=%s\n", len(posts), hasMore, nextCursor)
 	return postList, nextCursor, hasMore, nil
 }
 
-// GetTimeline 获取时间线帖子
+// GetTimeline 获取时间线帖子 (For you feed - 显示所有公开帖子)
 func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
-	fmt.Printf("[Content Repository] GetTimeline called for userID: %s, limit: %d\n", userID, limit)
+	fmt.Printf("[Content Repository] GetTimeline (For you) called for userID: %s, limit: %d\n", userID, limit)
 
-	// 简化实现：获取所有公开帖子，实际应该根据关注关系过滤
-	// 排除回复内容，只显示原创帖子
+	// For you feed显示所有公开帖子，包括用户自己的帖子
 	var posts []models.Post
 	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL AND is_reply = false").
 		Order("created_at DESC")
@@ -644,7 +643,110 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
 
+	fmt.Printf("[Content Repository] GetTimeline result: posts=%d, hasMore=%t, nextCursor=%s\n", len(posts), hasMore, nextCursor)
 	return postList, nextCursor, hasMore, nil
+}
+
+// GetFollowingTimeline 获取关注用户时间线帖子 (Following feed)
+func (r *postRepository) GetFollowingTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+	fmt.Printf("[Content Repository] GetFollowingTimeline called for userID: %s, limit: %d\n", userID, limit)
+
+	// 获取用户关注的用户列表
+	followingUserIDs, err := r.getFollowingUserIDs(ctx, userID)
+	if err != nil {
+		fmt.Printf("[Content Repository] Failed to get following users: %v\n", err)
+		// 如果获取关注列表失败，返回空结果
+		return []*content_proto.Post{}, "", false, nil
+	}
+
+	fmt.Printf("[Content Repository] User %s is following %d users: %v\n", userID, len(followingUserIDs), followingUserIDs)
+
+	// 如果用户没有关注任何人，返回空结果
+	if len(followingUserIDs) == 0 {
+		fmt.Printf("[Content Repository] User %s is not following anyone, returning empty timeline\n", userID)
+		return []*content_proto.Post{}, "", false, nil
+	}
+
+	// 获取关注用户的帖子，排除回复内容，只显示原创帖子
+	var posts []models.Post
+	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL AND is_reply = false AND user_id IN ?", followingUserIDs).
+		Order("created_at DESC")
+
+	// 如果limit为-1，表示获取所有帖子，不应用限制
+	// 如果limit为0或正数，应用相应的限制
+	if limit > 0 {
+		query = query.Limit(int(limit))
+	}
+	if cursor != "" {
+		// cursor是post ID，需要找到该post的created_at时间
+		var cursorPost models.Post
+		if err := r.db.Where("id = ?", cursor).First(&cursorPost).Error; err == nil {
+			query = query.Where("created_at < ?", cursorPost.CreatedAt)
+			fmt.Printf("[Content Repository] Using cursor post %s with created_at: %s\n", cursor, cursorPost.CreatedAt.Format(time.RFC3339))
+		} else {
+			fmt.Printf("[Content Repository] Failed to find cursor post %s: %v\n", cursor, err)
+		}
+	}
+
+	fmt.Printf("[Content Repository] Executing following timeline query\n")
+	if err := query.Find(&posts).Error; err != nil {
+		fmt.Printf("[Content Repository] Following timeline query failed: %v\n", err)
+		return nil, "", false, fmt.Errorf("failed to get following timeline: %w", err)
+	}
+
+	fmt.Printf("[Content Repository] Following timeline found %d posts\n", len(posts))
+	for i, post := range posts {
+		fmt.Printf("[Content Repository] Following Timeline Post %d: ID=%s, UserID=%s, Content=%s, CreatedAt=%s\n",
+			i, post.ID, post.UserID, post.Content[:min(50, len(post.Content))], post.CreatedAt.Format(time.RFC3339))
+	}
+
+	postList, err := r.buildPostList(posts)
+	if err != nil {
+		fmt.Printf("[Content Repository] Failed to build following timeline post list: %v\n", err)
+		return nil, "", false, err
+	}
+
+	fmt.Printf("[Content Repository] Built %d following timeline posts successfully\n", len(postList))
+
+	// 生成下一页cursor（简化处理）
+	nextCursor := ""
+	hasMore := limit > 0 && len(posts) == int(limit)
+	if hasMore && len(posts) > 0 {
+		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
+	}
+
+	fmt.Printf("[Content Repository] GetFollowingTimeline result: posts=%d, hasMore=%t, nextCursor=%s\n", len(posts), hasMore, nextCursor)
+	return postList, nextCursor, hasMore, nil
+}
+
+// getFollowingUserIDs 获取用户关注的用户ID列表
+func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string) ([]string, error) {
+	// 检查用户服务客户端是否可用
+	if r.userClient == nil {
+		return nil, fmt.Errorf("user service client not available")
+	}
+	
+	req := &user_proto.GetFollowingRequest{
+		UserId: userID,
+		First:  1000, // 获取最多1000个关注用户
+		After:  "",
+	}
+	
+	resp, err := r.userClient.GetFollowing(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get following users: %w", err)
+	}
+	
+	if resp.Error != nil {
+		return nil, fmt.Errorf("user service error: %s", resp.Error.Message)
+	}
+	
+	var followingIDs []string
+	for _, user := range resp.Users {
+		followingIDs = append(followingIDs, user.Id)
+	}
+	
+	return followingIDs, nil
 }
 
 // DeletePost 删除帖子（软删除）
