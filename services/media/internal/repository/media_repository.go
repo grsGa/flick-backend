@@ -172,13 +172,91 @@ func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.Me
 func (r *mediaRepository) UpdateFile(ctx context.Context, file *proto.MediaFile) error {
 	updatedAt, _ := time.Parse(time.RFC3339, file.UpdatedAt)
 
+	// 将proto.MediaVariants转换为models.MediaVariants（JSON格式）
+	var variants models.MediaVariants
+	if file.Variants != nil {
+		if file.Variants.Thumbnail != nil {
+			variants.Thumbnail = &models.MediaVariant{
+				URL:    file.Variants.Thumbnail.Url,
+				Width:  file.Variants.Thumbnail.Width,
+				Height: file.Variants.Thumbnail.Height,
+				Size:   file.Variants.Thumbnail.Size,
+			}
+		}
+		if file.Variants.Small != nil {
+			variants.Small = &models.MediaVariant{
+				URL:    file.Variants.Small.Url,
+				Width:  file.Variants.Small.Width,
+				Height: file.Variants.Small.Height,
+				Size:   file.Variants.Small.Size,
+			}
+		}
+		if file.Variants.Medium != nil {
+			variants.Medium = &models.MediaVariant{
+				URL:    file.Variants.Medium.Url,
+				Width:  file.Variants.Medium.Width,
+				Height: file.Variants.Medium.Height,
+				Size:   file.Variants.Medium.Size,
+			}
+		}
+		if file.Variants.Large != nil {
+			variants.Large = &models.MediaVariant{
+				URL:    file.Variants.Large.Url,
+				Width:  file.Variants.Large.Width,
+				Height: file.Variants.Large.Height,
+				Size:   file.Variants.Large.Size,
+			}
+		}
+		if file.Variants.Original != nil {
+			variants.Original = &models.MediaVariant{
+				URL:    file.Variants.Original.Url,
+				Width:  file.Variants.Original.Width,
+				Height: file.Variants.Original.Height,
+				Size:   file.Variants.Original.Size,
+			}
+		}
+		// 视频特有的variants
+		if file.Variants.Preview != nil {
+			variants.Preview = &models.MediaVariant{
+				URL:    file.Variants.Preview.Url,
+				Width:  file.Variants.Preview.Width,
+				Height: file.Variants.Preview.Height,
+				Size:   file.Variants.Preview.Size,
+			}
+		}
+		if file.Variants.LowRes != nil {
+			variants.LowRes = &models.MediaVariant{
+				URL:    file.Variants.LowRes.Url,
+				Width:  file.Variants.LowRes.Width,
+				Height: file.Variants.LowRes.Height,
+				Size:   file.Variants.LowRes.Size,
+			}
+		}
+		if file.Variants.MidRes != nil {
+			variants.MidRes = &models.MediaVariant{
+				URL:    file.Variants.MidRes.Url,
+				Width:  file.Variants.MidRes.Width,
+				Height: file.Variants.MidRes.Height,
+				Size:   file.Variants.MidRes.Size,
+			}
+		}
+		if file.Variants.HighRes != nil {
+			variants.HighRes = &models.MediaVariant{
+				URL:    file.Variants.HighRes.Url,
+				Width:  file.Variants.HighRes.Width,
+				Height: file.Variants.HighRes.Height,
+				Size:   file.Variants.HighRes.Size,
+			}
+		}
+	}
+
 	updates := map[string]interface{}{
 		"url":          file.Url,
 		"type":         file.Type,
 		"alt_text":     &file.AltText,
 		"mime_type":    file.MimeType,
 		"status":       file.Status,
-		"variants":     file.Variants,
+		"variants":     variants, // 使用转换后的JSON格式variants
 		"processed_at": file.ProcessedAt,
 		"updated_at":   updatedAt,
 	}

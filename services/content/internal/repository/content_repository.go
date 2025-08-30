@@ -110,14 +110,14 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	if req.ParentId != "" {
 		post.ParentID = &req.ParentId
 		post.IsReply = true
-		
+
 		// 获取父帖子信息来确定回复层级和根帖子ID
 		var parentPost models.Post
 		if err := tx.Where("id = ?", req.ParentId).First(&parentPost).Error; err != nil {
 			tx.Rollback()
 			return nil, fmt.Errorf("failed to find parent post: %w", err)
 		}
-		
+
 		// 设置回复层级和根帖子ID - 强制执行两级回复系统
 		if parentPost.IsReply {
 			// 对回复的回复：需要区分是对一级回复还是二级回复的回复
@@ -127,7 +127,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				post.RootID = parentPost.RootID
 				// ParentID指向被回复的一级回复
 				// post.ParentID 已经设置为 req.ParentId
-				
+
 				// 保存原始被回复的用户信息到ReplyMention表
 				originalReplyToUserID := parentPost.UserID
 				fmt.Printf("[Content Repository] Creating level 2 reply to level 1 - RootID: %v, ParentID: %v, OriginalReplyTo: %s\n", post.RootID, post.ParentID, originalReplyToUserID)
@@ -137,12 +137,12 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				post.RootID = parentPost.RootID
 				// 关键：ParentID应该指向被回复的二级回复的ParentID，这样可以正确分组显示
 				post.ParentID = parentPost.ParentID
-				
+
 				// 保存被回复的二级回复用户信息到ReplyMention表
 				originalReplyToUserID := parentPost.UserID
 				fmt.Printf("[Content Repository] Creating level 2 reply to level 2 - RootID: %v, ParentID: %v (grouped under same level 1), OriginalReplyTo: %s\n", post.RootID, post.ParentID, originalReplyToUserID)
 			}
-			
+
 			post.Content = req.Content
 		} else {
 			// 对原帖的回复：level 1
@@ -150,13 +150,13 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 			post.RootID = &req.ParentId
 			fmt.Printf("[Content Repository] Creating level 1 reply - RootID: %v, ParentID: %v\n", post.RootID, post.ParentID)
 		}
-		
+
 		// 验证回复层级（应该永远不会超过2）
 		if post.ReplyLevel > 2 {
 			tx.Rollback()
 			return nil, fmt.Errorf("reply level cannot exceed 2 - current level: %d", post.ReplyLevel)
 		}
-		
+
 		fmt.Printf("[Content Repository] Final reply structure - Level: %d, ParentID: %v, RootID: %v\n", post.ReplyLevel, post.ParentID, post.RootID)
 	}
 
@@ -179,7 +179,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 		var repliedPost models.Post
 		if err := tx.Where("id = ?", req.ParentId).First(&repliedPost).Error; err == nil {
 			var mentionedUserID string
-			
+
 			if repliedPost.ReplyLevel == 1 {
 				// 回复一级回复：保存一级回复的用户ID
 				mentionedUserID = repliedPost.UserID
@@ -189,12 +189,12 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				mentionedUserID = repliedPost.UserID
 				fmt.Printf("[Content Repository] Reply to level 2 - mentioning user: %s\n", mentionedUserID)
 			}
-			
+
 			if mentionedUserID != "" {
 				replyMention := models.ReplyMention{
-					ReplyID:        post.ID,
+					ReplyID:         post.ID,
 					MentionedUserID: mentionedUserID,
-					CreatedAt:      time.Now(),
+					CreatedAt:       time.Now(),
 				}
 				if err := tx.Create(&replyMention).Error; err != nil {
 					fmt.Printf("[Content Repository] Warning: Failed to create reply mention: %v\n", err)
@@ -339,6 +339,39 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 						Width:  mediaFile.Variants.Original.Width,
 						Height: mediaFile.Variants.Original.Height,
 						Size:   mediaFile.Variants.Original.Size,
+					}
+				}
+				// 处理视频特有的variants
+				if mediaFile.Variants.Preview != nil {
+					variants.Preview = &models.MediaVariant{
+						URL:    mediaFile.Variants.Preview.Url,
+						Width:  mediaFile.Variants.Preview.Width,
+						Height: mediaFile.Variants.Preview.Height,
+						Size:   mediaFile.Variants.Preview.Size,
+					}
+				}
+				if mediaFile.Variants.LowRes != nil {
+					variants.LowRes = &models.MediaVariant{
+						URL:    mediaFile.Variants.LowRes.Url,
+						Width:  mediaFile.Variants.LowRes.Width,
+						Height: mediaFile.Variants.LowRes.Height,
+						Size:   mediaFile.Variants.LowRes.Size,
+					}
+				}
+				if mediaFile.Variants.MidRes != nil {
+					variants.MidRes = &models.MediaVariant{
+						URL:    mediaFile.Variants.MidRes.Url,
+						Width:  mediaFile.Variants.MidRes.Width,
+						Height: mediaFile.Variants.MidRes.Height,
+						Size:   mediaFile.Variants.MidRes.Size,
+					}
+				}
+				if mediaFile.Variants.HighRes != nil {
+					variants.HighRes = &models.MediaVariant{
+						URL:    mediaFile.Variants.HighRes.Url,
+						Width:  mediaFile.Variants.HighRes.Width,
+						Height: mediaFile.Variants.HighRes.Height,
+						Size:   mediaFile.Variants.HighRes.Size,
 					}
 				}
 			}
@@ -725,27 +758,27 @@ func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string)
 	if r.userClient == nil {
 		return nil, fmt.Errorf("user service client not available")
 	}
-	
+
 	req := &user_proto.GetFollowingRequest{
 		UserId: userID,
 		First:  1000, // 获取最多1000个关注用户
 		After:  "",
 	}
-	
+
 	resp, err := r.userClient.GetFollowing(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get following users: %w", err)
 	}
-	
+
 	if resp.Error != nil {
 		return nil, fmt.Errorf("user service error: %s", resp.Error.Message)
 	}
-	
+
 	var followingIDs []string
 	for _, user := range resp.Users {
 		followingIDs = append(followingIDs, user.Id)
 	}
-	
+
 	return followingIDs, nil
 }
 
@@ -876,7 +909,7 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 		// 查找所有ReplyMention记录中提及该帖子作者，且这些回复与该帖子在同一个父级下且创建时间晚于该帖子的回复
 		r.db.Table("posts p").
 			Joins("JOIN reply_mentions rm ON p.id = rm.reply_id").
-			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL", 
+			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL",
 				post.UserID, post.ParentID, post.CreatedAt).
 			Count(&replyCount)
 	} else if post.IsReply && post.ReplyLevel == 1 {
@@ -886,7 +919,7 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 		// 对于原帖：统计所有回复（一级和二级）
 		r.db.Model(&models.Post{}).Where("(parent_id = ? OR root_id = ?) AND is_reply = true AND deleted_at IS NULL", post.ID, post.ID).Count(&replyCount)
 	}
-	
+
 	stats := &content_proto.PostStats{
 		LikeCount:   0,
 		ReplyCount:  int32(replyCount),
@@ -1253,6 +1286,43 @@ func (r *postRepository) getMediaVariants(mediaID string) *content_proto.MediaVa
 		}
 	}
 
+	// 处理视频特有的variants
+	if resp.File.Variants.Preview != nil {
+		variants.Preview = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.Preview.Url,
+			Width:  resp.File.Variants.Preview.Width,
+			Height: resp.File.Variants.Preview.Height,
+			Size:   resp.File.Variants.Preview.Size,
+		}
+	}
+
+	if resp.File.Variants.LowRes != nil {
+		variants.LowRes = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.LowRes.Url,
+			Width:  resp.File.Variants.LowRes.Width,
+			Height: resp.File.Variants.LowRes.Height,
+			Size:   resp.File.Variants.LowRes.Size,
+		}
+	}
+
+	if resp.File.Variants.MidRes != nil {
+		variants.MidRes = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.MidRes.Url,
+			Width:  resp.File.Variants.MidRes.Width,
+			Height: resp.File.Variants.MidRes.Height,
+			Size:   resp.File.Variants.MidRes.Size,
+		}
+	}
+
+	if resp.File.Variants.HighRes != nil {
+		variants.HighRes = &content_proto.MediaVariant{
+			Url:    resp.File.Variants.HighRes.Url,
+			Width:  resp.File.Variants.HighRes.Width,
+			Height: resp.File.Variants.HighRes.Height,
+			Size:   resp.File.Variants.HighRes.Size,
+		}
+	}
+
 	log.Printf("[Content Repository] Successfully retrieved variants for media ID: %s", mediaID)
 	return variants
 }
@@ -1260,27 +1330,27 @@ func (r *postRepository) getMediaVariants(mediaID string) *content_proto.MediaVa
 // GetPostReplies 获取帖子的回复列表
 func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetPostReplies called for postID: %s\n", postID)
-	
+
 	// 获取直接回复和嵌套回复 - 使用 root_id 或 parent_id 匹配
 	query := r.db.Where("(parent_id = ? OR (root_id = ? AND reply_level = 2)) AND deleted_at IS NULL", postID, postID).
 		Order("reply_level ASC, created_at DESC")
-	
+
 	// 处理分页
 	if cursor != "" {
 		if cursorTime, err := time.Parse(time.RFC3339, cursor); err == nil {
 			query = query.Where("created_at > ?", cursorTime)
 		}
 	}
-	
+
 	if limit > 0 {
 		query = query.Limit(int(limit + 1)) // +1 用于检查是否有更多数据
 	}
-	
+
 	var posts []models.Post
 	if err := query.Find(&posts).Error; err != nil {
 		return nil, "", false, fmt.Errorf("failed to get post replies: %w", err)
 	}
-	
+
 	// 检查是否有更多数据
 	hasMore := false
 	nextCursor := ""
@@ -1289,7 +1359,7 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 		posts = posts[:limit] // 移除多余的记录
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
-	
+
 	// 转换为proto格式
 	var protoPosts []*content_proto.Post
 	for _, post := range posts {
@@ -1300,7 +1370,7 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 		}
 		protoPosts = append(protoPosts, protoPost)
 	}
-	
+
 	fmt.Printf("[Content Repository] GetPostReplies returning %d replies\n", len(protoPosts))
 	return protoPosts, nextCursor, hasMore, nil
 }
@@ -1308,27 +1378,27 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 // GetConversationThread 获取完整对话线程
 func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetConversationThread called for rootID: %s\n", rootID)
-	
+
 	// 获取根帖子和所有相关回复
 	query := r.db.Where("(id = ? OR root_id = ?) AND deleted_at IS NULL", rootID, rootID).
 		Order("reply_level ASC, created_at ASC")
-	
+
 	// 处理分页
 	if cursor != "" {
 		if cursorTime, err := time.Parse(time.RFC3339, cursor); err == nil {
 			query = query.Where("created_at > ?", cursorTime)
 		}
 	}
-	
+
 	if limit > 0 {
 		query = query.Limit(int(limit + 1)) // +1 用于检查是否有更多数据
 	}
-	
+
 	var posts []models.Post
 	if err := query.Find(&posts).Error; err != nil {
 		return nil, "", false, fmt.Errorf("failed to get conversation thread: %w", err)
 	}
-	
+
 	// 检查是否有更多数据
 	hasMore := false
 	nextCursor := ""
@@ -1337,7 +1407,7 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 		posts = posts[:limit] // 移除多余的记录
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
-	
+
 	// 转换为proto格式
 	var protoPosts []*content_proto.Post
 	for _, post := range posts {
@@ -1348,7 +1418,7 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 		}
 		protoPosts = append(protoPosts, protoPost)
 	}
-	
+
 	fmt.Printf("[Content Repository] GetConversationThread returning %d posts\n", len(protoPosts))
 	return protoPosts, nextCursor, hasMore, nil
 }
@@ -1356,7 +1426,7 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 // DeleteReply 删除回复
 func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
 	fmt.Printf("[Content Repository] DeleteReply called for replyID: %s by user: %s\n", replyID, userID)
-	
+
 	// 检查回复是否存在且属于该用户
 	var reply models.Post
 	if err := r.db.Where("id = ? AND user_id = ? AND is_reply = true AND deleted_at IS NULL", replyID, userID).First(&reply).Error; err != nil {
@@ -1365,13 +1435,13 @@ func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string
 		}
 		return fmt.Errorf("failed to find reply: %w", err)
 	}
-	
+
 	// 软删除回复
 	now := time.Now()
 	if err := r.db.Model(&reply).Update("deleted_at", now).Error; err != nil {
 		return fmt.Errorf("failed to delete reply: %w", err)
 	}
-	
+
 	fmt.Printf("[Content Repository] Reply %s deleted successfully\n", replyID)
 	return nil
 }
@@ -1447,7 +1517,7 @@ func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserI
 		// 查找所有ReplyMention记录中提及该帖子作者，且这些回复与该帖子在同一个父级下且创建时间晚于该帖子的回复
 		r.db.Table("posts p").
 			Joins("JOIN reply_mentions rm ON p.id = rm.reply_id").
-			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL", 
+			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL",
 				post.UserID, post.ParentID, post.CreatedAt).
 			Count(&replyCount)
 	} else if post.IsReply && post.ReplyLevel == 1 {
@@ -1457,7 +1527,7 @@ func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserI
 		// 对于原帖：统计所有回复（一级和二级）
 		r.db.Model(&models.Post{}).Where("(parent_id = ? OR root_id = ?) AND is_reply = true AND deleted_at IS NULL", post.ID, post.ID).Count(&replyCount)
 	}
-	
+
 	stats := &content_proto.PostStats{
 		LikeCount:   0,
 		ReplyCount:  int32(replyCount),
@@ -1495,12 +1565,12 @@ func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserI
 // GetReplyMention 获取回复提及信息
 func (r *postRepository) GetReplyMention(ctx context.Context, replyID string) (*content_proto.ReplyMention, error) {
 	db := database.GetDB()
-	
+
 	var replyMention models.ReplyMention
 	if err := db.Where("reply_id = ?", replyID).First(&replyMention).Error; err != nil {
 		return nil, fmt.Errorf("failed to get reply mention: %w", err)
 	}
-	
+
 	return &content_proto.ReplyMention{
 		Id:              replyMention.ID,
 		ReplyId:         replyMention.ReplyID,

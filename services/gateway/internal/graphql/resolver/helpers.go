@@ -1,6 +1,8 @@
 package resolver
 
 import (
+	"strings"
+	
 	content_proto "github.com/flick/backend/services/content/proto"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 )
@@ -155,7 +157,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 	media := make([]model.Media, len(post.MediaAttachments))
 	for i, attachment := range post.MediaAttachments {
 		mediaType := model.MediaTypeImage
-		if attachment.Type == "video" {
+		if attachment.Type == "video" || attachment.Type == "posts" && strings.HasPrefix(attachment.MimeType, "video/") {
 			mediaType = model.MediaTypeVideo
 		}
 
@@ -202,6 +204,39 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 					Width:  int(attachment.Variants.Original.Width),
 					Height: int(attachment.Variants.Original.Height),
 					Size:   int(attachment.Variants.Original.Size),
+				}
+			}
+			// Video variants
+			if attachment.Variants.Preview != nil {
+				variants.Preview = &model.MediaVariant{
+					URL:    attachment.Variants.Preview.Url,
+					Width:  int(attachment.Variants.Preview.Width),
+					Height: int(attachment.Variants.Preview.Height),
+					Size:   int(attachment.Variants.Preview.Size),
+				}
+			}
+			if attachment.Variants.LowRes != nil {
+				variants.LowRes = &model.MediaVariant{
+					URL:    attachment.Variants.LowRes.Url,
+					Width:  int(attachment.Variants.LowRes.Width),
+					Height: int(attachment.Variants.LowRes.Height),
+					Size:   int(attachment.Variants.LowRes.Size),
+				}
+			}
+			if attachment.Variants.MidRes != nil {
+				variants.MidRes = &model.MediaVariant{
+					URL:    attachment.Variants.MidRes.Url,
+					Width:  int(attachment.Variants.MidRes.Width),
+					Height: int(attachment.Variants.MidRes.Height),
+					Size:   int(attachment.Variants.MidRes.Size),
+				}
+			}
+			if attachment.Variants.HighRes != nil {
+				variants.HighRes = &model.MediaVariant{
+					URL:    attachment.Variants.HighRes.Url,
+					Width:  int(attachment.Variants.HighRes.Width),
+					Height: int(attachment.Variants.HighRes.Height),
+					Size:   int(attachment.Variants.HighRes.Size),
 				}
 			}
 		}

@@ -185,7 +185,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		}, err
 	}
 
-	// 自动触发媒体处理生成多版本（仅对图片）
+	// 自动触发媒体处理生成多版本（图片和视频）
 	if strings.HasPrefix(contentType, "image/") {
 		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for image: %s\n", actualFileID)
 		go func() {
@@ -198,6 +198,20 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 				fmt.Printf("[MEDIA SERVICE] Auto-processing failed for %s: %v\n", actualFileID, processErr)
 			} else {
 				fmt.Printf("[MEDIA SERVICE] Auto-processing started for %s\n", actualFileID)
+			}
+		}()
+	} else if strings.HasPrefix(contentType, "video/") {
+		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for video: %s\n", actualFileID)
+		go func() {
+			processReq := &proto.ProcessMediaRequest{
+				FileId:   actualFileID,
+				Variants: []string{"low_res", "mid_res", "high_res"}, // 生成视频版本和预览图
+			}
+			_, processErr := s.ProcessMedia(context.Background(), processReq)
+			if processErr != nil {
+				fmt.Printf("[MEDIA SERVICE] Auto-processing failed for video %s: %v\n", actualFileID, processErr)
+			} else {
+				fmt.Printf("[MEDIA SERVICE] Auto-processing started for video %s\n", actualFileID)
 			}
 		}()
 	}
@@ -445,7 +459,8 @@ func (s *mediaService) processMediaAsync(ctx context.Context, job *ProcessingJob
 	updatedFile.MimeType = mediaType
 	updatedFile.ProcessedAt = time.Now().Format(time.RFC3339)
 
-	// 转换variants到proto格式
+	// 将models.MediaVariants转换为数据库存储格式
+	// 需要转换为proto格式以匹配MediaFile结构
 	updatedFile.Variants = s.convertVariantsToProto(variants)
 
 	err = s.mediaRepo.UpdateFile(ctx, &updatedFile)
@@ -539,15 +554,22 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 
 	fmt.Printf("[MEDIA PROCESSOR] Uploading variants for file %s (category: %s)\n", fileID, category)
 
-	// 上传各个版本
+	// 上传各个版本 - 包括图片和视频variants
 	variantTypes := []struct {
 		variant *models.MediaVariant
 		suffix  string
+		mimeType string
 	}{
-		{variants.Thumbnail, "thumbnail"},
-		{variants.Small, "small"},
-		{variants.Medium, "medium"},
-		{variants.Large, "large"},
+		// 图片variants
+		{variants.Thumbnail, "thumbnail", "image/jpeg"},
+		{variants.Small, "small", "image/jpeg"},
+		{variants.Medium, "medium", "image/jpeg"},
+		{variants.Large, "large", "image/jpeg"},
+		// 视频variants
+		{variants.Preview, "preview", "image/jpeg"},
+		{variants.LowRes, "low_res", "video/mp4"},
+		{variants.MidRes, "mid_res", "video/mp4"},
+		{variants.HighRes, "high_res", "video/mp4"},
 	}
 
 	for _, vt := range variantTypes {
@@ -557,7 +579,14 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 
 		// 构建MinIO对象路径 - 使用原始文件的category而不是硬编码posts
 		// 修复variant URL路径重复问题 - 不在文件名中重复fileID
-		variantFilename := fmt.Sprintf("%s%s", vt.suffix, originalExt)
+		var variantFilename string
+		if vt.suffix == "preview" {
+			variantFilename = fmt.Sprintf("%s.jpg", vt.suffix) // 预览图使用.jpg扩展名
+		} else if strings.Contains(vt.mimeType, "video") {
+			variantFilename = fmt.Sprintf("%s.mp4", vt.suffix) // 视频variants使用.mp4扩展名
+		} else {
+			variantFilename = fmt.Sprintf("%s%s", vt.suffix, originalExt) // 图片variants使用原扩展名
+		}
 		objectPath := fmt.Sprintf("%s/%s/%s/%s", category, userID, fileID, variantFilename)
 
 		// 打开本地处理后的文件
@@ -574,8 +603,8 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 			continue
 		}
 
-		// 上传到MinIO
-		url, err := s.storage.UploadFileWithPath(ctx, bucketName, objectPath, file, fileInfo.Size(), "image/jpeg")
+		// 上传到MinIO - 使用正确的MIME类型
+		url, err := s.storage.UploadFileWithPath(ctx, bucketName, objectPath, file, fileInfo.Size(), vt.mimeType)
 		file.Close()
 
 		if err != nil {
