@@ -15,13 +15,14 @@ type contextKey string
 
 const (
 	UserClaimsKey contextKey = "userClaims"
+	TokenKey      contextKey = "token"
 )
 
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Debug logging
 		fmt.Printf("[AUTH] Processing request: %s %s\n", c.Request.Method, c.Request.URL.Path)
-		
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			fmt.Printf("[AUTH] No Authorization header found\n")
@@ -47,6 +48,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 		fmt.Printf("[AUTH] JWT validated successfully for user: %s\n", claims.UserID)
 		ctx := context.WithValue(c.Request.Context(), UserClaimsKey, claims)
+		ctx = context.WithValue(ctx, TokenKey, tokenString)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
@@ -57,4 +59,11 @@ func GetUserClaims(ctx context.Context) *auth.Claims {
 		return claims
 	}
 	return nil
+}
+
+func GetTokenFromContext(ctx context.Context) string {
+	if token, ok := ctx.Value(TokenKey).(string); ok {
+		return token
+	}
+	return ""
 }

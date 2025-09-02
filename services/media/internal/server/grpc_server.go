@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/services/media/internal/middleware"
 	"github.com/flick/backend/services/media/internal/service"
 	"github.com/flick/backend/services/media/proto"
 	"google.golang.org/grpc"
@@ -13,12 +15,14 @@ import (
 type grpcServer struct {
 	proto.UnimplementedMediaServiceServer
 	mediaService service.MediaService
+	config       *config.Config
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(mediaService service.MediaService) *grpcServer {
+func NewGRPCServer(mediaService service.MediaService, cfg *config.Config) *grpcServer {
 	return &grpcServer{
 		mediaService: mediaService,
+		config:       cfg,
 	}
 }
 
@@ -54,6 +58,7 @@ func (s *grpcServer) Run(port string) error {
 	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(maxMsgSize),
 		grpc.MaxSendMsgSize(maxMsgSize),
+		grpc.UnaryInterceptor(middleware.AuthInterceptor(s.config)), // Add JWT authentication
 	)
 	proto.RegisterMediaServiceServer(grpcServer, s)
 

@@ -8,16 +8,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
+	"io"
 
-	"github.com/99designs/gqlgen/graphql"
 	content_proto "github.com/flick/backend/services/content/proto"
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	"github.com/flick/backend/services/gateway/internal/middleware"
-	interaction_pb "github.com/flick/backend/services/interaction/proto"
-	user_pb "github.com/flick/backend/services/user/proto"
+	interaction_proto "github.com/flick/backend/services/interaction/proto"
+	media_proto "github.com/flick/backend/services/media/proto"
+	user_proto "github.com/flick/backend/services/user/proto"
 )
 
 // Login is the resolver for the login field.
@@ -27,7 +26,7 @@ func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*
 		return nil, errors.New("username is required")
 	}
 
-	res, err := r.UserServiceClient.Login(ctx, &user_pb.LoginRequest{
+	res, err := r.UserServiceClient.Login(ctx, &user_proto.LoginRequest{
 		Identifier: identifier,
 		Password:   input.Password,
 	})
@@ -51,7 +50,7 @@ func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInp
 		displayName = *input.DisplayName
 	}
 
-	res, err := r.UserServiceClient.Register(ctx, &user_pb.RegisterRequest{
+	res, err := r.UserServiceClient.Register(ctx, &user_proto.RegisterRequest{
 		Username:    input.Username,
 		Email:       input.Email,
 		Password:    input.Password,
@@ -70,39 +69,225 @@ func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInp
 	}, nil
 }
 
-// UploadMedia is the resolver for the uploadMedia field.
-func (r *mutationResolver) UploadMedia(ctx context.Context, file graphql.Upload) (*model.Media, error) {
-	fmt.Printf("[Gateway] UploadMedia mutation received\n")
-
+// UploadAvatar is the resolver for the uploadAvatar field.
+func (r *mutationResolver) UploadAvatar(ctx context.Context, input model.UploadAvatarInput) (*model.MediaUploadResult, error) {
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
-		fmt.Printf("[Gateway] UploadMedia unauthorized: no user claims\n")
-		return nil, errors.New("unauthorized")
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("unauthorized"),
+		}, nil
 	}
 
-	fmt.Printf("[Gateway] File upload requested: %s, size: %d\n", file.Filename, file.Size)
-
-	// Generate a unique filename with timestamp
-	timestamp := time.Now().Unix()
-	uniqueFilename := fmt.Sprintf("%d_%s", timestamp, file.Filename)
-
-	// For now, return a mock URL that follows a realistic pattern
-	// In production, this would upload to a cloud storage service like S3 or MinIO
-	mediaURL := fmt.Sprintf("https://media.flick.app/uploads/%s", uniqueFilename)
-
-	// Determine media type based on file extension
-	mediaType := model.MediaTypeImage
-	if strings.Contains(strings.ToLower(file.Filename), ".mp4") ||
-		strings.Contains(strings.ToLower(file.Filename), ".mov") ||
-		strings.Contains(strings.ToLower(file.Filename), ".avi") {
-		mediaType = model.MediaTypeVideo
+	// Create authenticated context for gRPC call
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("authentication failed"),
+		}, nil
 	}
 
-	return &model.Media{
-		ID:   fmt.Sprintf("media_%d", timestamp),
-		URL:  mediaURL,
-		Type: mediaType,
+	// Read file content
+	fileContent, err := io.ReadAll(input.File.File)
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("failed to read file"),
+		}, nil
+	}
+
+	// Call media service
+	res, err := r.MediaServiceClient.UploadFile(authCtx, &media_proto.UploadFileRequest{
+		UserId:      input.UserID,
+		Content:     fileContent,
+		Filename:    input.File.Filename,
+		ContentType: input.File.ContentType,
+		FileType:    "avatar",
+	})
+
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr(fmt.Sprintf("upload failed: %v", err)),
+		}, nil
+	}
+
+	return &model.MediaUploadResult{
+		FileID:  res.FileId,
+		FileURL: res.FileUrl,
+		Success: true,
+		Message: stringPtr("upload successful"),
 	}, nil
+}
+
+// UploadBanner is the resolver for the uploadBanner field.
+func (r *mutationResolver) UploadBanner(ctx context.Context, input model.UploadBannerInput) (*model.MediaUploadResult, error) {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("unauthorized"),
+		}, nil
+	}
+
+	// Create authenticated context for gRPC call
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("authentication failed"),
+		}, nil
+	}
+
+	// Read file content
+	fileContent, err := io.ReadAll(input.File.File)
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("failed to read file"),
+		}, nil
+	}
+
+	// Call media service
+	res, err := r.MediaServiceClient.UploadFile(authCtx, &media_proto.UploadFileRequest{
+		UserId:      input.UserID,
+		Content:     fileContent,
+		Filename:    input.File.Filename,
+		ContentType: input.File.ContentType,
+		FileType:    "banner",
+	})
+
+	if err != nil {
+		return &model.MediaUploadResult{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr(fmt.Sprintf("upload failed: %v", err)),
+		}, nil
+	}
+
+	return &model.MediaUploadResult{
+		FileID:  res.FileId,
+		FileURL: res.FileUrl,
+		Success: true,
+		Message: stringPtr("upload successful"),
+	}, nil
+}
+
+// UploadPostMedia is the resolver for the uploadPostMedia field.
+func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.UploadPostMediaInput) ([]model.MediaUploadResult, error) {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return []model.MediaUploadResult{{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("unauthorized"),
+		}}, nil
+	}
+
+	// Create authenticated context for gRPC call
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return []model.MediaUploadResult{{
+			FileID:  "",
+			FileURL: "",
+			Success: false,
+			Message: stringPtr("authentication failed"),
+		}}, nil
+	}
+
+	var results []model.MediaUploadResult
+
+	for i, file := range input.Files {
+		// Read file content
+		fileContent, err := io.ReadAll(file.File)
+		if err != nil {
+			results = append(results, model.MediaUploadResult{
+				FileID:  "",
+				FileURL: "",
+				Success: false,
+				Message: stringPtr(fmt.Sprintf("failed to read file %d", i)),
+			})
+			continue
+		}
+
+		// Get alt text if provided
+		altText := ""
+		if i < len(input.AltTexts) {
+			altText = input.AltTexts[i]
+		}
+
+		// Call media service
+		res, err := r.MediaServiceClient.UploadFile(authCtx, &media_proto.UploadFileRequest{
+			UserId:      input.UserID,
+			Content:     fileContent,
+			Filename:    file.Filename,
+			ContentType: file.ContentType,
+			FileType:    "post",
+			AltText:     altText,
+		})
+
+		if err != nil {
+			results = append(results, model.MediaUploadResult{
+				FileID:  "",
+				FileURL: "",
+				Success: false,
+				Message: stringPtr(fmt.Sprintf("upload failed for file %d: %v", i, err)),
+			})
+			continue
+		}
+
+		results = append(results, model.MediaUploadResult{
+			FileID:  res.FileId,
+			FileURL: res.FileUrl,
+			Success: true,
+			Message: stringPtr("upload successful"),
+		})
+	}
+
+	return results, nil
+}
+
+// DeleteMedia is the resolver for the deleteMedia field.
+func (r *mutationResolver) DeleteMedia(ctx context.Context, input model.DeleteMediaInput) (bool, error) {
+	claims := middleware.GetUserClaims(ctx)
+	if claims == nil {
+		return false, errors.New("unauthorized")
+	}
+
+	// Create authenticated context for gRPC call
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return false, fmt.Errorf("authentication failed: %v", err)
+	}
+
+	// Call media service
+	_, err = r.MediaServiceClient.DeleteFile(authCtx, &media_proto.DeleteFileRequest{
+		FileUrl: input.FileURL,
+		UserId:  claims.UserID,
+	})
+
+	if err != nil {
+		return false, fmt.Errorf("delete failed: %v", err)
+	}
+
+	return true, nil
 }
 
 // CreatePost is the resolver for the createPost field.
@@ -143,7 +328,12 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 
 	fmt.Printf("[Gateway] Calling content-service CreatePost\n")
 
-	res, err := r.ContentServiceClient.CreatePost(ctx, req)
+	// Create authenticated gRPC context
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.ContentServiceClient.CreatePost(authCtx, req)
 	if err != nil {
 		fmt.Printf("[Gateway] Content-service call failed: %v\n", err)
 		return nil, err
@@ -193,7 +383,11 @@ func (r *mutationResolver) CreateReply(ctx context.Context, input model.CreateRe
 	}
 
 	// Call content service to create the reply
-	res, err := r.ContentServiceClient.CreatePost(ctx, req)
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.ContentServiceClient.CreatePost(authCtx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create reply: %w", err)
 	}
@@ -239,7 +433,11 @@ func (r *mutationResolver) LikePost(ctx context.Context, input model.LikePostInp
 	}
 
 	// Call interaction service to like the post
-	res, err := r.InteractionServiceClient.LikePost(ctx, &interaction_pb.LikePostRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.InteractionServiceClient.LikePost(authCtx, &interaction_proto.LikePostRequest{
 		PostId: input.PostID,
 		UserId: claims.UserID,
 	})
@@ -270,7 +468,11 @@ func (r *mutationResolver) UnlikePost(ctx context.Context, input model.LikePostI
 	}
 
 	// Call interaction service to unlike the post
-	res, err := r.InteractionServiceClient.UnlikePost(ctx, &interaction_pb.UnlikePostRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.InteractionServiceClient.UnlikePost(authCtx, &interaction_proto.UnlikePostRequest{
 		PostId: input.PostID,
 		UserId: claims.UserID,
 	})
@@ -363,7 +565,7 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 	fmt.Printf("  AvatarURL: %v\n", input.AvatarURL)
 	fmt.Printf("  BannerURL: %v\n", input.BannerURL)
 
-	req := &user_pb.UpdateProfileRequest{
+	req := &user_proto.UpdateProfileRequest{
 		UserId:      userID,
 		DisplayName: input.DisplayName,
 		Bio:         input.Bio,
@@ -376,7 +578,11 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.Update
 	// Gateway log: Calling user service
 	fmt.Printf("[Gateway] Calling user-service UpdateProfile for userID: %s\n", userID)
 
-	res, err := r.UserServiceClient.UpdateProfile(ctx, req)
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.UserServiceClient.UpdateProfile(authCtx, req)
 	if err != nil {
 		fmt.Printf("[Gateway] User-service call failed: %v\n", err)
 		return nil, err
@@ -402,7 +608,11 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	fmt.Printf("[Gateway] FollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
 	// 调用interaction服务创建关注关系
-	followRes, err := r.InteractionServiceClient.CreateFollow(ctx, &interaction_pb.CreateFollowRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	followRes, err := r.InteractionServiceClient.CreateFollow(authCtx, &interaction_proto.CreateFollowRequest{
 		FollowerId: followerID,
 		FolloweeId: userID,
 	})
@@ -414,7 +624,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	}
 
 	// 调用用户服务更新关注者计数
-	_, err = r.UserServiceClient.FollowUser(ctx, &user_pb.FollowUserRequest{
+	_, err = r.UserServiceClient.FollowUser(authCtx, &user_proto.FollowUserRequest{
 		FollowerId:  followerID,
 		FollowingId: userID,
 	})
@@ -424,7 +634,7 @@ func (r *mutationResolver) FollowUser(ctx context.Context, userID string) (*mode
 	}
 
 	// 获取被关注用户的信息返回
-	userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
 		UserId: userID,
 	})
 	if err != nil {
@@ -454,7 +664,11 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	fmt.Printf("[Gateway] UnfollowUser authorized for follower: %s, followee: %s\n", followerID, userID)
 
 	// 调用interaction服务删除关注关系
-	unfollowRes, err := r.InteractionServiceClient.DeleteFollow(ctx, &interaction_pb.DeleteFollowRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	unfollowRes, err := r.InteractionServiceClient.DeleteFollow(authCtx, &interaction_proto.DeleteFollowRequest{
 		FollowerId: followerID,
 		FolloweeId: userID,
 	})
@@ -466,7 +680,7 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	}
 
 	// 调用用户服务更新关注者计数
-	_, err = r.UserServiceClient.UnfollowUser(ctx, &user_pb.UnfollowUserRequest{
+	_, err = r.UserServiceClient.UnfollowUser(authCtx, &user_proto.UnfollowUserRequest{
 		FollowerId:  followerID,
 		FollowingId: userID,
 	})
@@ -476,7 +690,7 @@ func (r *mutationResolver) UnfollowUser(ctx context.Context, userID string) (*mo
 	}
 
 	// 获取被取消关注用户的信息返回
-	userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{
+	userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{
 		UserId: userID,
 	})
 	if err != nil {
@@ -503,7 +717,7 @@ func (r *queryResolver) Health(ctx context.Context) (*string, error) {
 func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*model.User, error) {
 	fmt.Printf("[Gateway] UserByUsername query received for username: %s\n", username)
 
-	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_pb.GetUserByUsernameRequest{
+	res, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
 		Username: username,
 	})
 	if err != nil {
@@ -529,7 +743,7 @@ func (r *queryResolver) UserByUsername(ctx context.Context, username string) (*m
 			// Viewing someone else's profile - check actual follow status
 			fmt.Printf("[Gateway] UserByUsername checking follow status for follower: %s, followee: %s\n", claims.UserID, user.Id)
 
-			followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+			followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_proto.IsFollowingRequest{
 				FollowerId: claims.UserID,
 				FolloweeId: user.Id,
 			})
@@ -575,7 +789,7 @@ func (r *queryResolver) UserPosts(ctx context.Context, username string, first in
 
 	// 通过用户服务获取用户ID
 	fmt.Printf("[Gateway] UserPosts calling user-service GetUserByUsername\n")
-	userRes, err := r.UserServiceClient.GetUserByUsername(ctx, &user_pb.GetUserByUsernameRequest{
+	userRes, err := r.UserServiceClient.GetUserByUsername(ctx, &user_proto.GetUserByUsernameRequest{
 		Username: username,
 	})
 	if err != nil {
@@ -608,7 +822,17 @@ func (r *queryResolver) UserPosts(ctx context.Context, username string, first in
 
 	// 使用真实的用户ID获取帖子
 	fmt.Printf("[Gateway] UserPosts calling content-service GetUserPosts for user: %s, requesting user: %s, cursor: %s\n", userRes.User.Id, requestingUserId, cursor)
-	res, err := r.ContentServiceClient.GetUserPosts(ctx, &content_proto.GetUserPostsRequest{
+
+	// Try to create authenticated context, but fallback to regular context if no auth
+	callCtx := ctx
+	if middleware.GetTokenFromContext(ctx) != "" {
+		authCtx, err := r.createAuthenticatedContext(ctx)
+		if err == nil {
+			callCtx = authCtx
+		}
+	}
+
+	res, err := r.ContentServiceClient.GetUserPosts(callCtx, &content_proto.GetUserPostsRequest{
 		UserId:           userRes.User.Id,
 		RequestingUserId: requestingUserId,
 		Limit:            int32(first),
@@ -666,7 +890,11 @@ func (r *queryResolver) Timeline(ctx context.Context, first int, after *string) 
 		cursor = *after
 	}
 
-	res, err := r.ContentServiceClient.GetTimeline(ctx, &content_proto.GetTimelineRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.ContentServiceClient.GetTimeline(authCtx, &content_proto.GetTimelineRequest{
 		UserId: claims.UserID,
 		Limit:  int32(first),
 		Cursor: cursor, // 简化处理
@@ -708,7 +936,11 @@ func (r *queryResolver) FollowingTimeline(ctx context.Context, first int, after 
 		cursor = *after
 	}
 
-	res, err := r.ContentServiceClient.GetFollowingTimeline(ctx, &content_proto.GetTimelineRequest{
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := r.ContentServiceClient.GetFollowingTimeline(authCtx, &content_proto.GetTimelineRequest{
 		UserId: claims.UserID,
 		Limit:  int32(first),
 		Cursor: cursor,
@@ -801,8 +1033,14 @@ func (r *queryResolver) HomeFeed(ctx context.Context, first int, after *string) 
 
 	fmt.Printf("[Gateway] HomeFeed calling content-service GetTimeline for user: %s\n", claims.UserID)
 
+	// Create authenticated context for gRPC call
+	authCtx, err := r.createAuthenticatedContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// 调用内容服务获取时间线
-	res, err := r.ContentServiceClient.GetTimeline(ctx, &content_proto.GetTimelineRequest{
+	res, err := r.ContentServiceClient.GetTimeline(authCtx, &content_proto.GetTimelineRequest{
 		UserId: claims.UserID,
 		Limit:  int32(first),
 		Cursor: "", // 简化处理
@@ -873,7 +1111,7 @@ func (r *queryResolver) PostReplies(ctx context.Context, postID string, first in
 				replyMentionRes, err := r.ContentServiceClient.GetReplyMention(ctx, replyMentionReq)
 				if err == nil && replyMentionRes.ReplyMention != nil {
 					// Get the original replied user info
-					userReq := &user_pb.GetUserRequest{
+					userReq := &user_proto.GetUserRequest{
 						UserId: replyMentionRes.ReplyMention.MentionedUserId,
 					}
 					userRes, err := r.UserServiceClient.GetUser(ctx, userReq)
@@ -1060,7 +1298,7 @@ func (r *queryResolver) Followers(ctx context.Context, userID string, first int,
 	fmt.Printf("[Gateway] Followers query received for userID: %s\n", userID)
 
 	// Get followers from interaction service
-	req := &interaction_pb.GetFollowersRequest{
+	req := &interaction_proto.GetFollowersRequest{
 		UserId:   userID,
 		Page:     1, // Start from page 1
 		PageSize: int32(first),
@@ -1076,7 +1314,7 @@ func (r *queryResolver) Followers(ctx context.Context, userID string, first int,
 	edges := make([]model.UserEdge, len(res.Followers))
 	for i, follower := range res.Followers {
 		// Get full user details from user service
-		userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{UserId: follower.FollowerId})
+		userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{UserId: follower.FollowerId})
 		if err != nil {
 			fmt.Printf("[Gateway] Error fetching user details for follower %s: %v\n", follower.FollowerId, err)
 			continue
@@ -1093,7 +1331,7 @@ func (r *queryResolver) Followers(ctx context.Context, userID string, first int,
 				fmt.Printf("[Gateway] Follower is self, setting isFollowing=false\n")
 			} else {
 				// Check if current user follows this follower
-				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_proto.IsFollowingRequest{
 					FollowerId: claims.UserID,
 					FolloweeId: follower.FollowerId,
 				})
@@ -1144,7 +1382,7 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 	fmt.Printf("[Gateway] Following query received for userID: %s\n", userID)
 
 	// Get following from interaction service
-	req := &interaction_pb.GetFollowingRequest{
+	req := &interaction_proto.GetFollowingRequest{
 		UserId:   userID,
 		Page:     1, // Start from page 1
 		PageSize: int32(first),
@@ -1160,7 +1398,7 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 	edges := make([]model.UserEdge, len(res.Following))
 	for i, followee := range res.Following {
 		// Get full user details from user service
-		userRes, err := r.UserServiceClient.GetUser(ctx, &user_pb.GetUserRequest{UserId: followee.FolloweeId})
+		userRes, err := r.UserServiceClient.GetUser(ctx, &user_proto.GetUserRequest{UserId: followee.FolloweeId})
 		if err != nil {
 			fmt.Printf("[Gateway] Error fetching user details for followee %s: %v\n", followee.FolloweeId, err)
 			continue
@@ -1178,7 +1416,7 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 				fmt.Printf("[Gateway] Followee is self, setting isFollowing=false\n")
 			} else {
 				// Check if current user follows this followee
-				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_pb.IsFollowingRequest{
+				followRes, err := r.InteractionServiceClient.IsFollowing(ctx, &interaction_proto.IsFollowingRequest{
 					FollowerId: claims.UserID,
 					FolloweeId: followee.FolloweeId,
 				})
@@ -1232,3 +1470,8 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// Helper function to create string pointer
+func stringPtr(s string) *string {
+	return &s
+}

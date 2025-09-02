@@ -74,7 +74,7 @@ func main() {
 	mediaService := service.NewMediaService(mediaRepo, storageRepo, tempDir)
 
 	// 初始化服务端
-	grpcServer := server.NewGRPCServer(mediaService)
+	grpcServer := server.NewGRPCServer(mediaService, cfg)
 
 	port := os.Getenv("MEDIA_SERVICE_PORT")
 	if port == "" {

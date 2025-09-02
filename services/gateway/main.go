@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/flick/backend/pkg/config"
@@ -22,7 +20,6 @@ import (
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
 	"github.com/flick/backend/services/gateway/internal/middleware"
-	media_proto "github.com/flick/backend/services/media/proto"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -211,7 +208,7 @@ func setupRoutes(r *gin.Engine) {
 
 	// GraphQL endpoint
 	graphqlPath := "/graphql"
-	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient)}))
+	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient)}))
 	queryHandler.Use(extension.Introspection{})
 
 	// Add error handling
@@ -307,81 +304,6 @@ func setupRoutes(r *gin.Engine) {
 		})
 	}
 
-	// Media API routes
-	api := r.Group("/api")
-	{
-		media := api.Group("/media")
-		{
-			// Legacy direct upload endpoint (keep for compatibility)
-			media.POST("/upload", func(c *gin.Context) {
-				// Debug logging for media upload
-				fmt.Printf("[MEDIA] Upload request received\n")
-
-				// Get user claims from context (set by auth middleware)
-				claims := middleware.GetUserClaims(c.Request.Context())
-				if claims == nil {
-					fmt.Printf("[MEDIA] No user claims found in context\n")
-					c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-					return
-				}
-				userID := claims.UserID
-				fmt.Printf("[MEDIA] User authenticated: %s\n", userID)
-
-				// Parse multipart form with larger limit for post media (100MB)
-				err := c.Request.ParseMultipartForm(100 << 20) // 100MB max
-				if err != nil {
-					fmt.Printf("[GATEWAY] Failed to parse multipart form: %v\n", err)
-					c.JSON(http.StatusBadRequest, gin.H{"error": "File too large or invalid format"})
-					return
-				}
-
-				file, header, err := c.Request.FormFile("file")
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"error": "No file provided"})
-					return
-				}
-				defer file.Close()
-
-				// Read file data
-				fileData, err := io.ReadAll(file)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
-					return
-				}
-
-				// Get file type and alt text from form
-				fileType := c.PostForm("type")
-				altText := c.PostForm("alt_text")
-
-				// Call media service
-				req := &media_proto.UploadFileRequest{
-					UserId:   userID,
-					Filename: header.Filename,
-					FileData: fileData,
-					Type:     fileType,
-					AltText:  altText,
-				}
-
-				res, err := mediaServiceClient.UploadFile(c, req)
-				if err != nil {
-					fmt.Printf("[GATEWAY] Media service error: %v\n", err)
-					// Check if it's a validation error and provide specific feedback
-					if strings.Contains(err.Error(), "exceeds maximum allowed size") {
-						c.JSON(http.StatusBadRequest, gin.H{"error": "File size too large. Maximum allowed size is 100MB for videos and 10MB for images."})
-					} else if strings.Contains(err.Error(), "not allowed") {
-						c.JSON(http.StatusBadRequest, gin.H{"error": "File type not supported. Please use JPG, PNG, GIF, WebP for images or MP4, WebM, MOV, AVI for videos."})
-					} else {
-						c.JSON(http.StatusInternalServerError, gin.H{"error": "Upload failed. Please try again."})
-					}
-					return
-				}
-
-				fmt.Printf("[GATEWAY] Upload successful, returning URL: %s\n", res.File.Url)
-				c.JSON(http.StatusOK, gin.H{
-					"url": res.File.Url,
-					"id":  res.File.Id,
-				})
-			})
-		}
-	}
+	// REST API endpoints removed - all media operations now use GraphQL mutations
+	// This ensures consistent authentication and unified API interface
 }

@@ -89,24 +89,27 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	// 生成文件ID
 	fileID := uuid.New().String()
 
-	// 确定内容类型
-	contentType := getContentTypeFromFilename(req.Filename)
+	// 确定内容类型 - 优先使用请求中的ContentType
+	contentType := req.ContentType
+	if contentType == "" {
+		contentType = getContentTypeFromFilename(req.Filename)
+	}
 
 	// 确定媒体类别
 	var category storage.MediaCategory
-	switch req.Type {
-	case "avatars":
+	switch req.FileType {
+	case "avatar":
 		category = storage.CategoryAvatar
-	case "banners":
+	case "banner":
 		category = storage.CategoryBanner
-	case "posts":
+	case "post_media":
 		category = storage.CategoryPost
 	default:
 		category = storage.CategoryPost // 默认为帖子媒体
 	}
 
 	// 验证文件
-	fileSize := int64(len(req.FileData))
+	fileSize := int64(len(req.Content))
 	if err := s.validator.ValidateUpload(category, req.Filename, fileSize, contentType); err != nil {
 		fmt.Printf("[MEDIA SERVICE] Validation failed: %v\n", err)
 		return &proto.UploadFileResponse{
@@ -120,7 +123,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	fmt.Printf("[MEDIA SERVICE] File validation passed: %s, size: %d bytes, type: %s\n", req.Filename, fileSize, contentType)
 
 	// 保存文件到存储
-	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.FileData, contentType, category.String(), req.UserId)
+	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.Content, contentType, category.String(), req.UserId)
 	if err != nil {
 		return &proto.UploadFileResponse{
 			Error: &proto.Error{
@@ -160,9 +163,9 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		UserId:    req.UserId,
 		Filename:  req.Filename,
 		Url:       url,
-		Type:      req.Type,
+		Type:      req.FileType,
 		MimeType:  contentType, // 设置MIME类型
-		Size:      int64(len(req.FileData)),
+		Size:      int64(len(req.Content)),
 		AltText:   req.AltText,
 		CreatedAt: time.Now().Format(time.RFC3339),
 		UpdatedAt: time.Now().Format(time.RFC3339),
@@ -170,7 +173,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 
 	// Debug logging for URL generation
 	fmt.Printf("[MEDIA SERVICE] Generated file URL: %s\n", url)
-	fmt.Printf("[MEDIA SERVICE] File type: %s, User ID: %s\n", req.Type, req.UserId)
+	fmt.Printf("[MEDIA SERVICE] File type: %s, User ID: %s\n", req.FileType, req.UserId)
 
 	err = s.mediaRepo.CreateFile(ctx, file)
 	if err != nil {
@@ -217,7 +220,11 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	}
 
 	return &proto.UploadFileResponse{
-		File: file,
+		FileId:      actualFileID,
+		FileUrl:     url,
+		Filename:    req.Filename,
+		ContentType: contentType,
+		Size:        int64(len(req.Content)),
 	}, nil
 }
 
@@ -240,8 +247,8 @@ func (s *mediaService) GetFile(ctx context.Context, req *proto.GetFileRequest) (
 
 // DeleteFile 删除文件
 func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.DeleteFileResponse, error) {
-	// 首先获取文件信息
-	file, err := s.mediaRepo.GetFileByID(ctx, req.FileId)
+	// 首先获取文件信息 - 通过URL查找文件
+	file, err := s.mediaRepo.GetFileByURL(ctx, req.FileUrl)
 	if err != nil {
 		return &proto.DeleteFileResponse{
 			Success: false,
@@ -252,8 +259,19 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 		}, err
 	}
 
+	// 验证用户权限 - 只有文件所有者可以删除
+	if file.UserId != req.UserId {
+		return &proto.DeleteFileResponse{
+			Success: false,
+			Error: &proto.Error{
+				Code:    403,
+				Message: "Permission denied: you can only delete your own files",
+			},
+		}, fmt.Errorf("permission denied")
+	}
+
 	// 从存储中删除文件
-	err = s.mediaRepo.DeleteFileFromStorage(ctx, file.Url)
+	err = s.mediaRepo.DeleteFileFromStorage(ctx, req.FileUrl)
 	if err != nil {
 		return &proto.DeleteFileResponse{
 			Success: false,
@@ -265,7 +283,7 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 	}
 
 	// 删除文件记录
-	err = s.mediaRepo.DeleteFile(ctx, req.FileId)
+	err = s.mediaRepo.DeleteFile(ctx, file.Id)
 	if err != nil {
 		return &proto.DeleteFileResponse{
 			Success: false,

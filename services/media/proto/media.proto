@@ -71,16 +71,21 @@ message MediaFile {
 // 上传文件请求
 message UploadFileRequest {
   string user_id = 1;
-  bytes file_data = 2;
+  bytes content = 2;
   string filename = 3;
-  string type = 4;
-  string alt_text = 5;
+  string content_type = 4;
+  string file_type = 5;
+  string alt_text = 6;
 }
 
 // 上传文件响应
 message UploadFileResponse {
-  MediaFile file = 1;
-  Error error = 2;
+  string file_id = 1;
+  string file_url = 2;
+  string filename = 3;
+  string content_type = 4;
+  int64 size = 5;
+  Error error = 6;
 }
 
 // 获取文件信息请求
@@ -96,7 +101,8 @@ message GetFileResponse {
 
 // 删除文件请求
 message DeleteFileRequest {
-  string file_id = 1;
+  string file_url = 1;
+  string user_id = 2;
 }
 
 // 删除文件响应

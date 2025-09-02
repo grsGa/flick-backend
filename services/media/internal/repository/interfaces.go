@@ -14,6 +14,9 @@ type MediaRepository interface {
 	// GetFileByID 根据ID获取文件
 	GetFileByID(ctx context.Context, id string) (*proto.MediaFile, error)
 
+	// GetFileByURL 根据URL获取文件
+	GetFileByURL(ctx context.Context, url string) (*proto.MediaFile, error)
+
 	// UpdateFile 更新文件记录
 	UpdateFile(ctx context.Context, file *proto.MediaFile) error
 

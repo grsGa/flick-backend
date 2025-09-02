@@ -1,9 +1,14 @@
 package resolver
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/flick/backend/services/gateway/internal/client"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
+	"github.com/flick/backend/services/gateway/internal/middleware"
 	user_proto "github.com/flick/backend/services/user/proto"
+	"google.golang.org/grpc/metadata"
 )
 
 // This file will not be regenerated automatically.
@@ -15,15 +20,17 @@ type Resolver struct {
 	UserServiceClient        client.UserServiceClient
 	ContentServiceClient     client.ContentServiceClient
 	InteractionServiceClient client.InteractionServiceClient
+	MediaServiceClient       client.MediaServiceClient
 }
 
 // NewResolver creates a new resolver instance
-func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient, interactionServiceClient client.InteractionServiceClient) *Resolver {
+func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient, interactionServiceClient client.InteractionServiceClient, mediaServiceClient client.MediaServiceClient) *Resolver {
 	return &Resolver{
 		AuthServiceClient:        authServiceClient,
 		UserServiceClient:        userServiceClient,
 		ContentServiceClient:     contentServiceClient,
 		InteractionServiceClient: interactionServiceClient,
+		MediaServiceClient:       mediaServiceClient,
 	}
 }
 
@@ -76,4 +83,17 @@ func (r *Resolver) userProtoToGql(user *user_proto.User) *model.User {
 		IsVerified:     isVerified,
 		CreatedAt:      user.CreatedAt,
 	}
+}
+
+// createAuthenticatedContext creates a context with JWT token for gRPC calls
+func (r *Resolver) createAuthenticatedContext(ctx context.Context) (context.Context, error) {
+	// Extract token from GraphQL context using middleware helper
+	token := middleware.GetTokenFromContext(ctx)
+	if token == "" {
+		return nil, fmt.Errorf("authentication required: no valid token found")
+	}
+
+	// Create gRPC metadata with Authorization header
+	md := metadata.Pairs("authorization", "Bearer "+token)
+	return metadata.NewOutgoingContext(ctx, md), nil
 }

@@ -225,6 +225,34 @@ input CreateConversationInput {
   participantIds: [ID!]!
 }
 
+# Media upload input types
+input UploadAvatarInput {
+  file: Upload!
+  userId: ID!
+}
+
+input UploadBannerInput {
+  file: Upload!
+  userId: ID!
+}
+
+input UploadPostMediaInput {
+  files: [Upload!]!
+  userId: ID!
+  altTexts: [String!]
+}
+
+input DeleteMediaInput {
+  fileUrl: String!
+}
+
+type MediaUploadResult {
+  fileId: String!
+  fileUrl: String!
+  success: Boolean!
+  message: String
+}
+
 type MessageEdge {
   node: Message!
   cursor: String!
@@ -389,7 +417,11 @@ type Query {
 type Mutation {
   login(input: LoginInput!): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
-  uploadMedia(file: Upload!): Media!
+  # Media mutations - replacing REST API
+  uploadAvatar(input: UploadAvatarInput!): MediaUploadResult!
+  uploadBanner(input: UploadBannerInput!): MediaUploadResult!
+  uploadPostMedia(input: UploadPostMediaInput!): [MediaUploadResult!]!
+  deleteMedia(input: DeleteMediaInput!): Boolean!
   # Post mutations
   createPost(input: CreatePostInput!): Post!
   deletePost(postId: ID!): Boolean!

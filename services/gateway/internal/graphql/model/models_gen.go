@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type NotificationEntity interface {
@@ -64,6 +66,10 @@ type CreateReplyInput struct {
 	MentionedUsers []string `json:"mentionedUsers,omitempty"`
 }
 
+type DeleteMediaInput struct {
+	FileURL string `json:"fileUrl"`
+}
+
 type Hashtag struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
@@ -116,6 +122,13 @@ type MediaAttachment struct {
 	URL      string         `json:"url"`
 	Type     string         `json:"type"`
 	Variants *MediaVariants `json:"variants,omitempty"`
+}
+
+type MediaUploadResult struct {
+	FileID  string  `json:"fileId"`
+	FileURL string  `json:"fileUrl"`
+	Success bool    `json:"success"`
+	Message *string `json:"message,omitempty"`
 }
 
 type MediaVariant struct {
@@ -295,6 +308,22 @@ type UpdateProfileInput struct {
 	Website     *string `json:"website,omitempty"`
 	AvatarURL   *string `json:"avatarUrl,omitempty"`
 	BannerURL   *string `json:"bannerUrl,omitempty"`
+}
+
+type UploadAvatarInput struct {
+	File   graphql.Upload `json:"file"`
+	UserID string         `json:"userId"`
+}
+
+type UploadBannerInput struct {
+	File   graphql.Upload `json:"file"`
+	UserID string         `json:"userId"`
+}
+
+type UploadPostMediaInput struct {
+	Files    []graphql.Upload `json:"files"`
+	UserID   string           `json:"userId"`
+	AltTexts []string         `json:"altTexts,omitempty"`
 }
 
 type User struct {

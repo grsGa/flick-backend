@@ -103,6 +103,13 @@ type ComplexityRoot struct {
 		Variants func(childComplexity int) int
 	}
 
+	MediaUploadResult struct {
+		FileID  func(childComplexity int) int
+		FileURL func(childComplexity int) int
+		Message func(childComplexity int) int
+		Success func(childComplexity int) int
+	}
+
 	MediaVariant struct {
 		Height func(childComplexity int) int
 		Size   func(childComplexity int) int
@@ -147,6 +154,7 @@ type ComplexityRoot struct {
 		CreateConversation         func(childComplexity int, input model.CreateConversationInput) int
 		CreatePost                 func(childComplexity int, input model.CreatePostInput) int
 		CreateReply                func(childComplexity int, input model.CreateReplyInput) int
+		DeleteMedia                func(childComplexity int, input model.DeleteMediaInput) int
 		DeletePost                 func(childComplexity int, postID string) int
 		DeleteReply                func(childComplexity int, replyID string) int
 		FollowUser                 func(childComplexity int, userID string) int
@@ -163,7 +171,9 @@ type ComplexityRoot struct {
 		UnfollowUser               func(childComplexity int, userID string) int
 		UnlikePost                 func(childComplexity int, input model.LikePostInput) int
 		UpdateProfile              func(childComplexity int, input model.UpdateProfileInput) int
-		UploadMedia                func(childComplexity int, file graphql.Upload) int
+		UploadAvatar               func(childComplexity int, input model.UploadAvatarInput) int
+		UploadBanner               func(childComplexity int, input model.UploadBannerInput) int
+		UploadPostMedia            func(childComplexity int, input model.UploadPostMediaInput) int
 	}
 
 	Notification struct {
@@ -323,7 +333,10 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error)
 	Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error)
-	UploadMedia(ctx context.Context, file graphql.Upload) (*model.Media, error)
+	UploadAvatar(ctx context.Context, input model.UploadAvatarInput) (*model.MediaUploadResult, error)
+	UploadBanner(ctx context.Context, input model.UploadBannerInput) (*model.MediaUploadResult, error)
+	UploadPostMedia(ctx context.Context, input model.UploadPostMediaInput) ([]model.MediaUploadResult, error)
+	DeleteMedia(ctx context.Context, input model.DeleteMediaInput) (bool, error)
 	CreatePost(ctx context.Context, input model.CreatePostInput) (*model.Post, error)
 	DeletePost(ctx context.Context, postID string) (bool, error)
 	CreateReply(ctx context.Context, input model.CreateReplyInput) (*model.Post, error)
@@ -612,6 +625,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MediaAttachment.Variants(childComplexity), true
 
+	case "MediaUploadResult.fileId":
+		if e.complexity.MediaUploadResult.FileID == nil {
+			break
+		}
+
+		return e.complexity.MediaUploadResult.FileID(childComplexity), true
+
+	case "MediaUploadResult.fileUrl":
+		if e.complexity.MediaUploadResult.FileURL == nil {
+			break
+		}
+
+		return e.complexity.MediaUploadResult.FileURL(childComplexity), true
+
+	case "MediaUploadResult.message":
+		if e.complexity.MediaUploadResult.Message == nil {
+			break
+		}
+
+		return e.complexity.MediaUploadResult.Message(childComplexity), true
+
+	case "MediaUploadResult.success":
+		if e.complexity.MediaUploadResult.Success == nil {
+			break
+		}
+
+		return e.complexity.MediaUploadResult.Success(childComplexity), true
+
 	case "MediaVariant.height":
 		if e.complexity.MediaVariant.Height == nil {
 			break
@@ -828,6 +869,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.CreateReply(childComplexity, args["input"].(model.CreateReplyInput)), true
 
+	case "Mutation.deleteMedia":
+		if e.complexity.Mutation.DeleteMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteMedia(childComplexity, args["input"].(model.DeleteMediaInput)), true
+
 	case "Mutation.deletePost":
 		if e.complexity.Mutation.DeletePost == nil {
 			break
@@ -1015,17 +1068,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateProfile(childComplexity, args["input"].(model.UpdateProfileInput)), true
 
-	case "Mutation.uploadMedia":
-		if e.complexity.Mutation.UploadMedia == nil {
+	case "Mutation.uploadAvatar":
+		if e.complexity.Mutation.UploadAvatar == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_uploadMedia_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_uploadAvatar_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UploadMedia(childComplexity, args["file"].(graphql.Upload)), true
+		return e.complexity.Mutation.UploadAvatar(childComplexity, args["input"].(model.UploadAvatarInput)), true
+
+	case "Mutation.uploadBanner":
+		if e.complexity.Mutation.UploadBanner == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadBanner_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadBanner(childComplexity, args["input"].(model.UploadBannerInput)), true
+
+	case "Mutation.uploadPostMedia":
+		if e.complexity.Mutation.UploadPostMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadPostMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadPostMedia(childComplexity, args["input"].(model.UploadPostMediaInput)), true
 
 	case "Notification.actor":
 		if e.complexity.Notification.Actor == nil {
@@ -1864,6 +1941,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateMessageInput,
 		ec.unmarshalInputCreatePostInput,
 		ec.unmarshalInputCreateReplyInput,
+		ec.unmarshalInputDeleteMediaInput,
 		ec.unmarshalInputLikePostInput,
 		ec.unmarshalInputLoginInput,
 		ec.unmarshalInputPollDataInput,
@@ -1871,6 +1949,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRepostInput,
 		ec.unmarshalInputSearchInput,
 		ec.unmarshalInputUpdateProfileInput,
+		ec.unmarshalInputUploadAvatarInput,
+		ec.unmarshalInputUploadBannerInput,
+		ec.unmarshalInputUploadPostMediaInput,
 	)
 	first := true
 
@@ -2195,6 +2276,34 @@ input CreateConversationInput {
   participantIds: [ID!]!
 }
 
+# Media upload input types
+input UploadAvatarInput {
+  file: Upload!
+  userId: ID!
+}
+
+input UploadBannerInput {
+  file: Upload!
+  userId: ID!
+}
+
+input UploadPostMediaInput {
+  files: [Upload!]!
+  userId: ID!
+  altTexts: [String!]
+}
+
+input DeleteMediaInput {
+  fileUrl: String!
+}
+
+type MediaUploadResult {
+  fileId: String!
+  fileUrl: String!
+  success: Boolean!
+  message: String
+}
+
 type MessageEdge {
   node: Message!
   cursor: String!
@@ -2359,7 +2468,11 @@ type Query {
 type Mutation {
   login(input: LoginInput!): AuthPayload!
   register(input: RegisterInput!): AuthPayload!
-  uploadMedia(file: Upload!): Media!
+  # Media mutations - replacing REST API
+  uploadAvatar(input: UploadAvatarInput!): MediaUploadResult!
+  uploadBanner(input: UploadBannerInput!): MediaUploadResult!
+  uploadPostMedia(input: UploadPostMediaInput!): [MediaUploadResult!]!
+  deleteMedia(input: DeleteMediaInput!): Boolean!
   # Post mutations
   createPost(input: CreatePostInput!): Post!
   deletePost(postId: ID!): Boolean!
@@ -2443,6 +2556,17 @@ func (ec *executionContext) field_Mutation_createReply_args(ctx context.Context,
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateReplyInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐCreateReplyInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteMediaInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐDeleteMediaInput)
 	if err != nil {
 		return nil, err
 	}
@@ -2615,14 +2739,36 @@ func (ec *executionContext) field_Mutation_updateProfile_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_uploadMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_uploadAvatar_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "file", ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUploadAvatarInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadAvatarInput)
 	if err != nil {
 		return nil, err
 	}
-	args["file"] = arg0
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadBanner_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUploadBannerInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadBannerInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadPostMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUploadPostMediaInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadPostMediaInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -4568,6 +4714,179 @@ func (ec *executionContext) fieldContext_MediaAttachment_variants(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _MediaUploadResult_fileId(ctx context.Context, field graphql.CollectedField, obj *model.MediaUploadResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaUploadResult_fileId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FileID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaUploadResult_fileId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaUploadResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaUploadResult_fileUrl(ctx context.Context, field graphql.CollectedField, obj *model.MediaUploadResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaUploadResult_fileUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FileURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaUploadResult_fileUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaUploadResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaUploadResult_success(ctx context.Context, field graphql.CollectedField, obj *model.MediaUploadResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaUploadResult_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaUploadResult_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaUploadResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaUploadResult_message(ctx context.Context, field graphql.CollectedField, obj *model.MediaUploadResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaUploadResult_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaUploadResult_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaUploadResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MediaVariant_url(ctx context.Context, field graphql.CollectedField, obj *model.MediaVariant) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MediaVariant_url(ctx, field)
 	if err != nil {
@@ -5878,8 +6197,8 @@ func (ec *executionContext) fieldContext_Mutation_register(ctx context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_uploadMedia(ctx, field)
+func (ec *executionContext) _Mutation_uploadAvatar(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_uploadAvatar(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5892,7 +6211,7 @@ func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UploadMedia(rctx, fc.Args["file"].(graphql.Upload))
+		return ec.resolvers.Mutation().UploadAvatar(rctx, fc.Args["input"].(model.UploadAvatarInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5904,12 +6223,12 @@ func (ec *executionContext) _Mutation_uploadMedia(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Media)
+	res := resTmp.(*model.MediaUploadResult)
 	fc.Result = res
-	return ec.marshalNMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalNMediaUploadResult2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResult(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_uploadAvatar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -5917,22 +6236,16 @@ func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Media_id(ctx, field)
-			case "url":
-				return ec.fieldContext_Media_url(ctx, field)
-			case "type":
-				return ec.fieldContext_Media_type(ctx, field)
-			case "mimeType":
-				return ec.fieldContext_Media_mimeType(ctx, field)
-			case "width":
-				return ec.fieldContext_Media_width(ctx, field)
-			case "height":
-				return ec.fieldContext_Media_height(ctx, field)
-			case "variants":
-				return ec.fieldContext_Media_variants(ctx, field)
+			case "fileId":
+				return ec.fieldContext_MediaUploadResult_fileId(ctx, field)
+			case "fileUrl":
+				return ec.fieldContext_MediaUploadResult_fileUrl(ctx, field)
+			case "success":
+				return ec.fieldContext_MediaUploadResult_success(ctx, field)
+			case "message":
+				return ec.fieldContext_MediaUploadResult_message(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type MediaUploadResult", field.Name)
 		},
 	}
 	defer func() {
@@ -5942,7 +6255,192 @@ func (ec *executionContext) fieldContext_Mutation_uploadMedia(ctx context.Contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_uploadMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_uploadAvatar_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadBanner(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_uploadBanner(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UploadBanner(rctx, fc.Args["input"].(model.UploadBannerInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaUploadResult)
+	fc.Result = res
+	return ec.marshalNMediaUploadResult2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadBanner(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "fileId":
+				return ec.fieldContext_MediaUploadResult_fileId(ctx, field)
+			case "fileUrl":
+				return ec.fieldContext_MediaUploadResult_fileUrl(ctx, field)
+			case "success":
+				return ec.fieldContext_MediaUploadResult_success(ctx, field)
+			case "message":
+				return ec.fieldContext_MediaUploadResult_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaUploadResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadBanner_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadPostMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_uploadPostMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UploadPostMedia(rctx, fc.Args["input"].(model.UploadPostMediaInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.MediaUploadResult)
+	fc.Result = res
+	return ec.marshalNMediaUploadResult2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResultᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadPostMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "fileId":
+				return ec.fieldContext_MediaUploadResult_fileId(ctx, field)
+			case "fileUrl":
+				return ec.fieldContext_MediaUploadResult_fileUrl(ctx, field)
+			case "success":
+				return ec.fieldContext_MediaUploadResult_success(ctx, field)
+			case "message":
+				return ec.fieldContext_MediaUploadResult_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaUploadResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadPostMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteMedia(rctx, fc.Args["input"].(model.DeleteMediaInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14788,6 +15286,33 @@ func (ec *executionContext) unmarshalInputCreateReplyInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeleteMediaInput(ctx context.Context, obj any) (model.DeleteMediaInput, error) {
+	var it model.DeleteMediaInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fileUrl"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fileUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fileUrl"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FileURL = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLikePostInput(ctx context.Context, obj any) (model.LikePostInput, error) {
 	var it model.LikePostInput
 	asMap := map[string]any{}
@@ -15076,6 +15601,115 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 				return it, err
 			}
 			it.BannerURL = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUploadAvatarInput(ctx context.Context, obj any) (model.UploadAvatarInput, error) {
+	var it model.UploadAvatarInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"file", "userId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "file":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+			data, err := ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.File = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUploadBannerInput(ctx context.Context, obj any) (model.UploadBannerInput, error) {
+	var it model.UploadBannerInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"file", "userId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "file":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+			data, err := ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.File = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUploadPostMediaInput(ctx context.Context, obj any) (model.UploadPostMediaInput, error) {
+	var it model.UploadPostMediaInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"files", "userId", "altTexts"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "files":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("files"))
+			data, err := ec.unmarshalNUpload2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUploadᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Files = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "altTexts":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("altTexts"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AltTexts = data
 		}
 	}
 
@@ -15557,6 +16191,57 @@ func (ec *executionContext) _MediaAttachment(ctx context.Context, sel ast.Select
 	return out
 }
 
+var mediaUploadResultImplementors = []string{"MediaUploadResult"}
+
+func (ec *executionContext) _MediaUploadResult(ctx context.Context, sel ast.SelectionSet, obj *model.MediaUploadResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaUploadResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaUploadResult")
+		case "fileId":
+			out.Values[i] = ec._MediaUploadResult_fileId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fileUrl":
+			out.Values[i] = ec._MediaUploadResult_fileUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "success":
+			out.Values[i] = ec._MediaUploadResult_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._MediaUploadResult_message(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mediaVariantImplementors = []string{"MediaVariant"}
 
 func (ec *executionContext) _MediaVariant(ctx context.Context, sel ast.SelectionSet, obj *model.MediaVariant) graphql.Marshaler {
@@ -15850,9 +16535,30 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "uploadMedia":
+		case "uploadAvatar":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_uploadMedia(ctx, field)
+				return ec._Mutation_uploadAvatar(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadBanner":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadBanner(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadPostMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadPostMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -17849,6 +18555,11 @@ func (ec *executionContext) unmarshalNCreateReplyInput2githubᚗcomᚋflickᚋba
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDeleteMediaInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐDeleteMediaInput(ctx context.Context, v any) (model.DeleteMediaInput, error) {
+	res, err := ec.unmarshalInputDeleteMediaInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
 	res, err := graphql.UnmarshalFloatContext(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -18105,16 +18816,6 @@ func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋflickᚋbackendᚋse
 	return ret
 }
 
-func (ec *executionContext) marshalNMedia2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v *model.Media) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Media(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNMediaAttachment2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaAttachment(ctx context.Context, sel ast.SelectionSet, v model.MediaAttachment) graphql.Marshaler {
 	return ec._MediaAttachment(ctx, sel, &v)
 }
@@ -18171,6 +18872,64 @@ func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋflickᚋbackend�
 
 func (ec *executionContext) marshalNMediaType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNMediaUploadResult2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResult(ctx context.Context, sel ast.SelectionSet, v model.MediaUploadResult) graphql.Marshaler {
+	return ec._MediaUploadResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMediaUploadResult2ᚕgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.MediaUploadResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMediaUploadResult2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMediaUploadResult2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaUploadResult(ctx context.Context, sel ast.SelectionSet, v *model.MediaUploadResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MediaUploadResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNMessage2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMessage(ctx context.Context, sel ast.SelectionSet, v model.Message) graphql.Marshaler {
@@ -18577,6 +19336,51 @@ func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋg
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpload2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUploadᚄ(ctx context.Context, v any) ([]graphql.Upload, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]graphql.Upload, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNUpload2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUploadᚄ(ctx context.Context, sel ast.SelectionSet, v []graphql.Upload) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNUploadAvatarInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadAvatarInput(ctx context.Context, v any) (model.UploadAvatarInput, error) {
+	res, err := ec.unmarshalInputUploadAvatarInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUploadBannerInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadBannerInput(ctx context.Context, v any) (model.UploadBannerInput, error) {
+	res, err := ec.unmarshalInputUploadBannerInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUploadPostMediaInput2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUploadPostMediaInput(ctx context.Context, v any) (model.UploadPostMediaInput, error) {
+	res, err := ec.unmarshalInputUploadPostMediaInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {

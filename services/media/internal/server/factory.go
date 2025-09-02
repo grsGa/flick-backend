@@ -1,13 +1,15 @@
 package server
 
 import (
+	"github.com/flick/backend/pkg/config"
 	"github.com/flick/backend/services/media/internal/service"
 )
 
 // NewGRPCServerFactory 创建gRPC服务工厂
-func NewGRPCServerFactory(mediaService service.MediaService) GRPCServerFactory {
+func NewGRPCServerFactory(mediaService service.MediaService, cfg *config.Config) GRPCServerFactory {
 	return &grpcServerFactory{
 		mediaService: mediaService,
+		config:       cfg,
 	}
 }
 
@@ -19,9 +21,10 @@ type GRPCServerFactory interface {
 // grpcServerFactory gRPC服务工厂实现
 type grpcServerFactory struct {
 	mediaService service.MediaService
+	config       *config.Config
 }
 
 // Create 创建gRPC服务实例
 func (f *grpcServerFactory) Create() *grpcServer {
-	return NewGRPCServer(f.mediaService)
+	return NewGRPCServer(f.mediaService, f.config)
 }

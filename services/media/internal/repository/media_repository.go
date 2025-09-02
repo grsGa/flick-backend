@@ -148,6 +148,27 @@ func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.Me
 		}
 	}
 
+	// Handle optional fields
+	var altText string
+	if media.AltText != nil {
+		altText = *media.AltText
+	}
+
+	var postID string
+	if media.PostID != nil {
+		postID = *media.PostID
+	}
+
+	var thumbnailURL string
+	if media.ThumbnailURL != nil {
+		thumbnailURL = *media.ThumbnailURL
+	}
+
+	var processedAt string
+	if media.ProcessedAt != nil {
+		processedAt = media.ProcessedAt.Format(time.RFC3339)
+	}
+
 	return &proto.MediaFile{
 		Id:          media.ID,
 		UserId:      media.UserID,
@@ -156,15 +177,157 @@ func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.Me
 		Type:        media.Type,
 		MimeType:    media.MimeType,
 		Size:        media.Size,
+		AltText:     altText,
+		CreatedAt:   media.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   media.UpdatedAt.Format(time.RFC3339),
+		PostId:      postID,
 		Status:      media.Status,
 		Width:       media.Width,
 		Height:      media.Height,
 		Duration:    media.Duration,
+		ThumbnailUrl: thumbnailURL,
 		Variants:    protoVariants,
-		AltText:     toString(media.AltText),
-		ProcessedAt: formatTimePtr(media.ProcessedAt),
+		ProcessedAt: processedAt,
+	}, nil
+}
+
+// GetFileByURL 根据URL获取文件
+func (r *mediaRepository) GetFileByURL(ctx context.Context, url string) (*proto.MediaFile, error) {
+	var media models.MediaAttachment
+	if err := r.db.Where("url = ? AND deleted_at IS NULL", url).First(&media).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("file not found")
+		}
+		return nil, err
+	}
+
+	// Convert MediaVariants to proto format
+	var protoVariants *proto.MediaVariants
+	if media.Variants != (models.MediaVariants{}) {
+		protoVariants = &proto.MediaVariants{}
+		
+		if media.Variants.Thumbnail != nil {
+			protoVariants.Thumbnail = &proto.MediaVariant{
+				Url:    media.Variants.Thumbnail.URL,
+				Width:  media.Variants.Thumbnail.Width,
+				Height: media.Variants.Thumbnail.Height,
+				Size:   media.Variants.Thumbnail.Size,
+			}
+		}
+		
+		if media.Variants.Small != nil {
+			protoVariants.Small = &proto.MediaVariant{
+				Url:    media.Variants.Small.URL,
+				Width:  media.Variants.Small.Width,
+				Height: media.Variants.Small.Height,
+				Size:   media.Variants.Small.Size,
+			}
+		}
+		
+		if media.Variants.Medium != nil {
+			protoVariants.Medium = &proto.MediaVariant{
+				Url:    media.Variants.Medium.URL,
+				Width:  media.Variants.Medium.Width,
+				Height: media.Variants.Medium.Height,
+				Size:   media.Variants.Medium.Size,
+			}
+		}
+		
+		if media.Variants.Large != nil {
+			protoVariants.Large = &proto.MediaVariant{
+				Url:    media.Variants.Large.URL,
+				Width:  media.Variants.Large.Width,
+				Height: media.Variants.Large.Height,
+				Size:   media.Variants.Large.Size,
+			}
+		}
+		
+		if media.Variants.Original != nil {
+			protoVariants.Original = &proto.MediaVariant{
+				Url:    media.Variants.Original.URL,
+				Width:  media.Variants.Original.Width,
+				Height: media.Variants.Original.Height,
+				Size:   media.Variants.Original.Size,
+			}
+		}
+		
+		if media.Variants.Preview != nil {
+			protoVariants.Preview = &proto.MediaVariant{
+				Url:    media.Variants.Preview.URL,
+				Width:  media.Variants.Preview.Width,
+				Height: media.Variants.Preview.Height,
+				Size:   media.Variants.Preview.Size,
+			}
+		}
+		
+		if media.Variants.LowRes != nil {
+			protoVariants.LowRes = &proto.MediaVariant{
+				Url:    media.Variants.LowRes.URL,
+				Width:  media.Variants.LowRes.Width,
+				Height: media.Variants.LowRes.Height,
+				Size:   media.Variants.LowRes.Size,
+			}
+		}
+		
+		if media.Variants.MidRes != nil {
+			protoVariants.MidRes = &proto.MediaVariant{
+				Url:    media.Variants.MidRes.URL,
+				Width:  media.Variants.MidRes.Width,
+				Height: media.Variants.MidRes.Height,
+				Size:   media.Variants.MidRes.Size,
+			}
+		}
+		
+		if media.Variants.HighRes != nil {
+			protoVariants.HighRes = &proto.MediaVariant{
+				Url:    media.Variants.HighRes.URL,
+				Width:  media.Variants.HighRes.Width,
+				Height: media.Variants.HighRes.Height,
+				Size:   media.Variants.HighRes.Size,
+			}
+		}
+	}
+
+	// Handle optional fields
+	var altText string
+	if media.AltText != nil {
+		altText = *media.AltText
+	}
+
+	var postID string
+	if media.PostID != nil {
+		postID = *media.PostID
+	}
+
+	var thumbnailURL string
+	if media.ThumbnailURL != nil {
+		thumbnailURL = *media.ThumbnailURL
+	}
+
+	var processedAt string
+	if media.ProcessedAt != nil {
+		processedAt = media.ProcessedAt.Format(time.RFC3339)
+	}
+
+	return &proto.MediaFile{
+		Id:          media.ID,
+		UserId:      media.UserID,
+		Filename:    media.Filename,
+		Url:         media.URL,
+		Type:        media.Type,
+		MimeType:    media.MimeType,
+		Size:        media.Size,
+		AltText:     altText,
 		CreatedAt:   media.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   media.UpdatedAt.Format(time.RFC3339),
+		PostId:      postID,
+		Status:      media.Status,
+		Width:       media.Width,
+		Height:      media.Height,
+		Duration:    media.Duration,
+		ThumbnailUrl: thumbnailURL,
+		Variants:    protoVariants,
+		ProcessedAt: processedAt,
 	}, nil
 }
 
