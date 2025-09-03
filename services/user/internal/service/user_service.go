@@ -42,8 +42,11 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logg
 
 // GetUser 获取用户信息
 func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
+	fmt.Printf("[User Service] GetUser request for userID: %s\n", req.UserId)
+	
 	user, err := s.userRepo.GetUserByID(ctx, req.UserId)
 	if err != nil {
+		fmt.Printf("[User Service] GetUser failed for userID %s: %v\n", req.UserId, err)
 		return &proto.GetUserResponse{
 			Error: &proto.Error{
 				Code:    404,
@@ -52,6 +55,7 @@ func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*
 		}, err
 	}
 
+	fmt.Printf("[User Service] GetUser success for userID %s: %s (avatar: %s)\n", req.UserId, user.Username, user.AvatarUrl)
 	return &proto.GetUserResponse{
 		User: user,
 	}, nil
@@ -372,8 +376,10 @@ func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfil
 	}
 
 	// 保存更新
+	fmt.Printf("[User Service] About to save user profile updates to database\n")
 	err = s.userRepo.UpdateUser(ctx, existingUser)
 	if err != nil {
+		fmt.Printf("[User Service] Failed to save profile updates: %v\n", err)
 		return &proto.UpdateProfileResponse{
 			Error: &proto.Error{
 				Code:    500,
@@ -382,6 +388,7 @@ func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfil
 		}, err
 	}
 
+	fmt.Printf("[User Service] Profile updated successfully for user %s, new avatar: %s\n", existingUser.Username, existingUser.AvatarUrl)
 	return &proto.UpdateProfileResponse{
 		User: existingUser,
 	}, nil

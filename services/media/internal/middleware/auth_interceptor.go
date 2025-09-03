@@ -25,6 +25,12 @@ func AuthInterceptor(cfg *config.Config, userClient user_proto.UserServiceClient
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		fmt.Printf("[MEDIA AUTH] Processing gRPC request: %s\n", info.FullMethod)
 
+		// Allow GetFile requests from other services without authentication
+		if info.FullMethod == "/media.MediaService/GetFile" {
+			fmt.Printf("[MEDIA AUTH] GetFile request - allowing without authentication for service-to-service calls\n")
+			return handler(ctx, req)
+		}
+
 		// Extract metadata from context
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {

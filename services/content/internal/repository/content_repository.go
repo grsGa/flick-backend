@@ -1016,12 +1016,18 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *cont
 
 	// 调用用户服务获取用户信息
 	fmt.Printf("[Content Repository] Fetching user info for: %s\n", userID)
-	resp, err := r.userClient.GetUser(ctx, &user_proto.GetUserRequest{
+	
+	// Create timeout context for user service call
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	
+	resp, err := r.userClient.GetUser(timeoutCtx, &user_proto.GetUserRequest{
 		UserId: userID,
 	})
 
 	if err != nil {
-		fmt.Printf("[Content Repository] Failed to fetch user info: %v, user does not exist\n", err)
+		fmt.Printf("[Content Repository] Failed to fetch user info: %v\n", err)
+		fmt.Printf("[Content Repository] Error details: %T - %+v\n", err, err)
 		return nil // Return nil instead of fallback data for security
 	}
 
@@ -1221,6 +1227,8 @@ func (r *postRepository) getMediaVariants(ctx context.Context, mediaID string) *
 	// Use the provided context with timeout, preserving authentication headers
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+
+	log.Printf("[Content Repository] Calling media service GetFile for media ID: %s", mediaID)
 
 	// 调用Media服务获取文件信息
 	resp, err := r.mediaClient.GetFile(timeoutCtx, &media_proto.GetFileRequest{
