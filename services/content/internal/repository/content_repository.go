@@ -72,6 +72,15 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	fmt.Printf("  Content: %s\n", req.Content)
 	fmt.Printf("  MediaUrls: %v\n", req.MediaUrls)
 
+	// SECURITY: Validate user exists before creating post
+	fmt.Printf("[Content Repository] Validating user exists: %s\n", req.UserId)
+	author := r.fetchUserInfo(ctx, req.UserId)
+	if author == nil {
+		fmt.Printf("[Content Repository] User %s does not exist, rejecting post creation\n", req.UserId)
+		return nil, fmt.Errorf("user does not exist: %s", req.UserId)
+	}
+	fmt.Printf("[Content Repository] User validation passed: %s (%s)\n", author.Username, author.DisplayName)
+
 	// 开始事务
 	fmt.Printf("[Content Repository] Starting database transaction\n")
 	tx := r.db.Begin()
@@ -487,7 +496,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 
 	// 构建返回的帖子对象
 	fmt.Printf("[Content Repository] Building response with committed data\n")
-	return r.buildPostProto(post, req.MediaUrls, req.MentionedUsers, req.Tags, poll, req.PollData)
+	return r.buildPostProto(ctx, post, req.MediaUrls, req.MentionedUsers, req.Tags, poll, req.PollData)
 }
 
 // GetPost 根据ID获取帖子
@@ -561,7 +570,7 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 		}
 	}
 
-	return r.buildPostProto(&post, r.getMediaURLs(mediaAttachments), mentionedUsers, tagStrings, poll, nil)
+	return r.buildPostProto(ctx, &post, r.getMediaURLs(mediaAttachments), mentionedUsers, tagStrings, poll, nil)
 }
 
 // GetUserPosts 获取用户帖子列表
@@ -836,7 +845,7 @@ func (r *postRepository) CheckReplyPermission(ctx context.Context, postID, userI
 }
 
 // buildPostProto 构建帖子Proto对象
-func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *content_proto.PollData) (*content_proto.Post, error) {
+func (r *postRepository) buildPostProto(ctx context.Context, post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *content_proto.PollData) (*content_proto.Post, error) {
 	// 获取实际的媒体附件从数据库
 	var dbMediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
@@ -845,7 +854,7 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 	mediaAttachments := make([]*content_proto.MediaAttachment, len(dbMediaAttachments))
 	for i, media := range dbMediaAttachments {
 		// 从Media服务获取完整的媒体信息包括variants
-		variants := r.getMediaVariants(media.ID)
+		variants := r.getMediaVariants(ctx, media.ID)
 
 		mediaAttachments[i] = &content_proto.MediaAttachment{
 			Id:       media.ID,
@@ -931,6 +940,12 @@ func (r *postRepository) buildPostProto(post *models.Post, mediaURLs []string, m
 	fmt.Printf("[Content Repository] About to call fetchUserInfo for user: %s\n", post.UserID)
 	author := r.fetchUserInfo(context.Background(), post.UserID)
 	fmt.Printf("[Content Repository] fetchUserInfo returned author: %+v\n", author)
+	
+	// Security check: reject if user does not exist
+	if author == nil {
+		fmt.Printf("[Content Repository] User %s does not exist, rejecting post creation\n", post.UserID)
+		return nil, fmt.Errorf("user does not exist: %s", post.UserID)
+	}
 
 	return &content_proto.Post{
 		Id:               post.ID,
@@ -1006,36 +1021,18 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *cont
 	})
 
 	if err != nil {
-		fmt.Printf("[Content Repository] Failed to fetch user info: %v, using fallback data\n", err)
-		return &content_proto.Author{
-			Id:          userID,
-			Username:    "user_" + userID[:8],
-			DisplayName: "User " + userID[:8],
-			AvatarUrl:   "",
-			IsVerified:  false,
-		}
+		fmt.Printf("[Content Repository] Failed to fetch user info: %v, user does not exist\n", err)
+		return nil // Return nil instead of fallback data for security
 	}
 
 	if resp.Error != nil {
-		fmt.Printf("[Content Repository] User service returned error: %s, using fallback data\n", resp.Error.Message)
-		return &content_proto.Author{
-			Id:          userID,
-			Username:    "user_" + userID[:8],
-			DisplayName: "User " + userID[:8],
-			AvatarUrl:   "",
-			IsVerified:  false,
-		}
+		fmt.Printf("[Content Repository] User service returned error: %s, user does not exist\n", resp.Error.Message)
+		return nil // Return nil instead of fallback data for security
 	}
 
 	if resp.User == nil {
-		fmt.Printf("[Content Repository] User service returned nil user, using fallback data\n")
-		return &content_proto.Author{
-			Id:          userID,
-			Username:    "user_" + userID[:8],
-			DisplayName: "User " + userID[:8],
-			AvatarUrl:   "",
-			IsVerified:  false,
-		}
+		fmt.Printf("[Content Repository] User service returned nil user, user does not exist\n")
+		return nil // Return nil instead of fallback data for security
 	}
 
 	// 返回真实用户数据
@@ -1215,17 +1212,18 @@ func (r *contentRepository) ListContent(ctx context.Context, userID string, page
 }
 
 // getMediaVariants 从Media服务获取媒体variants信息
-func (r *postRepository) getMediaVariants(mediaID string) *content_proto.MediaVariants {
+func (r *postRepository) getMediaVariants(ctx context.Context, mediaID string) *content_proto.MediaVariants {
 	if r.mediaClient == nil {
 		log.Printf("[Content Repository] Media client not available, returning nil variants for media ID: %s", mediaID)
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Use the provided context with timeout, preserving authentication headers
+	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	// 调用Media服务获取文件信息
-	resp, err := r.mediaClient.GetFile(ctx, &media_proto.GetFileRequest{
+	resp, err := r.mediaClient.GetFile(timeoutCtx, &media_proto.GetFileRequest{
 		FileId: mediaID,
 	})
 	if err != nil {
@@ -1363,7 +1361,7 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 	// 转换为proto格式
 	var protoPosts []*content_proto.Post
 	for _, post := range posts {
-		protoPost, err := r.buildPostProtoSimple(&post, requestingUserID)
+		protoPost, err := r.buildPostProtoSimple(ctx, &post, requestingUserID)
 		if err != nil {
 			fmt.Printf("[Content Repository] Failed to build proto for post %s: %v\n", post.ID, err)
 			continue
@@ -1411,7 +1409,7 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 	// 转换为proto格式
 	var protoPosts []*content_proto.Post
 	for _, post := range posts {
-		protoPost, err := r.buildPostProtoSimple(&post, requestingUserID)
+		protoPost, err := r.buildPostProtoSimple(ctx, &post, requestingUserID)
 		if err != nil {
 			fmt.Printf("[Content Repository] Failed to build proto for post %s: %v\n", post.ID, err)
 			continue
@@ -1447,7 +1445,7 @@ func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string
 }
 
 // buildPostProtoSimple 构建帖子Proto对象（简化版本，用于回复查询）
-func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserID string) (*content_proto.Post, error) {
+func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.Post, requestingUserID string) (*content_proto.Post, error) {
 	// 获取实际的媒体附件从数据库
 	var dbMediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
@@ -1455,7 +1453,7 @@ func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserI
 	// 构建媒体附件
 	mediaAttachments := make([]*content_proto.MediaAttachment, len(dbMediaAttachments))
 	for i, media := range dbMediaAttachments {
-		variants := r.getMediaVariants(media.ID)
+		variants := r.getMediaVariants(ctx, media.ID)
 		mediaAttachments[i] = &content_proto.MediaAttachment{
 			Id:       media.ID,
 			Url:      media.URL,
@@ -1537,6 +1535,12 @@ func (r *postRepository) buildPostProtoSimple(post *models.Post, requestingUserI
 
 	// 构建作者信息
 	author := r.fetchUserInfo(context.Background(), post.UserID)
+	
+	// Security check: reject if user does not exist
+	if author == nil {
+		fmt.Printf("[Content Repository] User %s does not exist in buildPostProtoSimple\n", post.UserID)
+		return nil, fmt.Errorf("user does not exist: %s", post.UserID)
+	}
 
 	return &content_proto.Post{
 		Id:               post.ID,

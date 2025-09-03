@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/consul/api"
+	"google.golang.org/grpc"
 )
 
 type RegisterOptions struct {
@@ -73,4 +74,51 @@ func RegisterServiceToConsul(opts RegisterOptions) {
 	}
 
 	log.Printf("✅ Service %s registered to Consul with ID %s", opts.ServiceName, serviceID)
+}
+
+// GetServiceConnection creates a gRPC connection to a service via Consul
+func GetServiceConnection(serviceName string) (*grpc.ClientConn, error) {
+	consulAddr := os.Getenv("CONSUL_AGENT_ADDR")
+	if consulAddr == "" {
+		consulAddr = "127.0.0.1:8500"
+	}
+
+	log.Printf("[DISCOVERY] Attempting to connect to service: %s via Consul at %s", serviceName, consulAddr)
+
+	config := api.DefaultConfig()
+	config.Address = consulAddr
+
+	client, err := api.NewClient(config)
+	if err != nil {
+		log.Printf("[DISCOVERY] Failed to create Consul client: %v", err)
+		return nil, fmt.Errorf("failed to create Consul client: %v", err)
+	}
+
+	// Query service from Consul
+	log.Printf("[DISCOVERY] Querying Consul for service: %s", serviceName)
+	services, _, err := client.Health().Service(serviceName, "", true, nil)
+	if err != nil {
+		log.Printf("[DISCOVERY] Failed to query service %s from Consul: %v", serviceName, err)
+		return nil, fmt.Errorf("failed to query service %s: %v", serviceName, err)
+	}
+
+	log.Printf("[DISCOVERY] Found %d healthy instances of service %s", len(services), serviceName)
+	if len(services) == 0 {
+		return nil, fmt.Errorf("no healthy instances of service %s found", serviceName)
+	}
+
+	// Use the first healthy service instance
+	service := services[0]
+	address := fmt.Sprintf("%s:%d", service.Service.Address, service.Service.Port)
+	log.Printf("[DISCOVERY] Connecting to service %s at address: %s", serviceName, address)
+
+	// Create gRPC connection
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Printf("[DISCOVERY] Failed to establish gRPC connection to %s at %s: %v", serviceName, address, err)
+		return nil, fmt.Errorf("failed to connect to service %s at %s: %v", serviceName, address, err)
+	}
+
+	log.Printf("[DISCOVERY] Successfully connected to service %s at %s", serviceName, address)
+	return conn, nil
 }

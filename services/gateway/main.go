@@ -4,22 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
-
-	"github.com/flick/backend/pkg/config"
-	"github.com/flick/backend/pkg/database"
-	"github.com/flick/backend/pkg/discovery"
-	"github.com/flick/backend/pkg/logger"
-	"github.com/flick/backend/pkg/telemetry"
-	auth_proto "github.com/flick/backend/services/auth/proto"
-	"github.com/flick/backend/services/gateway/internal/client"
-	"github.com/flick/backend/services/gateway/internal/graphql/generated"
-	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
-	"github.com/flick/backend/services/gateway/internal/middleware"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -31,6 +19,17 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/database"
+	"github.com/flick/backend/pkg/discovery"
+	"github.com/flick/backend/pkg/logger"
+	"github.com/flick/backend/pkg/telemetry"
+	auth_proto "github.com/flick/backend/services/auth/proto"
+	"github.com/flick/backend/services/gateway/internal/client"
+	"github.com/flick/backend/services/gateway/internal/graphql/generated"
+	"github.com/flick/backend/services/gateway/internal/graphql/resolver"
+	"github.com/flick/backend/services/gateway/internal/middleware"
 )
 
 // 全局gRPC客户端变量
@@ -70,7 +69,8 @@ func main() {
 	// Initialize logger
 	logger, err := logger.NewLogger()
 	if err != nil {
-		log.Fatalf("Failed to create logger: %v", err)
+		fmt.Printf("Failed to create logger: %v", err)
+		return
 	}
 	defer logger.Sync()
 
@@ -152,7 +152,8 @@ func main() {
 	logger.Info("Starting gateway service", zap.String("port", cfg.GatewayPort))
 
 	// Start server
-	if err := r.Run(":" + cfg.GatewayPort); err != nil {
+	fmt.Printf("[Gateway] Starting HTTP server on port %s\n", cfg.GatewayPort)
+	if err := r.Run("0.0.0.0:" + cfg.GatewayPort); err != nil {
 		logger.Fatal("Failed to run gateway service", zap.Error(err))
 	}
 }

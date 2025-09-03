@@ -7,6 +7,7 @@ import (
 
 	"github.com/flick/backend/pkg/auth"
 	"github.com/flick/backend/pkg/config"
+	user_proto "github.com/flick/backend/services/user/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -19,8 +20,8 @@ const (
 	UserClaimsKey contextKey = "userClaims"
 )
 
-// AuthInterceptor creates a gRPC unary interceptor for JWT authentication
-func AuthInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
+// AuthInterceptor creates a gRPC unary interceptor for JWT authentication with user validation
+func AuthInterceptor(cfg *config.Config, userClient user_proto.UserServiceClient) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		fmt.Printf("[MEDIA AUTH] Processing gRPC request: %s\n", info.FullMethod)
 
@@ -56,6 +57,19 @@ func AuthInterceptor(cfg *config.Config) grpc.UnaryServerInterceptor {
 		}
 
 		fmt.Printf("[MEDIA AUTH] JWT validated successfully for user: %s\n", claims.UserID)
+
+		// Verify user still exists in database
+		if userClient != nil {
+			_, err = userClient.GetUser(ctx, &user_proto.GetUserRequest{UserId: claims.UserID})
+			if err != nil {
+				fmt.Printf("[MEDIA AUTH] User validation failed: %v\n", err)
+				return nil, status.Errorf(codes.Unauthenticated, "Your account is no longer active. Please log in again.")
+			}
+			fmt.Printf("[MEDIA AUTH] User existence validated for user: %s\n", claims.UserID)
+		} else {
+			fmt.Printf("[MEDIA AUTH] ERROR: User service client not available, rejecting request for security\n")
+			return nil, status.Errorf(codes.Unavailable, "Service temporarily unavailable. Please try again later.")
+		}
 
 		// Add claims to context
 		ctx = context.WithValue(ctx, UserClaimsKey, claims)

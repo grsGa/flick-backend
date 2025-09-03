@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	content_proto "github.com/flick/backend/services/content/proto"
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
@@ -17,7 +18,57 @@ import (
 	interaction_proto "github.com/flick/backend/services/interaction/proto"
 	media_proto "github.com/flick/backend/services/media/proto"
 	user_proto "github.com/flick/backend/services/user/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+// convertErrorToUserMessage converts technical gRPC errors to user-friendly messages
+func convertErrorToUserMessage(err error) string {
+	if err == nil {
+		return "Upload failed"
+	}
+
+	// Check if it's a gRPC status error
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.Unauthenticated:
+			// Check for specific authentication messages
+			msg := st.Message()
+			if strings.Contains(msg, "account is no longer active") {
+				return "Your account is no longer active. Please log in again."
+			}
+			if strings.Contains(msg, "user not found") {
+				return "Your account is no longer active. Please log in again."
+			}
+			return "Authentication failed. Please log in again."
+		case codes.Unavailable:
+			return "Service temporarily unavailable. Please try again later."
+		case codes.PermissionDenied:
+			return "You don't have permission to upload files."
+		case codes.InvalidArgument:
+			return "Invalid file format or size. Please check your file and try again."
+		case codes.ResourceExhausted:
+			return "Upload quota exceeded. Please try again later."
+		default:
+			// For other gRPC errors, return a generic message
+			return "Upload failed. Please try again."
+		}
+	}
+
+	// For non-gRPC errors, check the error message
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "account is no longer active") {
+		return "Your account is no longer active. Please log in again."
+	}
+	if strings.Contains(errMsg, "user not found") {
+		return "Your account is no longer active. Please log in again."
+	}
+	if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "token") {
+		return "Authentication failed. Please log in again."
+	}
+
+	return "Upload failed. Please try again."
+}
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
@@ -244,11 +295,12 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 		})
 
 		if err != nil {
+			userFriendlyMsg := convertErrorToUserMessage(err)
 			results = append(results, model.MediaUploadResult{
 				FileID:  "",
 				FileURL: "",
 				Success: false,
-				Message: stringPtr(fmt.Sprintf("upload failed for file %d: %v", i, err)),
+				Message: stringPtr(userFriendlyMsg),
 			})
 			continue
 		}
