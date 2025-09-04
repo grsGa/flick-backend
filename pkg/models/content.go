@@ -28,10 +28,11 @@ type Post struct {
 
 // MediaVariant 媒体版本信息
 type MediaVariant struct {
-	URL    string `json:"url"`    // 版本URL
-	Width  int32  `json:"width"`  // 宽度
-	Height int32  `json:"height"` // 高度
-	Size   int64  `json:"size"`   // 文件大小
+	URL      string  `json:"url"`      // 版本URL
+	Width    int32   `json:"width"`    // 宽度
+	Height   int32   `json:"height"`   // 高度
+	Size     int64   `json:"size"`     // 文件大小
+	Duration float64 `json:"duration,omitempty"` // 视频时长(秒)，仅视频文件使用
 }
 
 // MediaVariants 多版本媒体信息

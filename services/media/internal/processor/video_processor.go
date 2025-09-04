@@ -186,18 +186,26 @@ func (p *VideoProcessor) getVideoInfo(videoPath string) (*models.MediaVariant, e
 	}
 
 	parts := strings.Split(strings.TrimSpace(string(output)), ",")
-	if len(parts) != 3 {
+	// ffprobe CSV output may have trailing empty fields, so we need at least 3 parts
+	if len(parts) < 3 {
 		return nil, fmt.Errorf("unexpected ffprobe output: %s", string(output))
 	}
 
-	width, err := strconv.Atoi(parts[0])
+	width, err := strconv.Atoi(strings.TrimSpace(parts[0]))
 	if err != nil {
 		return nil, fmt.Errorf("invalid width: %s", parts[0])
 	}
 
-	height, err := strconv.Atoi(parts[1])
+	height, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 	if err != nil {
 		return nil, fmt.Errorf("invalid height: %s", parts[1])
+	}
+
+	// Parse duration (third field) - may be float
+	durationStr := strings.TrimSpace(parts[2])
+	duration, err := strconv.ParseFloat(durationStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid duration: %s", durationStr)
 	}
 
 	// 获取文件大小
@@ -207,9 +215,10 @@ func (p *VideoProcessor) getVideoInfo(videoPath string) (*models.MediaVariant, e
 	}
 
 	return &models.MediaVariant{
-		Width:  int32(width),
-		Height: int32(height),
-		Size:   fileInfo.Size(),
+		Width:    int32(width),
+		Height:   int32(height),
+		Size:     fileInfo.Size(),
+		Duration: duration,
 	}, nil
 }
 

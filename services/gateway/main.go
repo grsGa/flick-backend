@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -122,6 +124,9 @@ func main() {
 	// Create Gin engine
 	r := gin.Default()
 
+	// Set multipart memory limit to 100MB (matching media service limit)
+	r.MaxMultipartMemory = 100 << 20 // 100MB
+
 	// CORS middleware
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
@@ -199,6 +204,23 @@ func getServiceConn(serviceDiscovery client.ServiceDiscovery, serviceName string
 	return conn
 }
 
+// responseCapture captures HTTP response for logging
+type responseCapture struct {
+	gin.ResponseWriter
+	statusCode int
+	body       []byte
+}
+
+func (w *responseCapture) WriteHeader(statusCode int) {
+	w.statusCode = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *responseCapture) Write(data []byte) (int, error) {
+	w.body = append(w.body, data...)
+	return w.ResponseWriter.Write(data)
+}
+
 func setupRoutes(r *gin.Engine) {
 	// 健康检查端点
 	r.GET("/health", func(c *gin.Context) {
@@ -209,8 +231,26 @@ func setupRoutes(r *gin.Engine) {
 
 	// GraphQL endpoint
 	graphqlPath := "/graphql"
-	queryHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient)}))
-	queryHandler.Use(extension.Introspection{})
+	
+	// Create GraphQL server with proper transport configuration
+	// IMPORTANT: Use handler.New() and add transports manually to avoid conflicts
+	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient)}))
+	
+	// Configure multipart upload transport FIRST with proper configuration
+	srv.AddTransport(&transport.MultipartForm{
+		MaxUploadSize: 100 << 20, // 100MB max file size
+		MaxMemory:     32 << 20,  // 32MB in memory, rest goes to temp files
+	})
+	
+	// Add other transports in correct order
+	srv.AddTransport(&transport.POST{})
+	srv.AddTransport(&transport.GET{})
+	srv.AddTransport(&transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+	})
+	
+	srv.Use(extension.Introspection{})
+	queryHandler := srv
 
 	// Add error handling
 	queryHandler.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
@@ -229,6 +269,7 @@ func setupRoutes(r *gin.Engine) {
 		graphql.POST("", func(c *gin.Context) {
 			fmt.Printf("[Gateway] GraphQL request received: %s %s\n", c.Request.Method, c.Request.URL.Path)
 			fmt.Printf("[Gateway] Content-Type: %s\n", c.Request.Header.Get("Content-Type"))
+			fmt.Printf("[Gateway] Content-Length: %s\n", c.Request.Header.Get("Content-Length"))
 
 			authHeader := c.Request.Header.Get("Authorization")
 			if len(authHeader) > 20 {
@@ -237,9 +278,33 @@ func setupRoutes(r *gin.Engine) {
 				fmt.Printf("[Gateway] Authorization: %s\n", authHeader)
 			}
 
+			// Check if this is a multipart request
+			contentType := c.Request.Header.Get("Content-Type")
+			if strings.Contains(contentType, "multipart/form-data") {
+				fmt.Printf("[Gateway] MULTIPART REQUEST DETECTED\n")
+				fmt.Printf("[Gateway] Content-Type: %s\n", contentType)
+				fmt.Printf("[Gateway] Request body size: %d bytes\n", c.Request.ContentLength)
+				fmt.Printf("[Gateway] Request method: %s\n", c.Request.Method)
+				// Don't parse multipart form here - let gqlgen handle it
+			}
+
 			// The middleware already added the claims to the request context.
 			// gqlgen will automatically pick it up.
-			queryHandler.ServeHTTP(c.Writer, c.Request)
+			fmt.Printf("[Gateway] Calling GraphQL handler\n")
+			
+			// Capture response to log errors
+			responseWriter := &responseCapture{ResponseWriter: c.Writer}
+			queryHandler.ServeHTTP(responseWriter, c.Request)
+			
+			// Log response details for multipart requests
+			if strings.Contains(contentType, "multipart/form-data") {
+				fmt.Printf("[Gateway] MULTIPART RESPONSE STATUS: %d\n", responseWriter.statusCode)
+				if len(responseWriter.body) > 0 {
+					fmt.Printf("[Gateway] MULTIPART RESPONSE BODY: %s\n", string(responseWriter.body))
+				}
+			}
+			
+			fmt.Printf("[Gateway] GraphQL handler completed\n")
 		})
 	}
 

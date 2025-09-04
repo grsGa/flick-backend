@@ -242,8 +242,12 @@ func (r *mutationResolver) UploadBanner(ctx context.Context, input model.UploadB
 
 // UploadPostMedia is the resolver for the uploadPostMedia field.
 func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.UploadPostMediaInput) ([]model.MediaUploadResult, error) {
+	fmt.Printf("[Gateway] UploadPostMedia resolver called - START\n")
+	fmt.Printf("[Gateway] UploadPostMedia input - UserID: %s, Files count: %d\n", input.UserID, len(input.Files))
+	
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
+		fmt.Printf("[Gateway] UploadPostMedia FAILED - no user claims\n")
 		return []model.MediaUploadResult{{
 			FileID:  "",
 			FileURL: "",
@@ -251,10 +255,12 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 			Message: stringPtr("unauthorized"),
 		}}, nil
 	}
+	fmt.Printf("[Gateway] UploadPostMedia authenticated - UserID: %s\n", claims.UserID)
 
 	// Create authenticated context for gRPC call
 	authCtx, err := r.createAuthenticatedContext(ctx)
 	if err != nil {
+		fmt.Printf("[Gateway] UploadPostMedia FAILED - auth context creation failed: %v\n", err)
 		return []model.MediaUploadResult{{
 			FileID:  "",
 			FileURL: "",
@@ -262,13 +268,17 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 			Message: stringPtr("authentication failed"),
 		}}, nil
 	}
+	fmt.Printf("[Gateway] UploadPostMedia auth context created successfully\n")
 
 	var results []model.MediaUploadResult
 
 	for i, file := range input.Files {
+		fmt.Printf("[Gateway] UploadPostMedia processing file %d - Filename: %s, ContentType: %s\n", i, file.Filename, file.ContentType)
+		
 		// Read file content
 		fileContent, err := io.ReadAll(file.File)
 		if err != nil {
+			fmt.Printf("[Gateway] UploadPostMedia FAILED - file read error for file %d: %v\n", i, err)
 			results = append(results, model.MediaUploadResult{
 				FileID:  "",
 				FileURL: "",
@@ -277,14 +287,17 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 			})
 			continue
 		}
+		fmt.Printf("[Gateway] UploadPostMedia file %d read successfully - Size: %d bytes\n", i, len(fileContent))
 
 		// Get alt text if provided
 		altText := ""
 		if i < len(input.AltTexts) {
 			altText = input.AltTexts[i]
 		}
+		fmt.Printf("[Gateway] UploadPostMedia file %d alt text: %s\n", i, altText)
 
 		// Call media service
+		fmt.Printf("[Gateway] UploadPostMedia calling media service for file %d\n", i)
 		res, err := r.MediaServiceClient.UploadFile(authCtx, &media_proto.UploadFileRequest{
 			UserId:      input.UserID,
 			Content:     fileContent,
@@ -295,6 +308,7 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 		})
 
 		if err != nil {
+			fmt.Printf("[Gateway] UploadPostMedia FAILED - media service error for file %d: %v\n", i, err)
 			userFriendlyMsg := convertErrorToUserMessage(err)
 			results = append(results, model.MediaUploadResult{
 				FileID:  "",
@@ -305,6 +319,7 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 			continue
 		}
 
+		fmt.Printf("[Gateway] UploadPostMedia SUCCESS - file %d uploaded - FileID: %s, FileURL: %s\n", i, res.FileId, res.FileUrl)
 		results = append(results, model.MediaUploadResult{
 			FileID:  res.FileId,
 			FileURL: res.FileUrl,
@@ -313,6 +328,7 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 		})
 	}
 
+	fmt.Printf("[Gateway] UploadPostMedia resolver completed - Results count: %d\n", len(results))
 	return results, nil
 }
 

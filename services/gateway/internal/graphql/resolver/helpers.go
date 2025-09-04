@@ -157,7 +157,7 @@ func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 	media := make([]model.Media, len(post.MediaAttachments))
 	for i, attachment := range post.MediaAttachments {
 		mediaType := model.MediaTypeImage
-		if attachment.Type == "video" || attachment.Type == "posts" && strings.HasPrefix(attachment.MimeType, "video/") {
+		if attachment.Type == "video" || strings.HasPrefix(attachment.MimeType, "video/") {
 			mediaType = model.MediaTypeVideo
 		}
 

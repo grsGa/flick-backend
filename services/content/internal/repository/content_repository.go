@@ -237,9 +237,9 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 			var mediaResp *media_proto.GetFileResponse
 			var err error
 
-			// 重试逻辑：最多等待6秒让Media服务完成variants处理
-			maxRetries := 3
-			retryDelay := 2 * time.Second
+			// 重试逻辑：针对视频处理的更长等待时间
+			maxRetries := 10
+			retryDelay := 5 * time.Second
 
 			for attempt := 0; attempt <= maxRetries; attempt++ {
 				if attempt > 0 {
