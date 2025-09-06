@@ -10,85 +10,29 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy the entire backend source code (including go.work and all service go.mod files)
+# Copy the entire backend source code with unified go.mod
 COPY . .
 
-# Set environment variables to allow external deps but force local resolution for our modules
+# Set environment variables
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOSUMDB=sum.golang.org
 ENV GOPRIVATE=github.com/flick/backend
 ENV GO111MODULE=on
 
-# Use go work mode to build all services independently
-# Each service has its own go.mod and dependencies are managed through go.work
-
-# Initialize workspace and download external dependencies first
-RUN go work use -r .
-RUN go work sync
-
-# Pre-download external dependencies for all services to avoid network issues during build
-WORKDIR /app/services/gateway
+# Download dependencies using the unified go.mod
 RUN go mod download
 
-WORKDIR /app/services/auth  
-RUN go mod download
-
-WORKDIR /app/services/user
-RUN go mod download
-
-WORKDIR /app/services/media
-RUN go mod download
-
-WORKDIR /app/services/content
-RUN go mod download
-
-WORKDIR /app/services/interaction
-RUN go mod download
-
-WORKDIR /app/services/messages
-RUN go mod download
-
-WORKDIR /app/services/notification
-RUN go mod download
-
-WORKDIR /app/services/recommendation
-RUN go mod download
-
-WORKDIR /app/services/search
-RUN go mod download
-
-WORKDIR /app
-
-# Build each service independently using their own go.mod
-WORKDIR /app/services/gateway
-RUN go build -o /app/gateway .
-
-WORKDIR /app/services/auth
-RUN go build -o /app/auth .
-
-WORKDIR /app/services/user
-RUN go build -o /app/user .
-
-WORKDIR /app/services/media
-RUN go build -o /app/media .
-
-WORKDIR /app/services/content
-RUN go build -o /app/content .
-
-WORKDIR /app/services/interaction
-RUN go build -o /app/interaction .
-
-WORKDIR /app/services/messages
-RUN go build -o /app/messages .
-
-WORKDIR /app/services/notification
-RUN go build -o /app/notification .
-
-WORKDIR /app/services/recommendation
-RUN go build -o /app/recommendation .
-
-WORKDIR /app/services/search
-RUN go build -o /app/search .
+# Build each service using the unified go.mod from root directory
+RUN go build -o /app/gateway ./services/gateway
+RUN go build -o /app/auth ./services/auth
+RUN go build -o /app/user ./services/user
+RUN go build -o /app/media ./services/media
+RUN go build -o /app/content ./services/content
+RUN go build -o /app/interaction ./services/interaction
+RUN go build -o /app/messages ./services/messages
+RUN go build -o /app/notification ./services/notification
+RUN go build -o /app/recommendation ./services/recommendation
+RUN go build -o /app/search ./services/search
 
 WORKDIR /app
 
