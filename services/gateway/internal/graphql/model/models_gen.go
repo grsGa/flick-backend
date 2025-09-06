@@ -301,6 +301,9 @@ type SearchResults struct {
 	Hashtags *HashtagConnection `json:"hashtags,omitempty"`
 }
 
+type Subscription struct {
+}
+
 type UpdateProfileInput struct {
 	DisplayName *string `json:"displayName,omitempty"`
 	Bio         *string `json:"bio,omitempty"`
@@ -354,6 +357,16 @@ type UserConnection struct {
 type UserEdge struct {
 	Node   *User  `json:"node"`
 	Cursor string `json:"cursor"`
+}
+
+type UserProfileUpdateEvent struct {
+	UserID        string  `json:"userId"`
+	Username      string  `json:"username"`
+	DisplayName   *string `json:"displayName,omitempty"`
+	AvatarURL     *string `json:"avatarUrl,omitempty"`
+	AvatarVersion *int    `json:"avatarVersion,omitempty"`
+	EventType     string  `json:"eventType"`
+	UpdatedAt     string  `json:"updatedAt"`
 }
 
 type MediaType string

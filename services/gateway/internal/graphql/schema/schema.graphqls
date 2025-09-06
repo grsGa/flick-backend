@@ -442,3 +442,17 @@ type Mutation {
   followUser(userID: String!): User!
   unfollowUser(userID: String!): User!
 }
+
+type Subscription {
+  userProfileUpdated(userId: ID!): UserProfileUpdateEvent!
+}
+
+type UserProfileUpdateEvent {
+  userId: ID!
+  username: String!
+  displayName: String
+  avatarUrl: String
+  avatarVersion: Int
+  eventType: String!
+  updatedAt: String!
+}

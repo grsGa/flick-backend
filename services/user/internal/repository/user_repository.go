@@ -184,6 +184,7 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 		DisplayName:     user.DisplayName,
 		Email:           user.Email,
 		AvatarUrl:       user.AvatarURL,
+		AvatarVersion:   int32(user.AvatarVersion),
 		Bio:             toString(user.Bio),
 		Location:        toString(user.Location),
 		WebsiteUrl:      toString(user.WebsiteURL),
@@ -223,6 +224,7 @@ func (r *userRepository) protoToModel(user *proto.User) *models.User {
 		Email:           user.Email,
 		PasswordHash:    user.PasswordHash,
 		AvatarURL:       user.AvatarUrl,
+		AvatarVersion:   int(user.AvatarVersion),
 		FollowersCount:  int(user.FollowersCount),
 		FollowingCount:  int(user.FollowingCount),
 		IsFollowing:     user.IsFollowing,
@@ -400,4 +402,15 @@ func (r *userRepository) UnfollowUser(ctx context.Context, followerID, following
 
 		return nil
 	})
+}
+
+// UpdateUserAvatar 更新用户头像版本和URL
+func (r *userRepository) UpdateUserAvatar(ctx context.Context, userID, avatarURL string, avatarVersion int32) error {
+	return r.db.Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"avatar_url":     avatarURL,
+			"avatar_version": avatarVersion,
+			"updated_at":     time.Now(),
+		}).Error
 }

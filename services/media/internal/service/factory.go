@@ -26,5 +26,5 @@ type mediaServiceFactory struct {
 
 // Create 创建媒体服务实例
 func (f *mediaServiceFactory) Create() MediaService {
-	return NewMediaService(f.mediaRepo, f.storage, "")
+	return NewMediaService(f.mediaRepo, f.storage, "", nil)
 }

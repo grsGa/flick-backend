@@ -40,4 +40,7 @@ type UserService interface {
 
 	// UnfollowUser 取消关注用户
 	UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error)
+
+	// UpdateUserAvatar 更新用户头像版本和URL
+	UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error)
 }

@@ -234,7 +234,7 @@ func setupRoutes(r *gin.Engine) {
 	
 	// Create GraphQL server with proper transport configuration
 	// IMPORTANT: Use handler.New() and add transports manually to avoid conflicts
-	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient)}))
+	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient, nil)}))
 	
 	// Configure multipart upload transport FIRST with proper configuration
 	srv.AddTransport(&transport.MultipartForm{

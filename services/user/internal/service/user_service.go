@@ -8,6 +8,7 @@ import (
 
 	"github.com/flick/backend/pkg/auth"
 	"github.com/flick/backend/pkg/config"
+	"github.com/flick/backend/pkg/messagebus"
 	"github.com/flick/backend/services/user/internal/repository"
 	"github.com/flick/backend/services/user/proto"
 
@@ -26,17 +27,19 @@ var blockedEmailDomains = map[string]struct{}{
 
 // userService 用户服务实现
 type userService struct {
-	userRepo repository.UserRepository
-	cfg      *config.Config
-	logger   *zap.Logger
+	userRepo    repository.UserRepository
+	cfg         *config.Config
+	logger      *zap.Logger
+	messageBus  messagebus.MessageBus
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logger *zap.Logger) UserService {
+func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logger *zap.Logger, messageBus messagebus.MessageBus) UserService {
 	return &userService{
-		userRepo: userRepo,
-		cfg:      cfg,
-		logger:   logger,
+		userRepo:   userRepo,
+		cfg:        cfg,
+		logger:     logger,
+		messageBus: messageBus,
 	}
 }
 
@@ -444,6 +447,51 @@ func (s *userService) UnfollowUser(ctx context.Context, req *proto.UnfollowUserR
 	}
 
 	return &proto.UnfollowUserResponse{
+		User: user,
+	}, nil
+}
+
+// UpdateUserAvatar 更新用户头像版本和URL
+func (s *userService) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
+	fmt.Printf("[User Service] UpdateUserAvatar request for userID: %s, version: %d, URL: %s\n", 
+		req.UserId, req.AvatarVersion, req.AvatarUrl)
+	
+	// 更新用户头像信息
+	err := s.userRepo.UpdateUserAvatar(ctx, req.UserId, req.AvatarUrl, req.AvatarVersion)
+	if err != nil {
+		fmt.Printf("[User Service] UpdateUserAvatar failed for userID %s: %v\n", req.UserId, err)
+		return &proto.UpdateUserAvatarResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to update user avatar: " + err.Error(),
+			},
+		}, err
+	}
+	
+	// 获取更新后的用户信息
+	user, err := s.userRepo.GetUserByID(ctx, req.UserId)
+	if err != nil {
+		return &proto.UpdateUserAvatarResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "Failed to get updated user: " + err.Error(),
+			},
+		}, err
+	}
+	
+	// 发布头像更新事件到消息总线
+	if s.messageBus != nil {
+		err = messagebus.PublishUserAvatarUpdated(ctx, s.messageBus, user.Id, user.Username, user.AvatarUrl, user.AvatarVersion)
+		if err != nil {
+			fmt.Printf("[User Service] Warning: Failed to publish avatar update event: %v\n", err)
+			// 不返回错误，因为主要操作已经成功
+		} else {
+			fmt.Printf("[User Service] Published avatar update event for user: %s\n", user.Username)
+		}
+	}
+	
+	fmt.Printf("[User Service] UpdateUserAvatar successful for userID: %s\n", req.UserId)
+	return &proto.UpdateUserAvatarResponse{
 		User: user,
 	}, nil
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"github.com/flick/backend/services/media/internal/storage"
 	"github.com/flick/backend/services/media/internal/validator"
 	"github.com/flick/backend/services/media/proto"
+	userProto "github.com/flick/backend/services/user/proto"
 	"github.com/google/uuid"
 )
 
@@ -38,10 +40,11 @@ type mediaService struct {
 	tempDir        string
 	processingJobs map[string]*ProcessingJob
 	jobsMutex      sync.RWMutex
+	userClient     userProto.UserServiceClient
 }
 
 // NewMediaService 创建媒体服务实例
-func NewMediaService(mediaRepo repository.MediaRepository, storage storage.MediaStorage, tempDir string) MediaService {
+func NewMediaService(mediaRepo repository.MediaRepository, storage storage.MediaStorage, tempDir string, userClient userProto.UserServiceClient) MediaService {
 	if tempDir == "" {
 		tempDir = "/tmp/media-processing"
 	}
@@ -55,6 +58,7 @@ func NewMediaService(mediaRepo repository.MediaRepository, storage storage.Media
 		processor:      processor.NewProcessorManager(tempDir),
 		storage:        storage,
 		tempDir:        tempDir,
+		userClient:     userClient,
 		processingJobs: make(map[string]*ProcessingJob),
 	}
 }
@@ -123,7 +127,16 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	fmt.Printf("[MEDIA SERVICE] File validation passed: %s, size: %d bytes, type: %s\n", req.Filename, fileSize, contentType)
 
 	// 保存文件到存储
-	url, err := s.mediaRepo.SaveFileToStorage(ctx, fileID, req.Content, contentType, category.String(), req.UserId)
+	var url string
+	var err error
+
+	// 如果是头像上传，使用版本化存储
+	if req.FileType == "avatar" {
+		url, err = s.saveVersionedAvatar(ctx, fileID, req.Content, contentType, req.UserId)
+	} else {
+		url, err = s.mediaRepo.SaveFileToStorage(ctx, fileID, req.Content, contentType, category.String(), req.UserId)
+	}
+
 	if err != nil {
 		return &proto.UploadFileResponse{
 			Error: &proto.Error{
@@ -135,13 +148,20 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 
 	// 从URL中提取实际的文件ID
 	// URL格式: http://host/bucket/category/userID/filename
-	// 文件名格式: category_uuid.ext (如 avatar_74bfbdb7-4ff1-430e-82af-29269accbf47.jpg)
+	// 对于版本化头像，文件名格式: avatar_v1.jpg, avatar_v2.jpg 等
+	// 对于普通文件，文件名格式: category_uuid.ext (如 avatar_74bfbdb7-4ff1-430e-82af-29269accbf47.jpg)
 	parts := strings.Split(url, "/")
 	var actualFileID string
 	if len(parts) >= 5 {
 		filename := parts[len(parts)-1] // 获取文件名
-		// 从文件名中提取UUID部分 (category_uuid.ext -> uuid)
-		if strings.Contains(filename, "_") && strings.Contains(filename, ".") {
+		
+		// 检查是否为版本化头像文件
+		if req.FileType == "avatar" && strings.HasPrefix(filename, "avatar_v") {
+			// 版本化头像使用原始生成的UUID作为文件ID
+			actualFileID = fileID
+			fmt.Printf("[MEDIA SERVICE] Versioned avatar detected: %s, using original UUID: %s\n", filename, actualFileID)
+		} else if strings.Contains(filename, "_") && strings.Contains(filename, ".") {
+			// 普通文件从文件名中提取UUID部分 (category_uuid.ext -> uuid)
 			nameParts := strings.Split(filename, "_")
 			if len(nameParts) >= 2 {
 				uuidWithExt := nameParts[1]
@@ -150,7 +170,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 			}
 		}
 	}
-	
+
 	// 如果无法从URL提取，使用原始生成的UUID
 	if actualFileID == "" {
 		actualFileID = fileID
@@ -189,7 +209,8 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	}
 
 	// 自动触发媒体处理生成多版本（图片和视频）
-	if strings.HasPrefix(contentType, "image/") {
+	// 跳过版本化头像的自动处理，因为它们已经是处理后的版本
+	if strings.HasPrefix(contentType, "image/") && req.FileType != "avatar" {
 		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for image: %s\n", actualFileID)
 		go func() {
 			processReq := &proto.ProcessMediaRequest{
@@ -203,6 +224,8 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 				fmt.Printf("[MEDIA SERVICE] Auto-processing started for %s\n", actualFileID)
 			}
 		}()
+	} else if req.FileType == "avatar" {
+		fmt.Printf("[MEDIA SERVICE] Skipping auto-processing for versioned avatar: %s\n", actualFileID)
 	} else if strings.HasPrefix(contentType, "video/") {
 		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for video: %s\n", actualFileID)
 		go func() {
@@ -423,7 +446,7 @@ func (s *mediaService) processMediaAsync(ctx context.Context, job *ProcessingJob
 	fmt.Printf("[MEDIA PROCESSOR] Getting media type for filename: %s\n", file.Filename)
 	mediaType := s.processor.GetMediaType(file.Filename)
 	fmt.Printf("[MEDIA PROCESSOR] Detected media type: %s\n", mediaType)
-	
+
 	if req.Variants == nil || len(req.Variants) == 0 {
 		req.Variants = s.processor.GetDefaultVariants(mediaType)
 		fmt.Printf("[MEDIA PROCESSOR] Using default variants: %v\n", req.Variants)
@@ -451,12 +474,12 @@ func (s *mediaService) processMediaAsync(ctx context.Context, job *ProcessingJob
 		fmt.Printf("[MEDIA PROCESSOR] ProcessMedia failed: %v\n", err)
 		return
 	}
-	
+
 	// 修复 original variant 的 URL 为正确的 MinIO URL
 	if variants.Original != nil {
 		variants.Original.URL = file.Url
 	}
-	
+
 	fmt.Printf("[MEDIA PROCESSOR] ProcessMedia completed successfully\n")
 
 	job.Progress = "70%"
@@ -511,7 +534,7 @@ func (s *mediaService) downloadFileToTemp(ctx context.Context, url, tempPath str
 	}
 
 	// 提取bucket和object路径
-	bucketName := parts[3] // social-media
+	bucketName := parts[3]                     // social-media
 	objectPath := strings.Join(parts[4:], "/") // posts/user-id/file-id/filename
 
 	fmt.Printf("[MEDIA PROCESSOR] Downloading from MinIO: bucket=%s, object=%s\n", bucketName, objectPath)
@@ -552,7 +575,7 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 	category := parts[4]   // avatars/banners/posts
 	userID := parts[5]     // user-id
 	filename := parts[6]   // complete filename with extension
-	
+
 	// 从文件名中提取fileID
 	// 文件名格式: avatar_fileID.ext 或 banner_fileID.ext 或 img_fileID.ext
 	var fileID string
@@ -567,15 +590,15 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 	}
 	// 移除扩展名
 	fileID = strings.TrimSuffix(fileID, filepath.Ext(fileID))
-	
+
 	originalExt := filepath.Ext(originalFile.Filename)
 
 	fmt.Printf("[MEDIA PROCESSOR] Uploading variants for file %s (category: %s)\n", fileID, category)
 
 	// 上传各个版本 - 包括图片和视频variants
 	variantTypes := []struct {
-		variant *models.MediaVariant
-		suffix  string
+		variant  *models.MediaVariant
+		suffix   string
 		mimeType string
 	}{
 		// 图片variants
@@ -632,7 +655,7 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 
 		// 保存临时文件路径用于清理
 		tempPath := vt.variant.URL
-		
+
 		// 更新variant的URL为MinIO URL
 		vt.variant.URL = url
 		vt.variant.Size = fileInfo.Size()
@@ -733,4 +756,166 @@ func (s *mediaService) convertVariantsToProto(variants *models.MediaVariants) *p
 	}
 
 	return result
+}
+
+// saveVersionedAvatar 保存版本化头像到MinIO存储
+func (s *mediaService) saveVersionedAvatar(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
+	fmt.Printf("[MEDIA SERVICE] Starting saveVersionedAvatar for user: %s\n", userID)
+	
+	// 获取用户当前头像版本号
+	currentVersion, err := s.getUserAvatarVersion(ctx, userID)
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Failed to get user avatar version: %v\n", err)
+		currentVersion = 0 // 默认从版本0开始
+	}
+	
+	fmt.Printf("[MEDIA SERVICE] Retrieved current version: %d for user: %s\n", currentVersion, userID)
+
+	// 增加版本号
+	newVersion := currentVersion + 1
+	fmt.Printf("[MEDIA SERVICE] New version will be: %d for user: %s\n", newVersion, userID)
+
+	// 生成版本化文件名
+	fileExt := filepath.Ext(fileID)
+	if fileExt == "" {
+		// 从content type推断扩展名
+		switch contentType {
+		case "image/jpeg":
+			fileExt = ".jpg"
+		case "image/png":
+			fileExt = ".png"
+		case "image/webp":
+			fileExt = ".webp"
+		default:
+			fileExt = ".jpg"
+		}
+	}
+
+	versionedFileName := fmt.Sprintf("avatar_v%d%s", newVersion, fileExt)
+	objectPath := fmt.Sprintf("avatars/%s/%s", userID, versionedFileName)
+
+	fmt.Printf("[MEDIA SERVICE] Saving versioned avatar: %s (version %d)\n", objectPath, newVersion)
+
+	// 上传到MinIO
+	reader := bytes.NewReader(content)
+	url, err := s.storage.UploadFileWithPath(ctx, "social-media", objectPath, reader, int64(len(content)), contentType)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload versioned avatar: %w", err)
+	}
+
+	// 更新用户头像版本号（这里需要调用User Service）
+	err = s.updateUserAvatarVersion(ctx, userID, newVersion, url)
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Warning: Failed to update user avatar version: %v\n", err)
+		// 不返回错误，因为文件已经上传成功
+	}
+
+	// 异步清理旧头像文件
+	go s.scheduleOldAvatarCleanup(ctx, userID, newVersion)
+
+	return url, nil
+}
+
+// getUserAvatarVersion 获取用户当前头像版本号
+func (s *mediaService) getUserAvatarVersion(ctx context.Context, userID string) (int, error) {
+	fmt.Printf("[MEDIA SERVICE] Getting avatar version for user: %s\n", userID)
+	
+	if s.userClient == nil {
+		fmt.Printf("[MEDIA SERVICE] User client not available, defaulting to version 0\n")
+		return 0, nil
+	}
+
+	resp, err := s.userClient.GetUser(ctx, &userProto.GetUserRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Failed to get user %s: %v\n", userID, err)
+		return 0, err
+	}
+
+	if resp.Error != nil {
+		fmt.Printf("[MEDIA SERVICE] User service error: %s\n", resp.Error.Message)
+		return 0, fmt.Errorf("user service error: %s", resp.Error.Message)
+	}
+
+	currentVersion := int(resp.User.AvatarVersion)
+	fmt.Printf("[MEDIA SERVICE] Current avatar version for user %s: %d\n", userID, currentVersion)
+	return currentVersion, nil
+}
+
+// updateUserAvatarVersion 更新用户头像版本号和URL
+func (s *mediaService) updateUserAvatarVersion(ctx context.Context, userID string, version int, avatarURL string) error {
+	if s.userClient == nil {
+		fmt.Printf("[MEDIA SERVICE] User client not available, cannot update avatar version\n")
+		return fmt.Errorf("user client not available")
+	}
+
+	resp, err := s.userClient.UpdateUserAvatar(ctx, &userProto.UpdateUserAvatarRequest{
+		UserId:        userID,
+		AvatarUrl:     avatarURL,
+		AvatarVersion: int32(version),
+	})
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Failed to update user avatar %s: %v\n", userID, err)
+		return err
+	}
+
+	if resp.Error != nil {
+		fmt.Printf("[MEDIA SERVICE] User service error updating avatar: %s\n", resp.Error.Message)
+		return fmt.Errorf("user service error: %s", resp.Error.Message)
+	}
+
+	fmt.Printf("[MEDIA SERVICE] Successfully updated user %s avatar version to %d\n", userID, version)
+	return nil
+}
+
+// scheduleOldAvatarCleanup 安排旧头像文件清理
+func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID string, currentVersion int) {
+	fmt.Printf("[MEDIA SERVICE] Scheduling cleanup for user %s, current version: %d\n", userID, currentVersion)
+	
+	// 创建一个新的context，避免原context被取消
+	cleanupCtx := context.Background()
+	
+	// 延迟30秒后开始清理，避免客户端仍在使用旧URL时出现404（缩短测试时间）
+	time.Sleep(30 * time.Second)
+
+	fmt.Printf("[MEDIA SERVICE] Starting cleanup of old avatars for user %s, keeping version %d\n", userID, currentVersion)
+
+	// 保留最近2个版本，删除更老的版本（降低阈值便于测试）
+	keepVersions := 2
+	fmt.Printf("[MEDIA SERVICE] Cleanup policy: keep %d versions, current version: %d\n", keepVersions, currentVersion)
+	
+	if currentVersion > keepVersions {
+		fmt.Printf("[MEDIA SERVICE] Will delete versions 1 to %d\n", currentVersion-keepVersions)
+		for version := 1; version <= currentVersion-keepVersions; version++ {
+			// 构造完整的URL格式，与存储时使用的格式一致
+			oldObjectPath := fmt.Sprintf("avatars/%s/avatar_v%d.jpg", userID, version)
+			oldURL := fmt.Sprintf("http://127.0.0.1:9000/social-media/%s", oldObjectPath)
+
+			fmt.Printf("[MEDIA SERVICE] Attempting to delete old avatar: %s\n", oldURL)
+			err := s.storage.DeleteFile(cleanupCtx, oldURL)
+			if err != nil {
+				fmt.Printf("[MEDIA SERVICE] Failed to delete old avatar %s: %v\n", oldURL, err)
+			} else {
+				fmt.Printf("[MEDIA SERVICE] Successfully deleted old avatar: %s\n", oldURL)
+			}
+
+			// 也尝试删除其他可能的扩展名
+			for _, ext := range []string{".png", ".webp"} {
+				altObjectPath := fmt.Sprintf("avatars/%s/avatar_v%d%s", userID, version, ext)
+				altURL := fmt.Sprintf("http://127.0.0.1:9000/social-media/%s", altObjectPath)
+				fmt.Printf("[MEDIA SERVICE] Attempting to delete alternative format: %s\n", altURL)
+				err := s.storage.DeleteFile(cleanupCtx, altURL)
+				if err != nil {
+					fmt.Printf("[MEDIA SERVICE] Failed to delete alternative format %s: %v\n", altURL, err)
+				} else {
+					fmt.Printf("[MEDIA SERVICE] Successfully deleted alternative format: %s\n", altURL)
+				}
+			}
+		}
+	} else {
+		fmt.Printf("[MEDIA SERVICE] No cleanup needed - current version (%d) <= keep versions (%d)\n", currentVersion, keepVersions)
+	}
+	
+	fmt.Printf("[MEDIA SERVICE] Cleanup completed for user %s\n", userID)
 }

@@ -37,6 +37,9 @@ service UserService {
 
   // 取消关注用户
   rpc UnfollowUser(UnfollowUserRequest) returns (UnfollowUserResponse);
+
+  // 更新用户头像版本
+  rpc UpdateUserAvatar(UpdateUserAvatarRequest) returns (UpdateUserAvatarResponse);
 }
 
 // 用户信息
@@ -48,21 +51,22 @@ message User {
   string phone = 5;
   string password_hash = 6;
   string avatar_url = 7;
-  string banner_url = 8;
-  string bio = 9;
-  string location = 10;
-  string website_url = 11;
-  bool is_email_verified = 12;
-  bool is_phone_verified = 13;
-  string login_method = 14;
-  string last_login_at = 15;
-  string status = 16;
-  string created_at = 17;
-  string updated_at = 18;
-  int32 followers_count = 19;
-  int32 following_count = 20;
-  bool is_following = 21;
-  bool is_verified = 22;
+  int32 avatar_version = 8;
+  string banner_url = 9;
+  string bio = 10;
+  string location = 11;
+  string website_url = 12;
+  bool is_email_verified = 13;
+  bool is_phone_verified = 14;
+  string login_method = 15;
+  string last_login_at = 16;
+  string status = 17;
+  string created_at = 18;
+  string updated_at = 19;
+  int32 followers_count = 20;
+  int32 following_count = 21;
+  bool is_following = 22;
+  bool is_verified = 23;
 }
 
 // 获取用户请求
@@ -218,6 +222,19 @@ message UnfollowUserRequest {
 
 // 取消关注用户响应
 message UnfollowUserResponse {
+  User user = 1;
+  Error error = 2;
+}
+
+// 更新用户头像请求
+message UpdateUserAvatarRequest {
+  string user_id = 1;
+  string avatar_url = 2;
+  int32 avatar_version = 3;
+}
+
+// 更新用户头像响应
+message UpdateUserAvatarResponse {
   User user = 1;
   Error error = 2;
 }

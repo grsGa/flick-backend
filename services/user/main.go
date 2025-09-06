@@ -43,7 +43,7 @@ func main() {
 	userRepo := repository.NewUserRepository()
 
 	// 初始化服务
-	userService := service.NewUserService(userRepo, cfg, appLogger)
+	userService := service.NewUserService(userRepo, cfg, appLogger, nil)
 
 	// 初始化服务端
 	grpcServer := server.NewGRPCServer(userService)

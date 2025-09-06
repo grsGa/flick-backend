@@ -80,6 +80,11 @@ func (s *grpcServer) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRe
 	return s.userService.UnfollowUser(ctx, req)
 }
 
+// UpdateUserAvatar 实现更新用户头像接口
+func (s *grpcServer) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
+	return s.userService.UpdateUserAvatar(ctx, req)
+}
+
 // Run 启动gRPC服务
 func (s *grpcServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)

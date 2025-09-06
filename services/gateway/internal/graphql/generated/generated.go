@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -41,6 +42,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -299,6 +301,10 @@ type ComplexityRoot struct {
 		Users    func(childComplexity int) int
 	}
 
+	Subscription struct {
+		UserProfileUpdated func(childComplexity int, userID string) int
+	}
+
 	User struct {
 		AvatarURL      func(childComplexity int) int
 		BannerURL      func(childComplexity int) int
@@ -323,6 +329,16 @@ type ComplexityRoot struct {
 	UserEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
+	}
+
+	UserProfileUpdateEvent struct {
+		AvatarURL     func(childComplexity int) int
+		AvatarVersion func(childComplexity int) int
+		DisplayName   func(childComplexity int) int
+		EventType     func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+		UserID        func(childComplexity int) int
+		Username      func(childComplexity int) int
 	}
 
 	_Service struct {
@@ -380,6 +396,9 @@ type QueryResolver interface {
 	RecommendedPosts(ctx context.Context, first int) (*model.PostConnection, error)
 	Followers(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error)
 	Following(ctx context.Context, userID string, first int, after *string) (*model.UserConnection, error)
+}
+type SubscriptionResolver interface {
+	UserProfileUpdated(ctx context.Context, userID string) (<-chan *model.UserProfileUpdateEvent, error)
 }
 
 type executableSchema struct {
@@ -1802,6 +1821,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SearchResults.Users(childComplexity), true
 
+	case "Subscription.userProfileUpdated":
+		if e.complexity.Subscription.UserProfileUpdated == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_userProfileUpdated_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.UserProfileUpdated(childComplexity, args["userId"].(string)), true
+
 	case "User.avatarUrl":
 		if e.complexity.User.AvatarURL == nil {
 			break
@@ -1921,6 +1952,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserEdge.Node(childComplexity), true
 
+	case "UserProfileUpdateEvent.avatarUrl":
+		if e.complexity.UserProfileUpdateEvent.AvatarURL == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.AvatarURL(childComplexity), true
+
+	case "UserProfileUpdateEvent.avatarVersion":
+		if e.complexity.UserProfileUpdateEvent.AvatarVersion == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.AvatarVersion(childComplexity), true
+
+	case "UserProfileUpdateEvent.displayName":
+		if e.complexity.UserProfileUpdateEvent.DisplayName == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.DisplayName(childComplexity), true
+
+	case "UserProfileUpdateEvent.eventType":
+		if e.complexity.UserProfileUpdateEvent.EventType == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.EventType(childComplexity), true
+
+	case "UserProfileUpdateEvent.updatedAt":
+		if e.complexity.UserProfileUpdateEvent.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.UpdatedAt(childComplexity), true
+
+	case "UserProfileUpdateEvent.userId":
+		if e.complexity.UserProfileUpdateEvent.UserID == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.UserID(childComplexity), true
+
+	case "UserProfileUpdateEvent.username":
+		if e.complexity.UserProfileUpdateEvent.Username == nil {
+			break
+		}
+
+		return e.complexity.UserProfileUpdateEvent.Username(childComplexity), true
+
 	case "_Service.sdl":
 		if e.complexity._Service.SDL == nil {
 			break
@@ -1995,6 +2075,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -2492,6 +2589,20 @@ type Mutation {
   updateProfile(input: UpdateProfileInput!): User!
   followUser(userID: String!): User!
   unfollowUser(userID: String!): User!
+}
+
+type Subscription {
+  userProfileUpdated(userId: ID!): UserProfileUpdateEvent!
+}
+
+type UserProfileUpdateEvent {
+  userId: ID!
+  username: String!
+  displayName: String
+  avatarUrl: String
+  avatarVersion: Int
+  eventType: String!
+  updatedAt: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../federation/directives.graphql", Input: `
@@ -3137,6 +3248,17 @@ func (ec *executionContext) field_Query_userReplies_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["after"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_userProfileUpdated_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -12297,6 +12419,91 @@ func (ec *executionContext) fieldContext_SearchResults_hashtags(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_userProfileUpdated(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_userProfileUpdated(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().UserProfileUpdated(rctx, fc.Args["userId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.UserProfileUpdateEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNUserProfileUpdateEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserProfileUpdateEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_userProfileUpdated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userId":
+				return ec.fieldContext_UserProfileUpdateEvent_userId(ctx, field)
+			case "username":
+				return ec.fieldContext_UserProfileUpdateEvent_username(ctx, field)
+			case "displayName":
+				return ec.fieldContext_UserProfileUpdateEvent_displayName(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_UserProfileUpdateEvent_avatarUrl(ctx, field)
+			case "avatarVersion":
+				return ec.fieldContext_UserProfileUpdateEvent_avatarVersion(ctx, field)
+			case "eventType":
+				return ec.fieldContext_UserProfileUpdateEvent_eventType(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_UserProfileUpdateEvent_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserProfileUpdateEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_userProfileUpdated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -13051,6 +13258,305 @@ func (ec *executionContext) _UserEdge_cursor(ctx context.Context, field graphql.
 func (ec *executionContext) fieldContext_UserEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_userId(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_userId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_username(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_username(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Username, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_displayName(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_displayName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DisplayName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_displayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_avatarUrl(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_avatarUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AvatarURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_avatarUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_avatarVersion(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_avatarVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AvatarVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_avatarVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_eventType(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_eventType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EventType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserProfileUpdateEvent_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.UserProfileUpdateEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserProfileUpdateEvent_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserProfileUpdateEvent_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserProfileUpdateEvent",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -17908,6 +18414,26 @@ func (ec *executionContext) _SearchResults(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "userProfileUpdated":
+		return ec._Subscription_userProfileUpdated(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
+}
+
 var userImplementors = []string{"User", "NotificationEntity", "RecommendationEntity"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
@@ -18045,6 +18571,66 @@ func (ec *executionContext) _UserEdge(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "cursor":
 			out.Values[i] = ec._UserEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userProfileUpdateEventImplementors = []string{"UserProfileUpdateEvent"}
+
+func (ec *executionContext) _UserProfileUpdateEvent(ctx context.Context, sel ast.SelectionSet, obj *model.UserProfileUpdateEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userProfileUpdateEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserProfileUpdateEvent")
+		case "userId":
+			out.Values[i] = ec._UserProfileUpdateEvent_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._UserProfileUpdateEvent_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "displayName":
+			out.Values[i] = ec._UserProfileUpdateEvent_displayName(ctx, field, obj)
+		case "avatarUrl":
+			out.Values[i] = ec._UserProfileUpdateEvent_avatarUrl(ctx, field, obj)
+		case "avatarVersion":
+			out.Values[i] = ec._UserProfileUpdateEvent_avatarVersion(ctx, field, obj)
+		case "eventType":
+			out.Values[i] = ec._UserProfileUpdateEvent_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._UserProfileUpdateEvent_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19487,6 +20073,20 @@ func (ec *executionContext) marshalNUserEdge2ᚕgithubᚗcomᚋflickᚋbackend�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNUserProfileUpdateEvent2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserProfileUpdateEvent(ctx context.Context, sel ast.SelectionSet, v model.UserProfileUpdateEvent) graphql.Marshaler {
+	return ec._UserProfileUpdateEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserProfileUpdateEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐUserProfileUpdateEvent(ctx context.Context, sel ast.SelectionSet, v *model.UserProfileUpdateEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserProfileUpdateEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalN_FieldSet2string(ctx context.Context, v any) (string, error) {

@@ -7,6 +7,31 @@ import (
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 )
 
+// stringPtr returns a pointer to the given string
+func stringPtr(s string) *string {
+	return &s
+}
+
+// convertErrorToUserMessage converts gRPC error to user-friendly message
+func convertErrorToUserMessage(err error) string {
+	if err == nil {
+		return "Unknown error"
+	}
+	
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "user not found") {
+		return "User not found"
+	}
+	if strings.Contains(errMsg, "unauthorized") {
+		return "Unauthorized access"
+	}
+	if strings.Contains(errMsg, "invalid") {
+		return "Invalid request"
+	}
+	
+	return "Internal server error"
+}
+
 // postProtoToGql converts content service proto Post to GraphQL model
 func (r *Resolver) postProtoToGql(post *content_proto.Post) *model.Post {
 	if post == nil {

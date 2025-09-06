@@ -6,11 +6,13 @@ package resolver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"strings"
+	"time"
 
+	"github.com/flick/backend/pkg/messagebus"
 	content_proto "github.com/flick/backend/services/content/proto"
 	"github.com/flick/backend/services/gateway/internal/graphql/generated"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
@@ -18,57 +20,7 @@ import (
 	interaction_proto "github.com/flick/backend/services/interaction/proto"
 	media_proto "github.com/flick/backend/services/media/proto"
 	user_proto "github.com/flick/backend/services/user/proto"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
-
-// convertErrorToUserMessage converts technical gRPC errors to user-friendly messages
-func convertErrorToUserMessage(err error) string {
-	if err == nil {
-		return "Upload failed"
-	}
-
-	// Check if it's a gRPC status error
-	if st, ok := status.FromError(err); ok {
-		switch st.Code() {
-		case codes.Unauthenticated:
-			// Check for specific authentication messages
-			msg := st.Message()
-			if strings.Contains(msg, "account is no longer active") {
-				return "Your account is no longer active. Please log in again."
-			}
-			if strings.Contains(msg, "user not found") {
-				return "Your account is no longer active. Please log in again."
-			}
-			return "Authentication failed. Please log in again."
-		case codes.Unavailable:
-			return "Service temporarily unavailable. Please try again later."
-		case codes.PermissionDenied:
-			return "You don't have permission to upload files."
-		case codes.InvalidArgument:
-			return "Invalid file format or size. Please check your file and try again."
-		case codes.ResourceExhausted:
-			return "Upload quota exceeded. Please try again later."
-		default:
-			// For other gRPC errors, return a generic message
-			return "Upload failed. Please try again."
-		}
-	}
-
-	// For non-gRPC errors, check the error message
-	errMsg := err.Error()
-	if strings.Contains(errMsg, "account is no longer active") {
-		return "Your account is no longer active. Please log in again."
-	}
-	if strings.Contains(errMsg, "user not found") {
-		return "Your account is no longer active. Please log in again."
-	}
-	if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "token") {
-		return "Authentication failed. Please log in again."
-	}
-
-	return "Upload failed. Please try again."
-}
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
@@ -244,7 +196,7 @@ func (r *mutationResolver) UploadBanner(ctx context.Context, input model.UploadB
 func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.UploadPostMediaInput) ([]model.MediaUploadResult, error) {
 	fmt.Printf("[Gateway] UploadPostMedia resolver called - START\n")
 	fmt.Printf("[Gateway] UploadPostMedia input - UserID: %s, Files count: %d\n", input.UserID, len(input.Files))
-	
+
 	claims := middleware.GetUserClaims(ctx)
 	if claims == nil {
 		fmt.Printf("[Gateway] UploadPostMedia FAILED - no user claims\n")
@@ -274,7 +226,7 @@ func (r *mutationResolver) UploadPostMedia(ctx context.Context, input model.Uplo
 
 	for i, file := range input.Files {
 		fmt.Printf("[Gateway] UploadPostMedia processing file %d - Filename: %s, ContentType: %s\n", i, file.Filename, file.ContentType)
-		
+
 		// Read file content
 		fileContent, err := io.ReadAll(file.File)
 		if err != nil {
@@ -1530,16 +1482,134 @@ func (r *queryResolver) Following(ctx context.Context, userID string, first int,
 	}, nil
 }
 
+// UserProfileUpdated is the resolver for the userProfileUpdated field.
+func (r *subscriptionResolver) UserProfileUpdated(ctx context.Context, userID string) (<-chan *model.UserProfileUpdateEvent, error) {
+	if r.MessageBus == nil {
+		return nil, fmt.Errorf("message bus not available")
+	}
+	
+	// Subscribe to user profile update events
+	msgChan, err := r.MessageBus.Subscribe(ctx, messagebus.TopicUserProfileUpdated)
+	if err != nil {
+		return nil, fmt.Errorf("failed to subscribe to user profile updates: %w", err)
+	}
+	
+	// Create output channel for GraphQL subscription
+	eventChan := make(chan *model.UserProfileUpdateEvent, 10)
+	
+	go func() {
+		defer close(eventChan)
+		
+		for {
+			select {
+			case msg, ok := <-msgChan:
+				if !ok {
+					return
+				}
+				
+				// Parse the message
+				var event messagebus.UserProfileUpdatedEvent
+				if err := json.Unmarshal(msg.Data, &event); err != nil {
+					fmt.Printf("[GraphQL Subscription] Failed to unmarshal event: %v\n", err)
+					continue
+				}
+				
+				// Filter events for the specific user
+				if event.UserID == userID {
+					// Convert to GraphQL model
+					gqlEvent := &model.UserProfileUpdateEvent{
+						UserID:        event.UserID,
+						Username:      event.Username,
+						DisplayName:   &event.DisplayName,
+						AvatarURL:     &event.AvatarURL,
+						AvatarVersion: func() *int { v := int(event.AvatarVersion); return &v }(),
+						EventType:     event.EventType,
+						UpdatedAt:     event.UpdatedAt.Format(time.RFC3339),
+					}
+					
+					select {
+					case eventChan <- gqlEvent:
+					case <-ctx.Done():
+						return
+					}
+				}
+				
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	
+	return eventChan, nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
 
-// Helper function to create string pointer
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func convertErrorToUserMessage(err error) string {
+	if err == nil {
+		return "Upload failed"
+	}
+
+	// Check if it's a gRPC status error
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.Unauthenticated:
+			// Check for specific authentication messages
+			msg := st.Message()
+			if strings.Contains(msg, "account is no longer active") {
+				return "Your account is no longer active. Please log in again."
+			}
+			if strings.Contains(msg, "user not found") {
+				return "Your account is no longer active. Please log in again."
+			}
+			return "Authentication failed. Please log in again."
+		case codes.Unavailable:
+			return "Service temporarily unavailable. Please try again later."
+		case codes.PermissionDenied:
+			return "You don't have permission to upload files."
+		case codes.InvalidArgument:
+			return "Invalid file format or size. Please check your file and try again."
+		case codes.ResourceExhausted:
+			return "Upload quota exceeded. Please try again later."
+		default:
+			// For other gRPC errors, return a generic message
+			return "Upload failed. Please try again."
+		}
+	}
+
+	// For non-gRPC errors, check the error message
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "account is no longer active") {
+		return "Your account is no longer active. Please log in again."
+	}
+	if strings.Contains(errMsg, "user not found") {
+		return "Your account is no longer active. Please log in again."
+	}
+	if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "token") {
+		return "Authentication failed. Please log in again."
+	}
+
+	return "Upload failed. Please try again."
+}
 func stringPtr(s string) *string {
 	return &s
 }
+*/

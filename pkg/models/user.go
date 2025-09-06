@@ -13,6 +13,7 @@ type User struct {
 	Phone           *string    `gorm:"size:20;uniqueIndex" json:"phone,omitempty"`
 	PasswordHash    string     `gorm:"type:text;not null" json:"password_hash"`
 	AvatarURL       string     `gorm:"type:text" json:"avatar_url"`
+	AvatarVersion   int        `gorm:"default:0" json:"avatar_version"`
 	BannerURL       *string    `gorm:"type:text" json:"banner_url,omitempty"`
 	Bio             *string    `gorm:"type:text" json:"bio,omitempty"`
 	Location        *string    `gorm:"size:50" json:"location,omitempty"`

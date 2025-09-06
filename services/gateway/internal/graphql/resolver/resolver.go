@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/flick/backend/pkg/messagebus"
 	"github.com/flick/backend/services/gateway/internal/client"
 	"github.com/flick/backend/services/gateway/internal/graphql/model"
 	"github.com/flick/backend/services/gateway/internal/middleware"
@@ -21,16 +22,18 @@ type Resolver struct {
 	ContentServiceClient     client.ContentServiceClient
 	InteractionServiceClient client.InteractionServiceClient
 	MediaServiceClient       client.MediaServiceClient
+	MessageBus               messagebus.MessageBus
 }
 
 // NewResolver creates a new resolver instance
-func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient, interactionServiceClient client.InteractionServiceClient, mediaServiceClient client.MediaServiceClient) *Resolver {
+func NewResolver(authServiceClient client.AuthServiceClient, userServiceClient client.UserServiceClient, contentServiceClient client.ContentServiceClient, interactionServiceClient client.InteractionServiceClient, mediaServiceClient client.MediaServiceClient, messageBus messagebus.MessageBus) *Resolver {
 	return &Resolver{
 		AuthServiceClient:        authServiceClient,
 		UserServiceClient:        userServiceClient,
 		ContentServiceClient:     contentServiceClient,
 		InteractionServiceClient: interactionServiceClient,
 		MediaServiceClient:       mediaServiceClient,
+		MessageBus:               messageBus,
 	}
 }
 

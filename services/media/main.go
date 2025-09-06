@@ -12,6 +12,9 @@ import (
 	"github.com/flick/backend/services/media/internal/server"
 	"github.com/flick/backend/services/media/internal/service"
 	"github.com/flick/backend/services/media/internal/storage"
+	userProto "github.com/flick/backend/services/user/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -69,9 +72,27 @@ func main() {
 	// 初始化媒体仓库
 	mediaRepo := repository.NewMediaRepository(storageRepo)
 
+	// 初始化User Service客户端连接
+	userServiceAddr := os.Getenv("USER_SERVICE_ADDR")
+	if userServiceAddr == "" {
+		userServiceAddr = "user-service:50051" // 修正端口号，User Service运行在50051
+	}
+	
+	userConn, err := grpc.Dial(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("Warning: Failed to connect to user service at %s: %v", userServiceAddr, err)
+		log.Println("Media service will continue without user service integration")
+	}
+	
+	var userClient userProto.UserServiceClient
+	if userConn != nil {
+		userClient = userProto.NewUserServiceClient(userConn)
+		log.Println("User service client initialized successfully")
+	}
+
 	// 初始化服务
 	tempDir := os.Getenv("TEMP_DIR")
-	mediaService := service.NewMediaService(mediaRepo, storageRepo, tempDir)
+	mediaService := service.NewMediaService(mediaRepo, storageRepo, tempDir, userClient)
 
 	// 初始化服务端
 	grpcServer := server.NewGRPCServer(mediaService, cfg)

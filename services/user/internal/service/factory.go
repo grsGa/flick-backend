@@ -30,5 +30,5 @@ type userServiceFactory struct {
 
 // Create 创建用户服务实例
 func (f *userServiceFactory) Create() UserService {
-	return NewUserService(f.userRepo, f.cfg, f.logger)
+	return NewUserService(f.userRepo, f.cfg, f.logger, nil)
 }

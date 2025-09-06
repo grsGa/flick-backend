@@ -40,4 +40,7 @@ type UserRepository interface {
 
 	// UnfollowUser 取消关注用户
 	UnfollowUser(ctx context.Context, followerID, followingID string) error
+
+	// UpdateUserAvatar 更新用户头像版本和URL
+	UpdateUserAvatar(ctx context.Context, userID, avatarURL string, avatarVersion int32) error
 }
