@@ -43,4 +43,7 @@ type UserService interface {
 
 	// UpdateUserAvatar 更新用户头像版本和URL
 	UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error)
+
+	// UpdateUserBanner 更新用户横幅版本和URL
+	UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error)
 }

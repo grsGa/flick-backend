@@ -43,4 +43,7 @@ type UserRepository interface {
 
 	// UpdateUserAvatar 更新用户头像版本和URL
 	UpdateUserAvatar(ctx context.Context, userID, avatarURL string, avatarVersion int32) error
+
+	// UpdateUserBanner 更新用户横幅版本和URL
+	UpdateUserBanner(ctx context.Context, userID, bannerURL string, bannerVersion int32) error
 }

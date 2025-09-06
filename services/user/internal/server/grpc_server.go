@@ -85,6 +85,11 @@ func (s *grpcServer) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUser
 	return s.userService.UpdateUserAvatar(ctx, req)
 }
 
+// UpdateUserBanner 实现更新用户横幅接口
+func (s *grpcServer) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
+	return s.userService.UpdateUserBanner(ctx, req)
+}
+
 // Run 启动gRPC服务
 func (s *grpcServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)

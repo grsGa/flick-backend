@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.7
-// source: user.proto
+// source: services/user/proto/user.proto
 
 package proto
 
@@ -46,6 +46,8 @@ type UserServiceClient interface {
 	UnfollowUser(ctx context.Context, in *UnfollowUserRequest, opts ...grpc.CallOption) (*UnfollowUserResponse, error)
 	// 更新用户头像版本
 	UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarRequest, opts ...grpc.CallOption) (*UpdateUserAvatarResponse, error)
+	// 更新用户横幅版本
+	UpdateUserBanner(ctx context.Context, in *UpdateUserBannerRequest, opts ...grpc.CallOption) (*UpdateUserBannerResponse, error)
 }
 
 type userServiceClient struct {
@@ -164,6 +166,15 @@ func (c *userServiceClient) UpdateUserAvatar(ctx context.Context, in *UpdateUser
 	return out, nil
 }
 
+func (c *userServiceClient) UpdateUserBanner(ctx context.Context, in *UpdateUserBannerRequest, opts ...grpc.CallOption) (*UpdateUserBannerResponse, error) {
+	out := new(UpdateUserBannerResponse)
+	err := c.cc.Invoke(ctx, "/user.UserService/UpdateUserBanner", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
@@ -192,6 +203,8 @@ type UserServiceServer interface {
 	UnfollowUser(context.Context, *UnfollowUserRequest) (*UnfollowUserResponse, error)
 	// 更新用户头像版本
 	UpdateUserAvatar(context.Context, *UpdateUserAvatarRequest) (*UpdateUserAvatarResponse, error)
+	// 更新用户横幅版本
+	UpdateUserBanner(context.Context, *UpdateUserBannerRequest) (*UpdateUserBannerResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -234,6 +247,9 @@ func (UnimplementedUserServiceServer) UnfollowUser(context.Context, *UnfollowUse
 }
 func (UnimplementedUserServiceServer) UpdateUserAvatar(context.Context, *UpdateUserAvatarRequest) (*UpdateUserAvatarResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserBanner(context.Context, *UpdateUserBannerRequest) (*UpdateUserBannerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserBanner not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -464,6 +480,24 @@ func _UserService_UpdateUserAvatar_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UpdateUserBanner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserBannerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserBanner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.UserService/UpdateUserBanner",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserBanner(ctx, req.(*UpdateUserBannerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -519,7 +553,11 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "UpdateUserAvatar",
 			Handler:    _UserService_UpdateUserAvatar_Handler,
 		},
+		{
+			MethodName: "UpdateUserBanner",
+			Handler:    _UserService_UpdateUserBanner_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "user.proto",
+	Metadata: "services/user/proto/user.proto",
 }

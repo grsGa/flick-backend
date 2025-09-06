@@ -208,6 +208,9 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 		pbUser.BannerUrl = *user.BannerURL
 	}
 
+	// 添加横幅版本号映射
+	pbUser.BannerVersion = int32(user.BannerVersion)
+
 	if user.LastLoginAt != nil {
 		pbUser.LastLoginAt = user.LastLoginAt.Format(time.RFC3339)
 	}
@@ -411,6 +414,17 @@ func (r *userRepository) UpdateUserAvatar(ctx context.Context, userID, avatarURL
 		Updates(map[string]interface{}{
 			"avatar_url":     avatarURL,
 			"avatar_version": avatarVersion,
+			"updated_at":     time.Now(),
+		}).Error
+}
+
+// UpdateUserBanner 更新用户横幅版本和URL
+func (r *userRepository) UpdateUserBanner(ctx context.Context, userID, bannerURL string, bannerVersion int32) error {
+	return r.db.Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"banner_url":     bannerURL,
+			"banner_version": bannerVersion,
 			"updated_at":     time.Now(),
 		}).Error
 }

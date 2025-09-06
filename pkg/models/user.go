@@ -15,6 +15,7 @@ type User struct {
 	AvatarURL       string     `gorm:"type:text" json:"avatar_url"`
 	AvatarVersion   int        `gorm:"default:0" json:"avatar_version"`
 	BannerURL       *string    `gorm:"type:text" json:"banner_url,omitempty"`
+	BannerVersion   int        `gorm:"default:0" json:"banner_version"`
 	Bio             *string    `gorm:"type:text" json:"bio,omitempty"`
 	Location        *string    `gorm:"size:50" json:"location,omitempty"`
 	WebsiteURL      *string    `gorm:"type:text" json:"website_url,omitempty"`

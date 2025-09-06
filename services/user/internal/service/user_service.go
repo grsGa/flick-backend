@@ -496,6 +496,51 @@ func (s *userService) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUse
 	}, nil
 }
 
+// UpdateUserBanner 更新用户横幅版本和URL
+func (s *userService) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
+	fmt.Printf("[User Service] UpdateUserBanner request for userID: %s, version: %d, URL: %s\n", 
+		req.UserId, req.BannerVersion, req.BannerUrl)
+	
+	// 更新用户横幅信息
+	err := s.userRepo.UpdateUserBanner(ctx, req.UserId, req.BannerUrl, req.BannerVersion)
+	if err != nil {
+		fmt.Printf("[User Service] UpdateUserBanner failed for userID %s: %v\n", req.UserId, err)
+		return &proto.UpdateUserBannerResponse{
+			Error: &proto.Error{
+				Code:    500,
+				Message: "Failed to update user banner: " + err.Error(),
+			},
+		}, err
+	}
+	
+	// 获取更新后的用户信息
+	user, err := s.userRepo.GetUserByID(ctx, req.UserId)
+	if err != nil {
+		return &proto.UpdateUserBannerResponse{
+			Error: &proto.Error{
+				Code:    404,
+				Message: "Failed to get updated user: " + err.Error(),
+			},
+		}, err
+	}
+	
+	// 发布横幅更新事件到消息总线
+	if s.messageBus != nil {
+		err = messagebus.PublishUserBannerUpdated(ctx, s.messageBus, user.Id, user.Username, user.BannerUrl, user.BannerVersion)
+		if err != nil {
+			fmt.Printf("[User Service] Warning: Failed to publish banner update event: %v\n", err)
+			// 不返回错误，因为主要操作已经成功
+		} else {
+			fmt.Printf("[User Service] Published banner update event for user: %s\n", user.Username)
+		}
+	}
+	
+	fmt.Printf("[User Service] UpdateUserBanner successful for userID: %s\n", req.UserId)
+	return &proto.UpdateUserBannerResponse{
+		User: user,
+	}, nil
+}
+
 // validateEmailDomain checks if the email domain is in the blocklist.
 func (s *userService) validateEmailDomain(email string) error {
 	parts := strings.Split(email, "@")

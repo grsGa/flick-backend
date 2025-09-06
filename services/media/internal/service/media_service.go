@@ -130,9 +130,11 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	var url string
 	var err error
 
-	// 如果是头像上传，使用版本化存储
+	// 如果是头像或横幅上传，使用版本化存储
 	if req.FileType == "avatar" {
 		url, err = s.saveVersionedAvatar(ctx, fileID, req.Content, contentType, req.UserId)
+	} else if req.FileType == "banner" {
+		url, err = s.saveVersionedBanner(ctx, fileID, req.Content, contentType, req.UserId)
 	} else {
 		url, err = s.mediaRepo.SaveFileToStorage(ctx, fileID, req.Content, contentType, category.String(), req.UserId)
 	}
@@ -154,12 +156,16 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	var actualFileID string
 	if len(parts) >= 5 {
 		filename := parts[len(parts)-1] // 获取文件名
-		
-		// 检查是否为版本化头像文件
+
+		// 检查是否为版本化头像或横幅文件
 		if req.FileType == "avatar" && strings.HasPrefix(filename, "avatar_v") {
 			// 版本化头像使用原始生成的UUID作为文件ID
 			actualFileID = fileID
 			fmt.Printf("[MEDIA SERVICE] Versioned avatar detected: %s, using original UUID: %s\n", filename, actualFileID)
+		} else if req.FileType == "banner" && strings.HasPrefix(filename, "banner_v") {
+			// 版本化横幅使用原始生成的UUID作为文件ID
+			actualFileID = fileID
+			fmt.Printf("[MEDIA SERVICE] Versioned banner detected: %s, using original UUID: %s\n", filename, actualFileID)
 		} else if strings.Contains(filename, "_") && strings.Contains(filename, ".") {
 			// 普通文件从文件名中提取UUID部分 (category_uuid.ext -> uuid)
 			nameParts := strings.Split(filename, "_")
@@ -209,8 +215,8 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 	}
 
 	// 自动触发媒体处理生成多版本（图片和视频）
-	// 跳过版本化头像的自动处理，因为它们已经是处理后的版本
-	if strings.HasPrefix(contentType, "image/") && req.FileType != "avatar" {
+	// 跳过版本化头像和横幅的自动处理，因为它们已经是处理后的版本
+	if strings.HasPrefix(contentType, "image/") && req.FileType != "avatar" && req.FileType != "banner" {
 		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for image: %s\n", actualFileID)
 		go func() {
 			processReq := &proto.ProcessMediaRequest{
@@ -226,6 +232,8 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 		}()
 	} else if req.FileType == "avatar" {
 		fmt.Printf("[MEDIA SERVICE] Skipping auto-processing for versioned avatar: %s\n", actualFileID)
+	} else if req.FileType == "banner" {
+		fmt.Printf("[MEDIA SERVICE] Skipping auto-processing for versioned banner: %s\n", actualFileID)
 	} else if strings.HasPrefix(contentType, "video/") {
 		fmt.Printf("[MEDIA SERVICE] Triggering automatic media processing for video: %s\n", actualFileID)
 		go func() {
@@ -761,14 +769,14 @@ func (s *mediaService) convertVariantsToProto(variants *models.MediaVariants) *p
 // saveVersionedAvatar 保存版本化头像到MinIO存储
 func (s *mediaService) saveVersionedAvatar(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
 	fmt.Printf("[MEDIA SERVICE] Starting saveVersionedAvatar for user: %s\n", userID)
-	
+
 	// 获取用户当前头像版本号
 	currentVersion, err := s.getUserAvatarVersion(ctx, userID)
 	if err != nil {
 		fmt.Printf("[MEDIA SERVICE] Failed to get user avatar version: %v\n", err)
 		currentVersion = 0 // 默认从版本0开始
 	}
-	
+
 	fmt.Printf("[MEDIA SERVICE] Retrieved current version: %d for user: %s\n", currentVersion, userID)
 
 	// 增加版本号
@@ -819,7 +827,7 @@ func (s *mediaService) saveVersionedAvatar(ctx context.Context, fileID string, c
 // getUserAvatarVersion 获取用户当前头像版本号
 func (s *mediaService) getUserAvatarVersion(ctx context.Context, userID string) (int, error) {
 	fmt.Printf("[MEDIA SERVICE] Getting avatar version for user: %s\n", userID)
-	
+
 	if s.userClient == nil {
 		fmt.Printf("[MEDIA SERVICE] User client not available, defaulting to version 0\n")
 		return 0, nil
@@ -872,10 +880,10 @@ func (s *mediaService) updateUserAvatarVersion(ctx context.Context, userID strin
 // scheduleOldAvatarCleanup 安排旧头像文件清理
 func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID string, currentVersion int) {
 	fmt.Printf("[MEDIA SERVICE] Scheduling cleanup for user %s, current version: %d\n", userID, currentVersion)
-	
+
 	// 创建一个新的context，避免原context被取消
 	cleanupCtx := context.Background()
-	
+
 	// 延迟30秒后开始清理，避免客户端仍在使用旧URL时出现404（缩短测试时间）
 	time.Sleep(30 * time.Second)
 
@@ -884,7 +892,7 @@ func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID stri
 	// 保留最近2个版本，删除更老的版本（降低阈值便于测试）
 	keepVersions := 2
 	fmt.Printf("[MEDIA SERVICE] Cleanup policy: keep %d versions, current version: %d\n", keepVersions, currentVersion)
-	
+
 	if currentVersion > keepVersions {
 		fmt.Printf("[MEDIA SERVICE] Will delete versions 1 to %d\n", currentVersion-keepVersions)
 		for version := 1; version <= currentVersion-keepVersions; version++ {
@@ -916,6 +924,153 @@ func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID stri
 	} else {
 		fmt.Printf("[MEDIA SERVICE] No cleanup needed - current version (%d) <= keep versions (%d)\n", currentVersion, keepVersions)
 	}
-	
+
 	fmt.Printf("[MEDIA SERVICE] Cleanup completed for user %s\n", userID)
+}
+
+// saveVersionedBanner 保存版本化横幅文件
+func (s *mediaService) saveVersionedBanner(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
+	fmt.Printf("[MEDIA SERVICE] Saving versioned banner for user: %s\n", userID)
+
+	// 获取用户当前横幅版本号
+	currentVersion, err := s.getUserBannerVersion(ctx, userID)
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Failed to get user banner version: %v\n", err)
+		currentVersion = 0 // 默认从版本0开始
+	}
+
+	// 递增版本号
+	newVersion := currentVersion + 1
+
+	// 确定文件扩展名
+	fileExt := ".jpg" // 默认扩展名
+	switch contentType {
+	case "image/png":
+		fileExt = ".png"
+	case "image/webp":
+		fileExt = ".webp"
+	case "image/gif":
+		fileExt = ".gif"
+	}
+
+	versionedFileName := fmt.Sprintf("banner_v%d%s", newVersion, fileExt)
+	objectPath := fmt.Sprintf("banners/%s/%s", userID, versionedFileName)
+
+	fmt.Printf("[MEDIA SERVICE] Saving versioned banner: %s (version %d)\n", objectPath, newVersion)
+
+	// 上传到MinIO
+	reader := bytes.NewReader(content)
+	url, err := s.storage.UploadFileWithPath(ctx, "social-media", objectPath, reader, int64(len(content)), contentType)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload versioned banner: %w", err)
+	}
+
+	// 更新用户横幅版本号（这里需要调用User Service）
+	err = s.updateUserBannerVersion(ctx, userID, newVersion, url)
+	if err != nil {
+		fmt.Printf("[MEDIA SERVICE] Warning: Failed to update user banner version: %v\n", err)
+		// 不返回错误，因为文件已经上传成功
+	}
+
+	// 异步清理旧版本横幅文件
+	go s.cleanupOldBanners(userID, newVersion)
+
+	return url, nil
+}
+
+// getUserBannerVersion 获取用户当前横幅版本号
+func (s *mediaService) getUserBannerVersion(ctx context.Context, userID string) (int, error) {
+	fmt.Printf("[MEDIA SERVICE] Getting banner version for user: %s\n", userID)
+
+	if s.userClient == nil {
+		fmt.Printf("[MEDIA SERVICE] User client not available, defaulting to version 0\n")
+		return 0, nil
+	}
+
+	resp, err := s.userClient.GetUser(ctx, &userProto.GetUserRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if resp.Error != nil {
+		return 0, fmt.Errorf("user service error: %s", resp.Error.Message)
+	}
+
+	currentVersion := int(resp.User.BannerVersion)
+	fmt.Printf("[MEDIA SERVICE] Current banner version for user %s: %d\n", userID, currentVersion)
+	return currentVersion, nil
+}
+
+// updateUserBannerVersion 更新用户横幅版本号和URL
+func (s *mediaService) updateUserBannerVersion(ctx context.Context, userID string, version int, bannerURL string) error {
+	if s.userClient == nil {
+		fmt.Printf("[MEDIA SERVICE] User client not available, cannot update banner version\n")
+		return fmt.Errorf("user client not available")
+	}
+
+	resp, err := s.userClient.UpdateUserBanner(ctx, &userProto.UpdateUserBannerRequest{
+		UserId:        userID,
+		BannerUrl:     bannerURL,
+		BannerVersion: int32(version),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update user banner: %w", err)
+	}
+
+	if resp.Error != nil {
+		return fmt.Errorf("user service error: %s", resp.Error.Message)
+	}
+
+	fmt.Printf("[MEDIA SERVICE] Successfully updated user %s banner version to %d\n", userID, version)
+	return nil
+}
+
+// cleanupOldBanners 清理用户的旧横幅版本文件
+func (s *mediaService) cleanupOldBanners(userID string, currentVersion int) {
+	// 创建新的context避免原context被取消
+	cleanupCtx := context.Background()
+
+	// 延迟30秒后开始清理，避免客户端仍在使用旧URL时出现404
+	time.Sleep(30 * time.Second)
+
+	fmt.Printf("[MEDIA SERVICE] Starting cleanup of old banners for user %s, keeping version %d\n", userID, currentVersion)
+
+	// 保留最近2个版本，删除更老的版本
+	keepVersions := 2
+	if currentVersion > keepVersions {
+		// 删除版本1到(currentVersion - keepVersions)
+		fmt.Printf("[MEDIA SERVICE] Will delete versions 1 to %d\n", currentVersion-keepVersions)
+		for version := 1; version <= currentVersion-keepVersions; version++ {
+			// 构造完整的URL格式，与存储时使用的格式一致
+			oldObjectPath := fmt.Sprintf("banners/%s/banner_v%d.jpg", userID, version)
+			oldURL := fmt.Sprintf("http://127.0.0.1:9000/social-media/%s", oldObjectPath)
+
+			fmt.Printf("[MEDIA SERVICE] Attempting to delete old banner: %s\n", oldURL)
+			err := s.storage.DeleteFile(cleanupCtx, oldURL)
+			if err != nil {
+				fmt.Printf("[MEDIA SERVICE] Failed to delete old banner %s: %v\n", oldURL, err)
+			} else {
+				fmt.Printf("[MEDIA SERVICE] Successfully deleted old banner: %s\n", oldURL)
+			}
+
+			// 也尝试删除其他可能的扩展名
+			for _, ext := range []string{".png", ".webp"} {
+				altObjectPath := fmt.Sprintf("banners/%s/banner_v%d%s", userID, version, ext)
+				altURL := fmt.Sprintf("http://127.0.0.1:9000/social-media/%s", altObjectPath)
+				fmt.Printf("[MEDIA SERVICE] Attempting to delete alternative format: %s\n", altURL)
+				err := s.storage.DeleteFile(cleanupCtx, altURL)
+				if err != nil {
+					fmt.Printf("[MEDIA SERVICE] Failed to delete alternative format %s: %v\n", altURL, err)
+				} else {
+					fmt.Printf("[MEDIA SERVICE] Successfully deleted alternative format: %s\n", altURL)
+				}
+			}
+		}
+	} else {
+		fmt.Printf("[MEDIA SERVICE] No cleanup needed - current version (%d) <= keep versions (%d)\n", currentVersion, keepVersions)
+	}
+
+	fmt.Printf("[MEDIA SERVICE] Banner cleanup completed for user %s\n", userID)
 }

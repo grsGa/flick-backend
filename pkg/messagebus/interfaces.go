@@ -28,6 +28,7 @@ type Message struct {
 const (
 	TopicUserProfileUpdated = "user.profile.updated"
 	TopicUserAvatarUpdated  = "user.avatar.updated"
+	TopicUserBannerUpdated  = "user.banner.updated"
 )
 
 // UserProfileUpdatedEvent represents a user profile update event
@@ -37,6 +38,8 @@ type UserProfileUpdatedEvent struct {
 	DisplayName   string    `json:"display_name,omitempty"`
 	AvatarURL     string    `json:"avatar_url,omitempty"`
 	AvatarVersion int32     `json:"avatar_version,omitempty"`
+	BannerURL     string    `json:"banner_url,omitempty"`
+	BannerVersion int32     `json:"banner_version,omitempty"`
 	UpdatedAt     time.Time `json:"updated_at"`
-	EventType     string    `json:"event_type"` // "avatar_updated", "profile_updated"
+	EventType     string    `json:"event_type"` // "avatar_updated", "banner_updated", "profile_updated"
 }

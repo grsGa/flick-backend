@@ -40,6 +40,9 @@ service UserService {
 
   // 更新用户头像版本
   rpc UpdateUserAvatar(UpdateUserAvatarRequest) returns (UpdateUserAvatarResponse);
+
+  // 更新用户横幅版本
+  rpc UpdateUserBanner(UpdateUserBannerRequest) returns (UpdateUserBannerResponse);
 }
 
 // 用户信息
@@ -53,20 +56,21 @@ message User {
   string avatar_url = 7;
   int32 avatar_version = 8;
   string banner_url = 9;
-  string bio = 10;
-  string location = 11;
-  string website_url = 12;
-  bool is_email_verified = 13;
-  bool is_phone_verified = 14;
-  string login_method = 15;
-  string last_login_at = 16;
-  string status = 17;
-  string created_at = 18;
-  string updated_at = 19;
-  int32 followers_count = 20;
-  int32 following_count = 21;
-  bool is_following = 22;
-  bool is_verified = 23;
+  int32 banner_version = 10;
+  string bio = 11;
+  string location = 12;
+  string website_url = 13;
+  bool is_email_verified = 14;
+  bool is_phone_verified = 15;
+  string login_method = 16;
+  string last_login_at = 17;
+  string status = 18;
+  string created_at = 19;
+  string updated_at = 20;
+  int32 followers_count = 21;
+  int32 following_count = 22;
+  bool is_following = 23;
+  bool is_verified = 24;
 }
 
 // 获取用户请求
@@ -235,6 +239,19 @@ message UpdateUserAvatarRequest {
 
 // 更新用户头像响应
 message UpdateUserAvatarResponse {
+  User user = 1;
+  Error error = 2;
+}
+
+// 更新用户横幅请求
+message UpdateUserBannerRequest {
+  string user_id = 1;
+  string banner_url = 2;
+  int32 banner_version = 3;
+}
+
+// 更新用户横幅响应
+message UpdateUserBannerResponse {
   User user = 1;
   Error error = 2;
 }

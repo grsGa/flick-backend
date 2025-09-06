@@ -106,3 +106,17 @@ func PublishUserAvatarUpdated(ctx context.Context, mb MessageBus, userID, userna
 
 	return PublishUserProfileUpdated(ctx, mb, event)
 }
+
+// PublishUserBannerUpdated publishes a user banner updated event
+func PublishUserBannerUpdated(ctx context.Context, mb MessageBus, userID, username, bannerURL string, bannerVersion int32) error {
+	event := &UserProfileUpdatedEvent{
+		UserID:        userID,
+		Username:      username,
+		BannerURL:     bannerURL,
+		BannerVersion: bannerVersion,
+		UpdatedAt:     time.Now(),
+		EventType:     "banner_updated",
+	}
+
+	return PublishUserProfileUpdated(ctx, mb, event)
+}
