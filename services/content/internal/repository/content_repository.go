@@ -95,6 +95,16 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	visibility := req.Visibility
 	if visibility == "" {
 		visibility = "public" // 默认为公开
+	} else {
+		// 将大写值转换为小写以匹配数据库约束
+		switch strings.ToUpper(visibility) {
+		case "PUBLIC":
+			visibility = "public"
+		case "PRIVATE":
+			visibility = "private"
+		case "FOLLOWERS":
+			visibility = "followers"
+		}
 	}
 
 	replyPermission := req.ReplyPermission

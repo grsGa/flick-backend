@@ -124,6 +124,15 @@ type MediaAttachment struct {
 	Variants *MediaVariants `json:"variants,omitempty"`
 }
 
+type MediaProcessedEvent struct {
+	PostID      string         `json:"postId"`
+	MediaID     string         `json:"mediaId"`
+	Status      string         `json:"status"`
+	Variants    *MediaVariants `json:"variants,omitempty"`
+	EventType   string         `json:"eventType"`
+	ProcessedAt string         `json:"processedAt"`
+}
+
 type MediaUploadResult struct {
 	FileID  string  `json:"fileId"`
 	FileURL string  `json:"fileUrl"`
@@ -254,6 +263,12 @@ type PostConnection struct {
 	PageInfo *PageInfo  `json:"pageInfo"`
 }
 
+type PostCreatedEvent struct {
+	Post      *Post  `json:"post"`
+	EventType string `json:"eventType"`
+	CreatedAt string `json:"createdAt"`
+}
+
 type PostEdge struct {
 	Node   *Post  `json:"node"`
 	Cursor string `json:"cursor"`
@@ -264,6 +279,13 @@ type PostStats struct {
 	ReplyCount  int `json:"replyCount"`
 	RepostCount int `json:"repostCount"`
 	ViewCount   int `json:"viewCount"`
+}
+
+type PostUpdatedEvent struct {
+	PostID    string `json:"postId"`
+	Post      *Post  `json:"post"`
+	EventType string `json:"eventType"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type Query struct {

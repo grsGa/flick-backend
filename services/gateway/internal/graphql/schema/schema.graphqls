@@ -445,6 +445,9 @@ type Mutation {
 
 type Subscription {
   userProfileUpdated(userId: ID!): UserProfileUpdateEvent!
+  postCreated: PostCreatedEvent!
+  postUpdated(postId: ID!): PostUpdatedEvent!
+  mediaProcessed(postId: ID!): MediaProcessedEvent!
 }
 
 type UserProfileUpdateEvent {
@@ -455,4 +458,26 @@ type UserProfileUpdateEvent {
   avatarVersion: Int
   eventType: String!
   updatedAt: String!
+}
+
+type PostCreatedEvent {
+  post: Post!
+  eventType: String!
+  createdAt: String!
+}
+
+type PostUpdatedEvent {
+  postId: ID!
+  post: Post!
+  eventType: String!
+  updatedAt: String!
+}
+
+type MediaProcessedEvent {
+  postId: ID!
+  mediaId: ID!
+  status: String!
+  variants: MediaVariants
+  eventType: String!
+  processedAt: String!
 }

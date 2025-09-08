@@ -105,6 +105,15 @@ type ComplexityRoot struct {
 		Variants func(childComplexity int) int
 	}
 
+	MediaProcessedEvent struct {
+		EventType   func(childComplexity int) int
+		MediaID     func(childComplexity int) int
+		PostID      func(childComplexity int) int
+		ProcessedAt func(childComplexity int) int
+		Status      func(childComplexity int) int
+		Variants    func(childComplexity int) int
+	}
+
 	MediaUploadResult struct {
 		FileID  func(childComplexity int) int
 		FileURL func(childComplexity int) int
@@ -249,6 +258,12 @@ type ComplexityRoot struct {
 		PageInfo func(childComplexity int) int
 	}
 
+	PostCreatedEvent struct {
+		CreatedAt func(childComplexity int) int
+		EventType func(childComplexity int) int
+		Post      func(childComplexity int) int
+	}
+
 	PostEdge struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
@@ -259,6 +274,13 @@ type ComplexityRoot struct {
 		ReplyCount  func(childComplexity int) int
 		RepostCount func(childComplexity int) int
 		ViewCount   func(childComplexity int) int
+	}
+
+	PostUpdatedEvent struct {
+		EventType func(childComplexity int) int
+		Post      func(childComplexity int) int
+		PostID    func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
 	}
 
 	Query struct {
@@ -302,6 +324,9 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
+		MediaProcessed     func(childComplexity int, postID string) int
+		PostCreated        func(childComplexity int) int
+		PostUpdated        func(childComplexity int, postID string) int
 		UserProfileUpdated func(childComplexity int, userID string) int
 	}
 
@@ -399,6 +424,9 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	UserProfileUpdated(ctx context.Context, userID string) (<-chan *model.UserProfileUpdateEvent, error)
+	PostCreated(ctx context.Context) (<-chan *model.PostCreatedEvent, error)
+	PostUpdated(ctx context.Context, postID string) (<-chan *model.PostUpdatedEvent, error)
+	MediaProcessed(ctx context.Context, postID string) (<-chan *model.MediaProcessedEvent, error)
 }
 
 type executableSchema struct {
@@ -643,6 +671,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MediaAttachment.Variants(childComplexity), true
+
+	case "MediaProcessedEvent.eventType":
+		if e.complexity.MediaProcessedEvent.EventType == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.EventType(childComplexity), true
+
+	case "MediaProcessedEvent.mediaId":
+		if e.complexity.MediaProcessedEvent.MediaID == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.MediaID(childComplexity), true
+
+	case "MediaProcessedEvent.postId":
+		if e.complexity.MediaProcessedEvent.PostID == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.PostID(childComplexity), true
+
+	case "MediaProcessedEvent.processedAt":
+		if e.complexity.MediaProcessedEvent.ProcessedAt == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.ProcessedAt(childComplexity), true
+
+	case "MediaProcessedEvent.status":
+		if e.complexity.MediaProcessedEvent.Status == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.Status(childComplexity), true
+
+	case "MediaProcessedEvent.variants":
+		if e.complexity.MediaProcessedEvent.Variants == nil {
+			break
+		}
+
+		return e.complexity.MediaProcessedEvent.Variants(childComplexity), true
 
 	case "MediaUploadResult.fileId":
 		if e.complexity.MediaUploadResult.FileID == nil {
@@ -1457,6 +1527,27 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PostConnection.PageInfo(childComplexity), true
 
+	case "PostCreatedEvent.createdAt":
+		if e.complexity.PostCreatedEvent.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.PostCreatedEvent.CreatedAt(childComplexity), true
+
+	case "PostCreatedEvent.eventType":
+		if e.complexity.PostCreatedEvent.EventType == nil {
+			break
+		}
+
+		return e.complexity.PostCreatedEvent.EventType(childComplexity), true
+
+	case "PostCreatedEvent.post":
+		if e.complexity.PostCreatedEvent.Post == nil {
+			break
+		}
+
+		return e.complexity.PostCreatedEvent.Post(childComplexity), true
+
 	case "PostEdge.cursor":
 		if e.complexity.PostEdge.Cursor == nil {
 			break
@@ -1498,6 +1589,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PostStats.ViewCount(childComplexity), true
+
+	case "PostUpdatedEvent.eventType":
+		if e.complexity.PostUpdatedEvent.EventType == nil {
+			break
+		}
+
+		return e.complexity.PostUpdatedEvent.EventType(childComplexity), true
+
+	case "PostUpdatedEvent.post":
+		if e.complexity.PostUpdatedEvent.Post == nil {
+			break
+		}
+
+		return e.complexity.PostUpdatedEvent.Post(childComplexity), true
+
+	case "PostUpdatedEvent.postId":
+		if e.complexity.PostUpdatedEvent.PostID == nil {
+			break
+		}
+
+		return e.complexity.PostUpdatedEvent.PostID(childComplexity), true
+
+	case "PostUpdatedEvent.updatedAt":
+		if e.complexity.PostUpdatedEvent.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.PostUpdatedEvent.UpdatedAt(childComplexity), true
 
 	case "Query.checkReplyPermission":
 		if e.complexity.Query.CheckReplyPermission == nil {
@@ -1820,6 +1939,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SearchResults.Users(childComplexity), true
+
+	case "Subscription.mediaProcessed":
+		if e.complexity.Subscription.MediaProcessed == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_mediaProcessed_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.MediaProcessed(childComplexity, args["postId"].(string)), true
+
+	case "Subscription.postCreated":
+		if e.complexity.Subscription.PostCreated == nil {
+			break
+		}
+
+		return e.complexity.Subscription.PostCreated(childComplexity), true
+
+	case "Subscription.postUpdated":
+		if e.complexity.Subscription.PostUpdated == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_postUpdated_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.PostUpdated(childComplexity, args["postId"].(string)), true
 
 	case "Subscription.userProfileUpdated":
 		if e.complexity.Subscription.UserProfileUpdated == nil {
@@ -2593,6 +2743,9 @@ type Mutation {
 
 type Subscription {
   userProfileUpdated(userId: ID!): UserProfileUpdateEvent!
+  postCreated: PostCreatedEvent!
+  postUpdated(postId: ID!): PostUpdatedEvent!
+  mediaProcessed(postId: ID!): MediaProcessedEvent!
 }
 
 type UserProfileUpdateEvent {
@@ -2603,6 +2756,28 @@ type UserProfileUpdateEvent {
   avatarVersion: Int
   eventType: String!
   updatedAt: String!
+}
+
+type PostCreatedEvent {
+  post: Post!
+  eventType: String!
+  createdAt: String!
+}
+
+type PostUpdatedEvent {
+  postId: ID!
+  post: Post!
+  eventType: String!
+  updatedAt: String!
+}
+
+type MediaProcessedEvent {
+  postId: ID!
+  mediaId: ID!
+  status: String!
+  variants: MediaVariants
+  eventType: String!
+  processedAt: String!
 }
 `, BuiltIn: false},
 	{Name: "../../../federation/directives.graphql", Input: `
@@ -3248,6 +3423,28 @@ func (ec *executionContext) field_Query_userReplies_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["after"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_mediaProcessed_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "postId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["postId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_postUpdated_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "postId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["postId"] = arg0
 	return args, nil
 }
 
@@ -4831,6 +5028,287 @@ func (ec *executionContext) fieldContext_MediaAttachment_variants(_ context.Cont
 				return ec.fieldContext_MediaVariants_highRes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MediaVariants", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_postId(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_postId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PostID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_postId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_mediaId(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_mediaId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MediaID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_mediaId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_status(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_variants(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_variants(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Variants, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MediaVariants)
+	fc.Result = res
+	return ec.marshalOMediaVariants2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaVariants(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_variants(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "thumbnail":
+				return ec.fieldContext_MediaVariants_thumbnail(ctx, field)
+			case "small":
+				return ec.fieldContext_MediaVariants_small(ctx, field)
+			case "medium":
+				return ec.fieldContext_MediaVariants_medium(ctx, field)
+			case "large":
+				return ec.fieldContext_MediaVariants_large(ctx, field)
+			case "original":
+				return ec.fieldContext_MediaVariants_original(ctx, field)
+			case "preview":
+				return ec.fieldContext_MediaVariants_preview(ctx, field)
+			case "lowRes":
+				return ec.fieldContext_MediaVariants_lowRes(ctx, field)
+			case "midRes":
+				return ec.fieldContext_MediaVariants_midRes(ctx, field)
+			case "highRes":
+				return ec.fieldContext_MediaVariants_highRes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaVariants", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_eventType(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_eventType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EventType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaProcessedEvent_processedAt(ctx context.Context, field graphql.CollectedField, obj *model.MediaProcessedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaProcessedEvent_processedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProcessedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaProcessedEvent_processedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaProcessedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10193,6 +10671,188 @@ func (ec *executionContext) fieldContext_PostConnection_pageInfo(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _PostCreatedEvent_post(ctx context.Context, field graphql.CollectedField, obj *model.PostCreatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCreatedEvent_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Post, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Post)
+	fc.Result = res
+	return ec.marshalNPost2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCreatedEvent_post(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCreatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "visibility":
+				return ec.fieldContext_Post_visibility(ctx, field)
+			case "replyPermission":
+				return ec.fieldContext_Post_replyPermission(ctx, field)
+			case "parentId":
+				return ec.fieldContext_Post_parentId(ctx, field)
+			case "rootId":
+				return ec.fieldContext_Post_rootId(ctx, field)
+			case "repostId":
+				return ec.fieldContext_Post_repostId(ctx, field)
+			case "isReply":
+				return ec.fieldContext_Post_isReply(ctx, field)
+			case "replyLevel":
+				return ec.fieldContext_Post_replyLevel(ctx, field)
+			case "hasMedia":
+				return ec.fieldContext_Post_hasMedia(ctx, field)
+			case "hasPoll":
+				return ec.fieldContext_Post_hasPoll(ctx, field)
+			case "media":
+				return ec.fieldContext_Post_media(ctx, field)
+			case "mediaAttachments":
+				return ec.fieldContext_Post_mediaAttachments(ctx, field)
+			case "mentionedUsers":
+				return ec.fieldContext_Post_mentionedUsers(ctx, field)
+			case "tags":
+				return ec.fieldContext_Post_tags(ctx, field)
+			case "poll":
+				return ec.fieldContext_Post_poll(ctx, field)
+			case "stats":
+				return ec.fieldContext_Post_stats(ctx, field)
+			case "interaction":
+				return ec.fieldContext_Post_interaction(ctx, field)
+			case "replies":
+				return ec.fieldContext_Post_replies(ctx, field)
+			case "parentPost":
+				return ec.fieldContext_Post_parentPost(ctx, field)
+			case "replyMention":
+				return ec.fieldContext_Post_replyMention(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostCreatedEvent_eventType(ctx context.Context, field graphql.CollectedField, obj *model.PostCreatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCreatedEvent_eventType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EventType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCreatedEvent_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCreatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostCreatedEvent_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.PostCreatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostCreatedEvent_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostCreatedEvent_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostCreatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PostEdge_node(ctx context.Context, field graphql.CollectedField, obj *model.PostEdge) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PostEdge_node(ctx, field)
 	if err != nil {
@@ -10502,6 +11162,232 @@ func (ec *executionContext) fieldContext_PostStats_viewCount(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostUpdatedEvent_postId(ctx context.Context, field graphql.CollectedField, obj *model.PostUpdatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostUpdatedEvent_postId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PostID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostUpdatedEvent_postId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostUpdatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostUpdatedEvent_post(ctx context.Context, field graphql.CollectedField, obj *model.PostUpdatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostUpdatedEvent_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Post, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Post)
+	fc.Result = res
+	return ec.marshalNPost2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPost(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostUpdatedEvent_post(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostUpdatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Post_id(ctx, field)
+			case "content":
+				return ec.fieldContext_Post_content(ctx, field)
+			case "author":
+				return ec.fieldContext_Post_author(ctx, field)
+			case "visibility":
+				return ec.fieldContext_Post_visibility(ctx, field)
+			case "replyPermission":
+				return ec.fieldContext_Post_replyPermission(ctx, field)
+			case "parentId":
+				return ec.fieldContext_Post_parentId(ctx, field)
+			case "rootId":
+				return ec.fieldContext_Post_rootId(ctx, field)
+			case "repostId":
+				return ec.fieldContext_Post_repostId(ctx, field)
+			case "isReply":
+				return ec.fieldContext_Post_isReply(ctx, field)
+			case "replyLevel":
+				return ec.fieldContext_Post_replyLevel(ctx, field)
+			case "hasMedia":
+				return ec.fieldContext_Post_hasMedia(ctx, field)
+			case "hasPoll":
+				return ec.fieldContext_Post_hasPoll(ctx, field)
+			case "media":
+				return ec.fieldContext_Post_media(ctx, field)
+			case "mediaAttachments":
+				return ec.fieldContext_Post_mediaAttachments(ctx, field)
+			case "mentionedUsers":
+				return ec.fieldContext_Post_mentionedUsers(ctx, field)
+			case "tags":
+				return ec.fieldContext_Post_tags(ctx, field)
+			case "poll":
+				return ec.fieldContext_Post_poll(ctx, field)
+			case "stats":
+				return ec.fieldContext_Post_stats(ctx, field)
+			case "interaction":
+				return ec.fieldContext_Post_interaction(ctx, field)
+			case "replies":
+				return ec.fieldContext_Post_replies(ctx, field)
+			case "parentPost":
+				return ec.fieldContext_Post_parentPost(ctx, field)
+			case "replyMention":
+				return ec.fieldContext_Post_replyMention(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Post_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Post_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostUpdatedEvent_eventType(ctx context.Context, field graphql.CollectedField, obj *model.PostUpdatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostUpdatedEvent_eventType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EventType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostUpdatedEvent_eventType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostUpdatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PostUpdatedEvent_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.PostUpdatedEvent) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PostUpdatedEvent_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PostUpdatedEvent_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PostUpdatedEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12498,6 +13384,234 @@ func (ec *executionContext) fieldContext_Subscription_userProfileUpdated(ctx con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Subscription_userProfileUpdated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_postCreated(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_postCreated(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().PostCreated(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.PostCreatedEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPostCreatedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostCreatedEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_postCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "post":
+				return ec.fieldContext_PostCreatedEvent_post(ctx, field)
+			case "eventType":
+				return ec.fieldContext_PostCreatedEvent_eventType(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_PostCreatedEvent_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PostCreatedEvent", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_postUpdated(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_postUpdated(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().PostUpdated(rctx, fc.Args["postId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.PostUpdatedEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPostUpdatedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostUpdatedEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_postUpdated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "postId":
+				return ec.fieldContext_PostUpdatedEvent_postId(ctx, field)
+			case "post":
+				return ec.fieldContext_PostUpdatedEvent_post(ctx, field)
+			case "eventType":
+				return ec.fieldContext_PostUpdatedEvent_eventType(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_PostUpdatedEvent_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PostUpdatedEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_postUpdated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_mediaProcessed(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_mediaProcessed(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().MediaProcessed(rctx, fc.Args["postId"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan *model.MediaProcessedEvent):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNMediaProcessedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaProcessedEvent(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_mediaProcessed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "postId":
+				return ec.fieldContext_MediaProcessedEvent_postId(ctx, field)
+			case "mediaId":
+				return ec.fieldContext_MediaProcessedEvent_mediaId(ctx, field)
+			case "status":
+				return ec.fieldContext_MediaProcessedEvent_status(ctx, field)
+			case "variants":
+				return ec.fieldContext_MediaProcessedEvent_variants(ctx, field)
+			case "eventType":
+				return ec.fieldContext_MediaProcessedEvent_eventType(ctx, field)
+			case "processedAt":
+				return ec.fieldContext_MediaProcessedEvent_processedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaProcessedEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_mediaProcessed_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -16697,6 +17811,67 @@ func (ec *executionContext) _MediaAttachment(ctx context.Context, sel ast.Select
 	return out
 }
 
+var mediaProcessedEventImplementors = []string{"MediaProcessedEvent"}
+
+func (ec *executionContext) _MediaProcessedEvent(ctx context.Context, sel ast.SelectionSet, obj *model.MediaProcessedEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaProcessedEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaProcessedEvent")
+		case "postId":
+			out.Values[i] = ec._MediaProcessedEvent_postId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mediaId":
+			out.Values[i] = ec._MediaProcessedEvent_mediaId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._MediaProcessedEvent_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "variants":
+			out.Values[i] = ec._MediaProcessedEvent_variants(ctx, field, obj)
+		case "eventType":
+			out.Values[i] = ec._MediaProcessedEvent_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "processedAt":
+			out.Values[i] = ec._MediaProcessedEvent_processedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mediaUploadResultImplementors = []string{"MediaUploadResult"}
 
 func (ec *executionContext) _MediaUploadResult(ctx context.Context, sel ast.SelectionSet, obj *model.MediaUploadResult) graphql.Marshaler {
@@ -17701,6 +18876,55 @@ func (ec *executionContext) _PostConnection(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var postCreatedEventImplementors = []string{"PostCreatedEvent"}
+
+func (ec *executionContext) _PostCreatedEvent(ctx context.Context, sel ast.SelectionSet, obj *model.PostCreatedEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, postCreatedEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PostCreatedEvent")
+		case "post":
+			out.Values[i] = ec._PostCreatedEvent_post(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventType":
+			out.Values[i] = ec._PostCreatedEvent_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._PostCreatedEvent_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var postEdgeImplementors = []string{"PostEdge"}
 
 func (ec *executionContext) _PostEdge(ctx context.Context, sel ast.SelectionSet, obj *model.PostEdge) graphql.Marshaler {
@@ -17773,6 +18997,60 @@ func (ec *executionContext) _PostStats(ctx context.Context, sel ast.SelectionSet
 			}
 		case "viewCount":
 			out.Values[i] = ec._PostStats_viewCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var postUpdatedEventImplementors = []string{"PostUpdatedEvent"}
+
+func (ec *executionContext) _PostUpdatedEvent(ctx context.Context, sel ast.SelectionSet, obj *model.PostUpdatedEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, postUpdatedEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PostUpdatedEvent")
+		case "postId":
+			out.Values[i] = ec._PostUpdatedEvent_postId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "post":
+			out.Values[i] = ec._PostUpdatedEvent_post(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "eventType":
+			out.Values[i] = ec._PostUpdatedEvent_eventType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._PostUpdatedEvent_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18429,6 +19707,12 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "userProfileUpdated":
 		return ec._Subscription_userProfileUpdated(ctx, fields[0])
+	case "postCreated":
+		return ec._Subscription_postCreated(ctx, fields[0])
+	case "postUpdated":
+		return ec._Subscription_postUpdated(ctx, fields[0])
+	case "mediaProcessed":
+		return ec._Subscription_mediaProcessed(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -19450,6 +20734,20 @@ func (ec *executionContext) marshalNMediaAttachment2ᚕgithubᚗcomᚋflickᚋba
 	return ret
 }
 
+func (ec *executionContext) marshalNMediaProcessedEvent2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaProcessedEvent(ctx context.Context, sel ast.SelectionSet, v model.MediaProcessedEvent) graphql.Marshaler {
+	return ec._MediaProcessedEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMediaProcessedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaProcessedEvent(ctx context.Context, sel ast.SelectionSet, v *model.MediaProcessedEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MediaProcessedEvent(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐMediaType(ctx context.Context, v any) (model.MediaType, error) {
 	var res model.MediaType
 	err := res.UnmarshalGQL(v)
@@ -19734,6 +21032,20 @@ func (ec *executionContext) marshalNPost2ᚖgithubᚗcomᚋflickᚋbackendᚋser
 	return ec._Post(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPostCreatedEvent2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostCreatedEvent(ctx context.Context, sel ast.SelectionSet, v model.PostCreatedEvent) graphql.Marshaler {
+	return ec._PostCreatedEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPostCreatedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostCreatedEvent(ctx context.Context, sel ast.SelectionSet, v *model.PostCreatedEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PostCreatedEvent(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPostEdge2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostEdge(ctx context.Context, sel ast.SelectionSet, v model.PostEdge) graphql.Marshaler {
 	return ec._PostEdge(ctx, sel, &v)
 }
@@ -19790,6 +21102,20 @@ func (ec *executionContext) marshalNPostStats2ᚖgithubᚗcomᚋflickᚋbackend�
 		return graphql.Null
 	}
 	return ec._PostStats(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPostUpdatedEvent2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostUpdatedEvent(ctx context.Context, sel ast.SelectionSet, v model.PostUpdatedEvent) graphql.Marshaler {
+	return ec._PostUpdatedEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPostUpdatedEvent2ᚖgithubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostUpdatedEvent(ctx context.Context, sel ast.SelectionSet, v *model.PostUpdatedEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PostUpdatedEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNPostVisibility2githubᚗcomᚋflickᚋbackendᚋservicesᚋgatewayᚋinternalᚋgraphqlᚋmodelᚐPostVisibility(ctx context.Context, v any) (model.PostVisibility, error) {

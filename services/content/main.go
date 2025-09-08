@@ -9,6 +9,8 @@ import (
 	"github.com/flick/backend/services/content/internal/repository"
 	"github.com/flick/backend/services/content/internal/server"
 	"github.com/flick/backend/services/content/internal/service"
+	"github.com/flick/backend/services/content/internal/events"
+	"github.com/flick/backend/services/content/internal/media"
 )
 
 func main() {
@@ -26,8 +28,14 @@ func main() {
 	// 初始化仓库
 	postRepo := repository.NewPostRepository()
 
+	// 初始化事件发布器
+	eventPublisher := events.NewEventPublisher()
+
+	// 初始化媒体处理器
+	mediaProcessor := media.NewMediaProcessor(eventPublisher)
+
 	// 初始化服务（统一使用PostService）
-	postService := service.NewPostService(postRepo)
+	postService := service.NewPostService(postRepo, eventPublisher, mediaProcessor)
 
 	// 初始化服务端
 	grpcServer := server.NewGRPCServer(postService)

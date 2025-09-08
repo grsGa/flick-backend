@@ -12,15 +12,30 @@ import (
 	"github.com/google/uuid"
 )
 
+// EventPublisher 事件发布接口
+type EventPublisher interface {
+	PublishPostCreated(ctx context.Context, post *proto.Post) error
+	PublishMediaProcessed(ctx context.Context, postId, mediaId, status string) error
+}
+
+// MediaProcessor 媒体处理接口
+type MediaProcessor interface {
+	ProcessMediaAsync(ctx context.Context, postId string, mediaUrls []string) error
+}
+
 // postService 帖子服务实现
 type postService struct {
-	postRepo repository.PostRepository
+	postRepo       repository.PostRepository
+	eventPublisher EventPublisher
+	mediaProcessor MediaProcessor
 }
 
 // NewPostService 创建帖子服务实例
-func NewPostService(postRepo repository.PostRepository) PostService {
+func NewPostService(postRepo repository.PostRepository, eventPublisher EventPublisher, mediaProcessor MediaProcessor) PostService {
 	return &postService{
-		postRepo: postRepo,
+		postRepo:       postRepo,
+		eventPublisher: eventPublisher,
+		mediaProcessor: mediaProcessor,
 	}
 }
 
@@ -64,7 +79,7 @@ func (s *postService) CreatePost(ctx context.Context, req *proto.CreatePostReque
 		}
 	}
 
-	// 创建帖子
+	// 创建帖子 - 立即创建，媒体处理状态为 "processing"
 	fmt.Printf("[Content Service] Calling repository CreatePost\n")
 	post, err := s.postRepo.CreatePost(ctx, req)
 	if err != nil {
@@ -79,8 +94,23 @@ func (s *postService) CreatePost(ctx context.Context, req *proto.CreatePostReque
 
 	fmt.Printf("[Content Service] Post created successfully: %+v\n", post)
 
-	// TODO: 发布帖子创建事件给interaction-service
-	// s.publishPostCreatedEvent(post)
+	// 发布帖子创建事件 - 实时通知其他用户
+	if s.eventPublisher != nil {
+		go func() {
+			if err := s.eventPublisher.PublishPostCreated(context.Background(), post); err != nil {
+				fmt.Printf("[Content Service] Failed to publish post created event: %v\n", err)
+			}
+		}()
+	}
+
+	// 异步处理媒体 - 不阻塞帖子创建
+	if len(req.MediaUrls) > 0 && s.mediaProcessor != nil {
+		go func() {
+			if err := s.mediaProcessor.ProcessMediaAsync(context.Background(), post.Id, req.MediaUrls); err != nil {
+				fmt.Printf("[Content Service] Failed to start media processing: %v\n", err)
+			}
+		}()
+	}
 
 	return &proto.CreatePostResponse{
 		Post: post,
@@ -214,7 +244,7 @@ func (s *postService) validateCreatePostRequest(req *proto.CreatePostRequest) er
 	}
 
 	// 检查可见性
-	if req.Visibility != "" && req.Visibility != "public" && req.Visibility != "private" && req.Visibility != "followers" {
+	if req.Visibility != "" && req.Visibility != "PUBLIC" && req.Visibility != "PRIVATE" && req.Visibility != "FOLLOWERS" && req.Visibility != "public" && req.Visibility != "private" && req.Visibility != "followers" {
 		return errors.New("invalid visibility value")
 	}
 
