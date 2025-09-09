@@ -231,24 +231,24 @@ func setupRoutes(r *gin.Engine) {
 
 	// GraphQL endpoint
 	graphqlPath := "/graphql"
-	
+
 	// Create GraphQL server with proper transport configuration
 	// IMPORTANT: Use handler.New() and add transports manually to avoid conflicts
 	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: resolver.NewResolver(authServiceClient, userServiceClient, contentServiceClient, interactionServiceClient, mediaServiceClient, nil)}))
-	
+
 	// Configure multipart upload transport FIRST with proper configuration
 	srv.AddTransport(&transport.MultipartForm{
 		MaxUploadSize: 100 << 20, // 100MB max file size
 		MaxMemory:     32 << 20,  // 32MB in memory, rest goes to temp files
 	})
-	
+
 	// Add other transports in correct order
 	srv.AddTransport(&transport.POST{})
 	srv.AddTransport(&transport.GET{})
 	srv.AddTransport(&transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
 	})
-	
+
 	srv.Use(extension.Introspection{})
 	queryHandler := srv
 
@@ -291,11 +291,11 @@ func setupRoutes(r *gin.Engine) {
 			// The middleware already added the claims to the request context.
 			// gqlgen will automatically pick it up.
 			fmt.Printf("[Gateway] Calling GraphQL handler\n")
-			
+
 			// Capture response to log errors
 			responseWriter := &responseCapture{ResponseWriter: c.Writer}
 			queryHandler.ServeHTTP(responseWriter, c.Request)
-			
+
 			// Log response details for multipart requests
 			if strings.Contains(contentType, "multipart/form-data") {
 				fmt.Printf("[Gateway] MULTIPART RESPONSE STATUS: %d\n", responseWriter.statusCode)
@@ -303,7 +303,7 @@ func setupRoutes(r *gin.Engine) {
 					fmt.Printf("[Gateway] MULTIPART RESPONSE BODY: %s\n", string(responseWriter.body))
 				}
 			}
-			
+
 			fmt.Printf("[Gateway] GraphQL handler completed\n")
 		})
 	}

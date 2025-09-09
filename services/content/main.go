@@ -25,11 +25,11 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// 初始化仓库
-	postRepo := repository.NewPostRepository()
-
 	// 初始化事件发布器
 	eventPublisher := events.NewEventPublisher()
+
+	// 初始化仓库
+	postRepo := repository.NewPostRepository(eventPublisher)
 
 	// 初始化媒体处理器
 	mediaProcessor := media.NewMediaProcessor(eventPublisher)

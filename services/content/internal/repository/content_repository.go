@@ -20,15 +20,22 @@ import (
 	user_proto "github.com/flick/backend/services/user/proto"
 )
 
+// EventPublisher 事件发布接口
+type EventPublisher interface {
+	PublishReplyDeleted(ctx context.Context, eventData map[string]interface{}) error
+	PublishReplyCreated(ctx context.Context, eventData map[string]interface{}) error
+}
+
 // postRepository 帖子仓储实现
 type postRepository struct {
-	db          *gorm.DB
-	userClient  user_proto.UserServiceClient
-	mediaClient media_proto.MediaServiceClient
+	db             *gorm.DB
+	userClient     user_proto.UserServiceClient
+	mediaClient    media_proto.MediaServiceClient
+	eventPublisher EventPublisher
 }
 
 // NewPostRepository 创建帖子仓储实例
-func NewPostRepository() PostRepository {
+func NewPostRepository(eventPublisher EventPublisher) PostRepository {
 	fmt.Printf("[Content Repository] Initializing PostRepository with user service integration\n")
 
 	// 连接用户服务
@@ -59,9 +66,10 @@ func NewPostRepository() PostRepository {
 	}
 
 	return &postRepository{
-		db:          database.GetDB(),
-		userClient:  userClient,
-		mediaClient: mediaClient,
+		db:             database.GetDB(),
+		userClient:     userClient,
+		mediaClient:    mediaClient,
+		eventPublisher: eventPublisher,
 	}
 }
 
@@ -504,6 +512,23 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 
 	fmt.Printf("[Content Repository] Transaction committed successfully\n")
 
+	// 如果创建的是回复，发布回复创建事件以更新父帖子的回复计数
+	if post.IsReply && r.eventPublisher != nil {
+		eventData := map[string]interface{}{
+			"reply_id":   post.ID,
+			"parent_id":  post.ParentID,
+			"root_id":    post.RootID,
+			"user_id":    post.UserID,
+			"level":      post.ReplyLevel,
+			"created_at": post.CreatedAt.Format(time.RFC3339),
+		}
+		
+		if err := r.eventPublisher.PublishReplyCreated(ctx, eventData); err != nil {
+			// 记录错误但不影响创建操作
+			fmt.Printf("[Content Repository] Failed to publish reply created event: %v\n", err)
+		}
+	}
+
 	// 构建返回的帖子对象
 	fmt.Printf("[Content Repository] Building response with committed data\n")
 	return r.buildPostProto(ctx, post, req.MediaUrls, req.MentionedUsers, req.Tags, poll, req.PollData)
@@ -803,6 +828,16 @@ func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string)
 
 // DeletePost 删除帖子（软删除）
 func (r *postRepository) DeletePost(ctx context.Context, id, userID string) error {
+	// 首先获取要删除的帖子信息，用于后续的计数更新
+	var post models.Post
+	if err := r.db.Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).First(&post).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("post not found or not authorized")
+		}
+		return fmt.Errorf("failed to get post: %w", err)
+	}
+
+	// 执行软删除
 	result := r.db.Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).
 		Update("deleted_at", time.Now())
 
@@ -812,6 +847,23 @@ func (r *postRepository) DeletePost(ctx context.Context, id, userID string) erro
 
 	if result.RowsAffected == 0 {
 		return errors.New("post not found or not authorized")
+	}
+
+	// 如果删除的是回复，需要发布回复删除事件以更新父帖子的回复计数
+	if post.IsReply && r.eventPublisher != nil {
+		eventData := map[string]interface{}{
+			"reply_id":   post.ID,
+			"parent_id":  post.ParentID,
+			"root_id":    post.RootID,
+			"user_id":    post.UserID,
+			"level":      post.ReplyLevel,
+			"deleted_at": time.Now().Format(time.RFC3339),
+		}
+		
+		if err := r.eventPublisher.PublishReplyDeleted(ctx, eventData); err != nil {
+			// 记录错误但不影响删除操作
+			fmt.Printf("[Content Repository] Failed to publish reply deleted event: %v\n", err)
+		}
 	}
 
 	return nil
@@ -924,13 +976,8 @@ func (r *postRepository) buildPostProto(ctx context.Context, post *models.Post, 
 	// 构建统计信息
 	var replyCount int64
 	if post.IsReply && post.ReplyLevel == 2 {
-		// 对于二级回复：统计专门回复该帖子的数量
-		// 查找所有ReplyMention记录中提及该帖子作者，且这些回复与该帖子在同一个父级下且创建时间晚于该帖子的回复
-		r.db.Table("posts p").
-			Joins("JOIN reply_mentions rm ON p.id = rm.reply_id").
-			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL",
-				post.UserID, post.ParentID, post.CreatedAt).
-			Count(&replyCount)
+		// 对于二级回复：始终返回0，因为对二级回复的回复会归类到父级一级回复下
+		replyCount = 0
 	} else if post.IsReply && post.ReplyLevel == 1 {
 		// 对于一级回复：统计所有以它为父级的二级回复
 		r.db.Model(&models.Post{}).Where("parent_id = ? AND is_reply = true AND deleted_at IS NULL", post.ID).Count(&replyCount)
@@ -1343,13 +1390,15 @@ func (r *postRepository) getMediaVariants(ctx context.Context, mediaID string) *
 	return variants
 }
 
-// GetPostReplies 获取帖子的回复列表
+// GetPostReplies 获取帖子的回复列表 - 优化版本
 func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetPostReplies called for postID: %s\n", postID)
 
-	// 获取直接回复和嵌套回复 - 使用 root_id 或 parent_id 匹配
-	query := r.db.Where("(parent_id = ? OR (root_id = ? AND reply_level = 2)) AND deleted_at IS NULL", postID, postID).
-		Order("reply_level ASC, created_at DESC")
+	// 优化查询：使用索引友好的查询方式
+	// 1. 先获取直接回复 (reply_level = 1, parent_id = postID)
+	// 2. 再获取嵌套回复 (reply_level = 2, root_id = postID)
+	query := r.db.Where("((parent_id = ? AND reply_level = 1) OR (root_id = ? AND reply_level = 2)) AND is_reply = true AND deleted_at IS NULL", postID, postID).
+		Order("reply_level ASC, created_at ASC") // 改为ASC，保持时间顺序
 
 	// 处理分页
 	if cursor != "" {
@@ -1529,13 +1578,8 @@ func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.
 	// 构建统计信息
 	var replyCount int64
 	if post.IsReply && post.ReplyLevel == 2 {
-		// 对于二级回复：统计专门回复该帖子的数量
-		// 查找所有ReplyMention记录中提及该帖子作者，且这些回复与该帖子在同一个父级下且创建时间晚于该帖子的回复
-		r.db.Table("posts p").
-			Joins("JOIN reply_mentions rm ON p.id = rm.reply_id").
-			Where("rm.mentioned_user_id = ? AND p.parent_id = ? AND p.created_at > ? AND p.is_reply = true AND p.deleted_at IS NULL",
-				post.UserID, post.ParentID, post.CreatedAt).
-			Count(&replyCount)
+		// 对于二级回复：始终返回0，因为对二级回复的回复会归类到父级一级回复下
+		replyCount = 0
 	} else if post.IsReply && post.ReplyLevel == 1 {
 		// 对于一级回复：统计所有以它为父级的二级回复
 		r.db.Model(&models.Post{}).Where("parent_id = ? AND is_reply = true AND deleted_at IS NULL", post.ID).Count(&replyCount)

@@ -53,7 +53,6 @@ func (p *EventPublisher) PublishMediaProcessed(ctx context.Context, postId, medi
 		ProcessedAt: time.Now().Format(time.RFC3339),
 	}
 
-	// 序列化事件
 	eventData, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("failed to marshal media processed event: %w", err)
@@ -61,6 +60,56 @@ func (p *EventPublisher) PublishMediaProcessed(ctx context.Context, postId, medi
 
 	// 发布事件
 	fmt.Printf("[EventPublisher] Publishing MEDIA_PROCESSED event: %s\n", string(eventData))
+	
+	// TODO: 实际发布到消息队列
+	
+	return nil
+}
+
+// PublishReplyDeleted 发布回复删除事件
+func (p *EventPublisher) PublishReplyDeleted(ctx context.Context, eventData map[string]interface{}) error {
+	event := map[string]interface{}{
+		"event_type": "REPLY_DELETED",
+		"timestamp":  time.Now(),
+	}
+	
+	// 合并事件数据
+	for k, v := range eventData {
+		event[k] = v
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal reply deleted event: %w", err)
+	}
+
+	// 发布事件
+	fmt.Printf("[EventPublisher] Publishing REPLY_DELETED event: %s\n", string(data))
+	
+	// TODO: 实际发布到消息队列
+	
+	return nil
+}
+
+// PublishReplyCreated 发布回复创建事件
+func (p *EventPublisher) PublishReplyCreated(ctx context.Context, eventData map[string]interface{}) error {
+	event := map[string]interface{}{
+		"event_type": "REPLY_CREATED",
+		"timestamp":  time.Now(),
+	}
+	
+	// 合并事件数据
+	for k, v := range eventData {
+		event[k] = v
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal reply created event: %w", err)
+	}
+
+	// 发布事件
+	fmt.Printf("[EventPublisher] Publishing REPLY_CREATED event: %s\n", string(data))
 	
 	// TODO: 实际发布到消息队列
 	

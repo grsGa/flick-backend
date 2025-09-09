@@ -16,6 +16,8 @@ import (
 type EventPublisher interface {
 	PublishPostCreated(ctx context.Context, post *proto.Post) error
 	PublishMediaProcessed(ctx context.Context, postId, mediaId, status string) error
+	PublishReplyDeleted(ctx context.Context, eventData map[string]interface{}) error
+	PublishReplyCreated(ctx context.Context, eventData map[string]interface{}) error
 }
 
 // MediaProcessor 媒体处理接口
