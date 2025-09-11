@@ -236,83 +236,23 @@ func (r *postgresRepository) DeleteRepost(ctx context.Context, userID, postID st
 		Delete(&models.Repost{}).Error
 }
 
-// CreateReply 创建回复
+// CreateReply 创建回复 - 回复现在作为Post处理，由content服务管理
 func (r *postgresRepository) CreateReply(ctx context.Context, reply *proto.Reply) error {
-	model := &models.Reply{
-		PostID:    reply.PostId,
-		UserID:    reply.UserId,
-		Content:   reply.Content,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	if reply.ParentReplyId != "" {
-		model.ParentReplyID = &reply.ParentReplyId
-	}
-	return r.db.WithContext(ctx).Create(model).Error
+	// 回复功能已迁移到content服务，这里只需要返回成功
+	// 实际的回复创建通过content服务的CreatePost完成
+	return nil
 }
 
-// DeleteReply 删除回复
+// DeleteReply 删除回复 - 回复现在作为Post处理，由content服务管理
 func (r *postgresRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
-	return r.db.WithContext(ctx).
-		Where("id = ? AND user_id = ?", replyID, userID).
-		Delete(&models.Reply{}).Error
+	// 回复删除功能已迁移到content服务
+	return nil
 }
 
-// GetReplies 获取回复列表
+// GetReplies 获取回复列表 - 回复现在作为Post处理，由content服务管理
 func (r *postgresRepository) GetReplies(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Reply, string, bool, error) {
-	var replies []models.Reply
-	query := r.db.WithContext(ctx).Where("post_id = ?", postID)
-
-	// 处理游标分页
-	if cursor != "" {
-		// 解码游标获取时间戳
-		decoded, err := base64.StdEncoding.DecodeString(cursor)
-		if err == nil {
-			if timestamp, err := strconv.ParseInt(string(decoded), 10, 64); err == nil {
-				cursorTime := time.Unix(0, timestamp)
-				query = query.Where("created_at < ?", cursorTime)
-			}
-		}
-	}
-
-	if err := query.
-		Order("created_at DESC").
-		Limit(int(limit + 1)). // 多查一条用于判断是否有更多数据
-		Find(&replies).Error; err != nil {
-		return nil, "", false, err
-	}
-
-	hasMore := len(replies) > int(limit)
-	if hasMore {
-		replies = replies[:limit] // 移除多查的那一条
-	}
-
-	// 转换为proto格式
-	result := make([]*proto.Reply, len(replies))
-	for i, reply := range replies {
-		protoReply := &proto.Reply{
-			Id:        reply.ID,
-			PostId:    reply.PostID,
-			UserId:    reply.UserID,
-			Content:   reply.Content,
-			CreatedAt: reply.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: reply.UpdatedAt.Format(time.RFC3339),
-		}
-		if reply.ParentReplyID != nil {
-			protoReply.ParentReplyId = *reply.ParentReplyID
-		}
-		result[i] = protoReply
-	}
-
-	// 生成下一页游标
-	var nextCursor string
-	if hasMore && len(replies) > 0 {
-		lastReply := replies[len(replies)-1]
-		timestamp := lastReply.CreatedAt.UnixNano()
-		nextCursor = base64.StdEncoding.EncodeToString([]byte(strconv.FormatInt(timestamp, 10)))
-	}
-
-	return result, nextCursor, hasMore, nil
+	// 回复功能已迁移到content服务，返回空列表
+	return []*proto.Reply{}, "", false, nil
 }
 
 // GetPostStats 获取帖子统计

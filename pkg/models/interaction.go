@@ -32,16 +32,13 @@ type Repost struct {
 	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-// Reply 回复模型
-type Reply struct {
-	ID            string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	PostID        string    `gorm:"type:uuid;not null;index" json:"post_id"`
-	UserID        string    `gorm:"type:uuid;not null;index" json:"user_id"`
-	Content       string    `gorm:"type:text;not null" json:"content"`
-	ParentReplyID *string   `gorm:"type:uuid;index" json:"parent_reply_id,omitempty"` // 支持楼中楼
-	CreatedAt     time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt     time.Time `gorm:"not null" json:"updated_at"`
-	DeletedAt     *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+// Bookmark 书签模型
+type Bookmark struct {
+	ID        string    `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID    string    `gorm:"type:uuid;not null;index" json:"user_id"`
+	PostID    string    `gorm:"type:uuid;not null;index" json:"post_id"`
+	CreatedAt time.Time `gorm:"not null" json:"created_at"`
+	DeletedAt *time.Time `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 // PostStats 帖子统计模型 - 用于快速查询互动数据

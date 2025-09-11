@@ -155,7 +155,6 @@ func main() {
 		&models.Follow{},
 		&models.Like{},
 		&models.Repost{},
-		&models.Reply{},
 		&models.PostStats{},
 		&models.PollVote{},
 		&models.Bookmark{},
