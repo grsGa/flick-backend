@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"context"
@@ -13,20 +13,30 @@ import (
 	"gorm.io/gorm"
 )
 
-// authRepository 认证仓储实现
-type authRepository struct {
+// AuthRepository 认证仓储实现
+type AuthRepository struct {
 	db *gorm.DB
 }
 
+
+// Session 会话模型
+type Session struct {
+ID           string
+UserID       string
+RefreshToken string
+ExpiresAt    string
+CreatedAt    string
+}
+
 // NewAuthRepository 创建认证仓储实例
-func NewAuthRepository() AuthRepository {
-	return &authRepository{
+func NewAuthRepository() *AuthRepository {
+	return &AuthRepository{
 		db: database.GetDB(),
 	}
 }
 
 // GetUserByIdentifier 根据标识符（用户名、邮箱或手机号）获取用户
-func (r *authRepository) GetUserByIdentifier(ctx context.Context, identifier string) (*proto.User, error) {
+func (r *AuthRepository) GetUserByIdentifier(ctx context.Context, identifier string) (*proto.User, error) {
 	var user models.User
 	if err := r.db.Where("(username = ? OR email = ? OR phone = ?) AND deleted_at IS NULL", identifier, identifier, identifier).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -39,7 +49,7 @@ func (r *authRepository) GetUserByIdentifier(ctx context.Context, identifier str
 }
 
 // VerifyPassword 验证密码
-func (r *authRepository) VerifyPassword(ctx context.Context, userID string, password string) error {
+func (r *AuthRepository) VerifyPassword(ctx context.Context, userID string, password string) error {
 	var user models.User
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", userID).First(&user).Error; err != nil {
 		return err
@@ -53,7 +63,7 @@ func (r *authRepository) VerifyPassword(ctx context.Context, userID string, pass
 }
 
 // GetUserByID 根据ID获取用户
-func (r *authRepository) GetUserByID(ctx context.Context, id string) (*proto.User, error) {
+func (r *AuthRepository) GetUserByID(ctx context.Context, id string) (*proto.User, error) {
 	var user models.User
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -66,7 +76,7 @@ func (r *authRepository) GetUserByID(ctx context.Context, id string) (*proto.Use
 }
 
 // CreateUser 创建用户
-func (r *authRepository) CreateUser(ctx context.Context, user *proto.User, password string) (*proto.User, error) {
+func (r *AuthRepository) CreateUser(ctx context.Context, user *proto.User, password string) (*proto.User, error) {
 	// 对密码进行哈希处理
 	passwordHash, err := auth.HashPassword(password)
 	if err != nil {
@@ -123,7 +133,7 @@ func (r *authRepository) CreateUser(ctx context.Context, user *proto.User, passw
 }
 
 // UpdateUserLoginInfo 更新用户登录信息
-func (r *authRepository) UpdateUserLoginInfo(ctx context.Context, userID string, lastLoginAt string) error {
+func (r *AuthRepository) UpdateUserLoginInfo(ctx context.Context, userID string, lastLoginAt string) error {
 	updates := map[string]interface{}{
 		"last_login_at": time.Now(),
 		"updated_at":    time.Now(),
@@ -133,35 +143,35 @@ func (r *authRepository) UpdateUserLoginInfo(ctx context.Context, userID string,
 }
 
 // CreateSession 创建会话
-func (r *authRepository) CreateSession(ctx context.Context, session *Session) error {
+func (r *AuthRepository) CreateSession(ctx context.Context, session *Session) error {
 	// 在实际实现中，这里应该创建会话记录
 	// 由于目前没有会话表，暂时返回nil
 	return nil
 }
 
 // GetSession 获取会话
-func (r *authRepository) GetSession(ctx context.Context, refreshToken string) (*Session, error) {
+func (r *AuthRepository) GetSession(ctx context.Context, refreshToken string) (*Session, error) {
 	// 在实际实现中，这里应该查询会话记录
 	// 由于目前没有会话表，暂时返回错误
 	return nil, errors.New("session not found")
 }
 
 // DeleteSession 删除会话
-func (r *authRepository) DeleteSession(ctx context.Context, refreshToken string) error {
+func (r *AuthRepository) DeleteSession(ctx context.Context, refreshToken string) error {
 	// 在实际实现中，这里应该删除会话记录
 	// 由于目前没有会话表，暂时返回nil
 	return nil
 }
 
 // DeleteUserSessions 删除用户所有会话
-func (r *authRepository) DeleteUserSessions(ctx context.Context, userID string) error {
+func (r *AuthRepository) DeleteUserSessions(ctx context.Context, userID string) error {
 	// 在实际实现中，这里应该删除用户所有会话记录
 	// 由于目前没有会话表，暂时返回nil
 	return nil
 }
 
 // modelToProto 将模型转换为protobuf消息
-func (r *authRepository) modelToProto(user *models.User) *proto.User {
+func (r *AuthRepository) modelToProto(user *models.User) *proto.User {
 	pbUser := &proto.User{
 		Id:              user.ID,
 		Username:        user.Username,
@@ -205,3 +215,4 @@ func toString(s *string) string {
 	}
 	return *s
 }
+

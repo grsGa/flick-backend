@@ -26,16 +26,16 @@ var blockedEmailDomains = map[string]struct{}{
 }
 
 // userService 用户服务实现
-type userService struct {
-	userRepo    repository.UserRepository
+type UserService struct {
+	userRepo *repository.UserRepository
 	cfg         *config.Config
 	logger      *zap.Logger
 	messageBus  messagebus.MessageBus
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logger *zap.Logger, messageBus messagebus.MessageBus) UserService {
-	return &userService{
+func NewUserService(userRepo *repository.UserRepository, cfg *config.Config, logger *zap.Logger, messageBus messagebus.MessageBus) *UserService {
+	return &UserService{
 		userRepo:   userRepo,
 		cfg:        cfg,
 		logger:     logger,
@@ -44,7 +44,7 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config, logg
 }
 
 // GetUser 获取用户信息
-func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
+func (s *UserService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
 	fmt.Printf("[User Service] GetUser request for userID: %s\n", req.UserId)
 	
 	user, err := s.userRepo.GetUserByID(ctx, req.UserId)
@@ -65,7 +65,7 @@ func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*
 }
 
 // GetUserByUsername implements the gRPC method.
-func (s *userService) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
+func (s *UserService) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
 	s.logger.Info("Fetching user by username", zap.String("username", req.Username))
 	user, err := s.userRepo.GetUserByUsername(ctx, req.Username)
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *userService) GetUserByUsername(ctx context.Context, req *proto.GetUserB
 }
 
 // UpdateUser 更新用户
-func (s *userService) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
+func (s *UserService) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
 	// 首先获取现有用户信息
 	existingUser, err := s.userRepo.GetUserByID(ctx, req.UserId)
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *userService) UpdateUser(ctx context.Context, req *proto.UpdateUserReque
 }
 
 // DeleteUser 删除用户
-func (s *userService) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
+func (s *UserService) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
 	err := s.userRepo.DeleteUser(ctx, req.UserId)
 	if err != nil {
 		return &proto.DeleteUserResponse{
@@ -172,7 +172,7 @@ func (s *userService) DeleteUser(ctx context.Context, req *proto.DeleteUserReque
 }
 
 // Register 用户注册
-func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s *UserService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	// Validate email domain against the blocklist
 	if err := s.validateEmailDomain(req.Email); err != nil {
 		s.logger.Warn("Registration blocked for disposable email", zap.String("email", req.Email), zap.Error(err))
@@ -208,7 +208,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 		}, err
 	}
 
-	// 创建新用户
+	// 创建新用�?
 	newUser := &proto.User{
 		Username:     req.Username,
 		Email:        req.Email,
@@ -250,7 +250,7 @@ func (s *userService) Register(ctx context.Context, req *proto.RegisterRequest) 
 }
 
 // Login 用户登录
-func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+func (s *UserService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
 	// 用户认证
 	user, err := s.userRepo.Authenticate(ctx, req.Identifier, req.Password)
 	if err != nil {
@@ -282,8 +282,8 @@ func (s *userService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	}, nil
 }
 
-// GetFollowers 获取关注者
-func (s *userService) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
+// GetFollowers 获取关注�?
+func (s *UserService) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
 	users, pageInfo, err := s.userRepo.GetFollowers(ctx, req.UserId, int(req.First), req.After)
 	if err != nil {
 		return &proto.GetFollowersResponse{
@@ -301,7 +301,7 @@ func (s *userService) GetFollowers(ctx context.Context, req *proto.GetFollowersR
 }
 
 // GetFollowing 获取正在关注
-func (s *userService) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
+func (s *UserService) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
 	users, pageInfo, err := s.userRepo.GetFollowing(ctx, req.UserId, int(req.First), req.After)
 	if err != nil {
 		return &proto.GetFollowingResponse{
@@ -319,7 +319,7 @@ func (s *userService) GetFollowing(ctx context.Context, req *proto.GetFollowingR
 }
 
 // UpdateProfile 更新个人资料
-func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
+func (s *UserService) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
 	// Debug: Log request values
 	fmt.Printf("[User Service] UpdateProfile request:\n")
 	fmt.Printf("  UserId: %s\n", req.UserId)
@@ -398,7 +398,7 @@ func (s *userService) UpdateProfile(ctx context.Context, req *proto.UpdateProfil
 }
 
 // FollowUser 关注用户
-func (s *userService) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
+func (s *UserService) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
 	err := s.userRepo.FollowUser(ctx, req.FollowerId, req.FollowingId)
 	if err != nil {
 		return &proto.FollowUserResponse{
@@ -425,7 +425,7 @@ func (s *userService) FollowUser(ctx context.Context, req *proto.FollowUserReque
 }
 
 // UnfollowUser 取消关注用户
-func (s *userService) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
+func (s *UserService) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
 	err := s.userRepo.UnfollowUser(ctx, req.FollowerId, req.FollowingId)
 	if err != nil {
 		return &proto.UnfollowUserResponse{
@@ -452,7 +452,7 @@ func (s *userService) UnfollowUser(ctx context.Context, req *proto.UnfollowUserR
 }
 
 // UpdateUserAvatar 更新用户头像版本和URL
-func (s *userService) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
+func (s *UserService) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
 	fmt.Printf("[User Service] UpdateUserAvatar request for userID: %s, version: %d, URL: %s\n", 
 		req.UserId, req.AvatarVersion, req.AvatarUrl)
 	
@@ -497,7 +497,7 @@ func (s *userService) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUse
 }
 
 // UpdateUserBanner 更新用户横幅版本和URL
-func (s *userService) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
+func (s *UserService) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
 	fmt.Printf("[User Service] UpdateUserBanner request for userID: %s, version: %d, URL: %s\n", 
 		req.UserId, req.BannerVersion, req.BannerUrl)
 	
@@ -542,7 +542,7 @@ func (s *userService) UpdateUserBanner(ctx context.Context, req *proto.UpdateUse
 }
 
 // validateEmailDomain checks if the email domain is in the blocklist.
-func (s *userService) validateEmailDomain(email string) error {
+func (s *UserService) validateEmailDomain(email string) error {
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
 		return errors.New("invalid email format")
@@ -553,3 +553,4 @@ func (s *userService) validateEmailDomain(email string) error {
 	}
 	return nil
 }
+

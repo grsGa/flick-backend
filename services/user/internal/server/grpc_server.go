@@ -13,85 +13,85 @@ import (
 )
 
 // grpcServer gRPC服务实现
-type grpcServer struct {
+type GRPCServer struct {
 	proto.UnimplementedUserServiceServer
-	userService service.UserService
+	userService *service.UserService
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(userService service.UserService) *grpcServer {
-	return &grpcServer{
+func NewGRPCServer(userService *service.UserService) *GRPCServer {
+	return &GRPCServer{
 		userService: userService,
 	}
 }
 
 // GetUser 实现获取用户接口
-func (s *grpcServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
+func (s *GRPCServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.GetUserResponse, error) {
 	return s.userService.GetUser(ctx, req)
 }
 
-// GetUserByUsername 实现根据用户名获取用户接口
-func (s *grpcServer) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
+// GetUserByUsername 实现根据用户名获取用户接�?
+func (s *GRPCServer) GetUserByUsername(ctx context.Context, req *proto.GetUserByUsernameRequest) (*proto.GetUserResponse, error) {
 	return s.userService.GetUserByUsername(ctx, req)
 }
 
 // UpdateUser 实现更新用户接口
-func (s *grpcServer) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
+func (s *GRPCServer) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UpdateUserResponse, error) {
 	return s.userService.UpdateUser(ctx, req)
 }
 
 // DeleteUser 实现删除用户接口
-func (s *grpcServer) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
+func (s *GRPCServer) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.DeleteUserResponse, error) {
 	return s.userService.DeleteUser(ctx, req)
 }
 
 // Register 实现用户注册接口
-func (s *grpcServer) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s *GRPCServer) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	return s.userService.Register(ctx, req)
 }
 
 // Login 实现用户登录接口
-func (s *grpcServer) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+func (s *GRPCServer) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
 	return s.userService.Login(ctx, req)
 }
 
-// GetFollowers 实现获取关注者接口
-func (s *grpcServer) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
+// GetFollowers 实现获取关注者接�?
+func (s *GRPCServer) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
 	return s.userService.GetFollowers(ctx, req)
 }
 
 // GetFollowing 实现获取正在关注接口
-func (s *grpcServer) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
+func (s *GRPCServer) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
 	return s.userService.GetFollowing(ctx, req)
 }
 
 // UpdateProfile 实现更新个人资料接口
-func (s *grpcServer) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
+func (s *GRPCServer) UpdateProfile(ctx context.Context, req *proto.UpdateProfileRequest) (*proto.UpdateProfileResponse, error) {
 	return s.userService.UpdateProfile(ctx, req)
 }
 
 // FollowUser 实现关注用户接口
-func (s *grpcServer) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
+func (s *GRPCServer) FollowUser(ctx context.Context, req *proto.FollowUserRequest) (*proto.FollowUserResponse, error) {
 	return s.userService.FollowUser(ctx, req)
 }
 
 // UnfollowUser 实现取消关注用户接口
-func (s *grpcServer) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
+func (s *GRPCServer) UnfollowUser(ctx context.Context, req *proto.UnfollowUserRequest) (*proto.UnfollowUserResponse, error) {
 	return s.userService.UnfollowUser(ctx, req)
 }
 
 // UpdateUserAvatar 实现更新用户头像接口
-func (s *grpcServer) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
+func (s *GRPCServer) UpdateUserAvatar(ctx context.Context, req *proto.UpdateUserAvatarRequest) (*proto.UpdateUserAvatarResponse, error) {
 	return s.userService.UpdateUserAvatar(ctx, req)
 }
 
 // UpdateUserBanner 实现更新用户横幅接口
-func (s *grpcServer) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
+func (s *GRPCServer) UpdateUserBanner(ctx context.Context, req *proto.UpdateUserBannerRequest) (*proto.UpdateUserBannerResponse, error) {
 	return s.userService.UpdateUserBanner(ctx, req)
 }
 
 // Run 启动gRPC服务
-func (s *grpcServer) Run(port string) error {
+func (s *GRPCServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -110,3 +110,4 @@ func (s *grpcServer) Run(port string) error {
 
 	return grpcServer.Serve(lis)
 }
+

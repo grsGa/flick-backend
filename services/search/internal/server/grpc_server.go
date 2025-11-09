@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"context"
@@ -10,35 +10,35 @@ import (
 )
 
 // grpcServer gRPC服务实现
-type grpcServer struct {
+type GRPCServer struct {
 	proto.UnimplementedSearchServiceServer
-	searchService service.SearchService
+	searchService *service.SearchService
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(searchService service.SearchService) *grpcServer {
-	return &grpcServer{
+func NewGRPCServer(searchService *service.SearchService) *GRPCServer {
+	return &GRPCServer{
 		searchService: searchService,
 	}
 }
 
 // SearchContent 实现搜索内容接口
-func (s *grpcServer) SearchContent(ctx context.Context, req *proto.SearchContentRequest) (*proto.SearchContentResponse, error) {
+func (s *GRPCServer) SearchContent(ctx context.Context, req *proto.SearchContentRequest) (*proto.SearchContentResponse, error) {
 	return s.searchService.SearchContent(ctx, req)
 }
 
 // SearchUsers 实现搜索用户接口
-func (s *grpcServer) SearchUsers(ctx context.Context, req *proto.SearchUsersRequest) (*proto.SearchUsersResponse, error) {
+func (s *GRPCServer) SearchUsers(ctx context.Context, req *proto.SearchUsersRequest) (*proto.SearchUsersResponse, error) {
 	return s.searchService.SearchUsers(ctx, req)
 }
 
 // SearchHashtags 实现搜索标签接口
-func (s *grpcServer) SearchHashtags(ctx context.Context, req *proto.SearchHashtagsRequest) (*proto.SearchHashtagsResponse, error) {
+func (s *GRPCServer) SearchHashtags(ctx context.Context, req *proto.SearchHashtagsRequest) (*proto.SearchHashtagsResponse, error) {
 	return s.searchService.SearchHashtags(ctx, req)
 }
 
 // Run 启动gRPC服务
-func (s *grpcServer) Run(port string) error {
+func (s *GRPCServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -49,3 +49,4 @@ func (s *grpcServer) Run(port string) error {
 	
 	return grpcServer.Serve(lis)
 }
+

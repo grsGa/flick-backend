@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -32,8 +32,8 @@ type ProcessingJob struct {
 }
 
 // mediaService 媒体服务实现
-type mediaService struct {
-	mediaRepo      repository.MediaRepository
+type MediaService struct {
+	mediaRepo *repository.MediaRepository
 	validator      *validator.MediaValidator
 	processor      *processor.ProcessorManager
 	storage        storage.MediaStorage
@@ -44,7 +44,7 @@ type mediaService struct {
 }
 
 // NewMediaService 创建媒体服务实例
-func NewMediaService(mediaRepo repository.MediaRepository, storage storage.MediaStorage, tempDir string, userClient userProto.UserServiceClient) MediaService {
+func NewMediaService(mediaRepo *repository.MediaRepository, storage storage.MediaStorage, tempDir string, userClient userProto.UserServiceClient) *MediaService {
 	if tempDir == "" {
 		tempDir = "/tmp/media-processing"
 	}
@@ -52,7 +52,7 @@ func NewMediaService(mediaRepo repository.MediaRepository, storage storage.Media
 	// 确保临时目录存在
 	os.MkdirAll(tempDir, 0755)
 
-	return &mediaService{
+	return &MediaService{
 		mediaRepo:      mediaRepo,
 		validator:      validator.NewMediaValidator(),
 		processor:      processor.NewProcessorManager(tempDir),
@@ -89,7 +89,7 @@ func getContentTypeFromFilename(filename string) string {
 }
 
 // UploadFile 上传文件
-func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
+func (s *MediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
 	// 生成文件ID
 	fileID := uuid.New().String()
 
@@ -260,7 +260,7 @@ func (s *mediaService) UploadFile(ctx context.Context, req *proto.UploadFileRequ
 }
 
 // GetFile 获取文件信息
-func (s *mediaService) GetFile(ctx context.Context, req *proto.GetFileRequest) (*proto.GetFileResponse, error) {
+func (s *MediaService) GetFile(ctx context.Context, req *proto.GetFileRequest) (*proto.GetFileResponse, error) {
 	file, err := s.mediaRepo.GetFileByID(ctx, req.FileId)
 	if err != nil {
 		return &proto.GetFileResponse{
@@ -277,7 +277,7 @@ func (s *mediaService) GetFile(ctx context.Context, req *proto.GetFileRequest) (
 }
 
 // DeleteFile 删除文件
-func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.DeleteFileResponse, error) {
+func (s *MediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.DeleteFileResponse, error) {
 	// 首先获取文件信息 - 通过URL查找文件
 	file, err := s.mediaRepo.GetFileByURL(ctx, req.FileUrl)
 	if err != nil {
@@ -331,7 +331,7 @@ func (s *mediaService) DeleteFile(ctx context.Context, req *proto.DeleteFileRequ
 }
 
 // ListFiles 获取文件列表
-func (s *mediaService) ListFiles(ctx context.Context, req *proto.ListFilesRequest) (*proto.ListFilesResponse, error) {
+func (s *MediaService) ListFiles(ctx context.Context, req *proto.ListFilesRequest) (*proto.ListFilesResponse, error) {
 	files, total, err := s.mediaRepo.ListFiles(ctx, req.UserId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.ListFilesResponse{
@@ -349,7 +349,7 @@ func (s *mediaService) ListFiles(ctx context.Context, req *proto.ListFilesReques
 }
 
 // ProcessMedia 处理媒体文件生成多版本
-func (s *mediaService) ProcessMedia(ctx context.Context, req *proto.ProcessMediaRequest) (*proto.ProcessMediaResponse, error) {
+func (s *MediaService) ProcessMedia(ctx context.Context, req *proto.ProcessMediaRequest) (*proto.ProcessMediaResponse, error) {
 	// 获取文件信息
 	file, err := s.mediaRepo.GetFileByID(ctx, req.FileId)
 	if err != nil {
@@ -387,7 +387,7 @@ func (s *mediaService) ProcessMedia(ctx context.Context, req *proto.ProcessMedia
 }
 
 // GetProcessStatus 获取媒体处理状态
-func (s *mediaService) GetProcessStatus(ctx context.Context, req *proto.GetProcessStatusRequest) (*proto.GetProcessStatusResponse, error) {
+func (s *MediaService) GetProcessStatus(ctx context.Context, req *proto.GetProcessStatusRequest) (*proto.GetProcessStatusResponse, error) {
 	s.jobsMutex.RLock()
 	job, exists := s.processingJobs[req.JobId]
 	s.jobsMutex.RUnlock()
@@ -421,7 +421,7 @@ func (s *mediaService) GetProcessStatus(ctx context.Context, req *proto.GetProce
 }
 
 // processMediaAsync 异步处理媒体文件
-func (s *mediaService) processMediaAsync(ctx context.Context, job *ProcessingJob, file *proto.MediaFile, req *proto.ProcessMediaRequest) {
+func (s *MediaService) processMediaAsync(ctx context.Context, job *ProcessingJob, file *proto.MediaFile, req *proto.ProcessMediaRequest) {
 	defer func() {
 		if r := recover(); r != nil {
 			job.Status = "failed"
@@ -528,7 +528,7 @@ func (s *mediaService) processMediaAsync(ctx context.Context, job *ProcessingJob
 }
 
 // downloadFileToTemp 下载文件到临时目录
-func (s *mediaService) downloadFileToTemp(ctx context.Context, url, tempPath string) error {
+func (s *MediaService) downloadFileToTemp(ctx context.Context, url, tempPath string) error {
 	// 确保临时目录存在
 	if err := os.MkdirAll(filepath.Dir(tempPath), 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
@@ -572,7 +572,7 @@ func (s *mediaService) downloadFileToTemp(ctx context.Context, url, tempPath str
 }
 
 // uploadVariantsToStorage 上传处理后的文件版本到存储
-func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile *proto.MediaFile, variants *models.MediaVariants) error {
+func (s *MediaService) uploadVariantsToStorage(ctx context.Context, originalFile *proto.MediaFile, variants *models.MediaVariants) error {
 	// 从原文件URL中提取路径信息
 	parts := strings.Split(originalFile.Url, "/")
 	if len(parts) < 6 {
@@ -678,7 +678,7 @@ func (s *mediaService) uploadVariantsToStorage(ctx context.Context, originalFile
 }
 
 // convertVariantsToProto 转换variants到proto格式
-func (s *mediaService) convertVariantsToProto(variants *models.MediaVariants) *proto.MediaVariants {
+func (s *MediaService) convertVariantsToProto(variants *models.MediaVariants) *proto.MediaVariants {
 	result := &proto.MediaVariants{}
 
 	if variants.Thumbnail != nil {
@@ -767,7 +767,7 @@ func (s *mediaService) convertVariantsToProto(variants *models.MediaVariants) *p
 }
 
 // saveVersionedAvatar 保存版本化头像到MinIO存储
-func (s *mediaService) saveVersionedAvatar(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
+func (s *MediaService) saveVersionedAvatar(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
 	fmt.Printf("[MEDIA SERVICE] Starting saveVersionedAvatar for user: %s\n", userID)
 
 	// 获取用户当前头像版本号
@@ -825,7 +825,7 @@ func (s *mediaService) saveVersionedAvatar(ctx context.Context, fileID string, c
 }
 
 // getUserAvatarVersion 获取用户当前头像版本号
-func (s *mediaService) getUserAvatarVersion(ctx context.Context, userID string) (int, error) {
+func (s *MediaService) getUserAvatarVersion(ctx context.Context, userID string) (int, error) {
 	fmt.Printf("[MEDIA SERVICE] Getting avatar version for user: %s\n", userID)
 
 	if s.userClient == nil {
@@ -852,7 +852,7 @@ func (s *mediaService) getUserAvatarVersion(ctx context.Context, userID string) 
 }
 
 // updateUserAvatarVersion 更新用户头像版本号和URL
-func (s *mediaService) updateUserAvatarVersion(ctx context.Context, userID string, version int, avatarURL string) error {
+func (s *MediaService) updateUserAvatarVersion(ctx context.Context, userID string, version int, avatarURL string) error {
 	if s.userClient == nil {
 		fmt.Printf("[MEDIA SERVICE] User client not available, cannot update avatar version\n")
 		return fmt.Errorf("user client not available")
@@ -878,7 +878,7 @@ func (s *mediaService) updateUserAvatarVersion(ctx context.Context, userID strin
 }
 
 // scheduleOldAvatarCleanup 安排旧头像文件清理
-func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID string, currentVersion int) {
+func (s *MediaService) scheduleOldAvatarCleanup(ctx context.Context, userID string, currentVersion int) {
 	fmt.Printf("[MEDIA SERVICE] Scheduling cleanup for user %s, current version: %d\n", userID, currentVersion)
 
 	// 创建一个新的context，避免原context被取消
@@ -929,7 +929,7 @@ func (s *mediaService) scheduleOldAvatarCleanup(ctx context.Context, userID stri
 }
 
 // saveVersionedBanner 保存版本化横幅文件
-func (s *mediaService) saveVersionedBanner(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
+func (s *MediaService) saveVersionedBanner(ctx context.Context, fileID string, content []byte, contentType, userID string) (string, error) {
 	fmt.Printf("[MEDIA SERVICE] Saving versioned banner for user: %s\n", userID)
 
 	// 获取用户当前横幅版本号
@@ -979,7 +979,7 @@ func (s *mediaService) saveVersionedBanner(ctx context.Context, fileID string, c
 }
 
 // getUserBannerVersion 获取用户当前横幅版本号
-func (s *mediaService) getUserBannerVersion(ctx context.Context, userID string) (int, error) {
+func (s *MediaService) getUserBannerVersion(ctx context.Context, userID string) (int, error) {
 	fmt.Printf("[MEDIA SERVICE] Getting banner version for user: %s\n", userID)
 
 	if s.userClient == nil {
@@ -1004,7 +1004,7 @@ func (s *mediaService) getUserBannerVersion(ctx context.Context, userID string) 
 }
 
 // updateUserBannerVersion 更新用户横幅版本号和URL
-func (s *mediaService) updateUserBannerVersion(ctx context.Context, userID string, version int, bannerURL string) error {
+func (s *MediaService) updateUserBannerVersion(ctx context.Context, userID string, version int, bannerURL string) error {
 	if s.userClient == nil {
 		fmt.Printf("[MEDIA SERVICE] User client not available, cannot update banner version\n")
 		return fmt.Errorf("user client not available")
@@ -1028,7 +1028,7 @@ func (s *mediaService) updateUserBannerVersion(ctx context.Context, userID strin
 }
 
 // cleanupOldBanners 清理用户的旧横幅版本文件
-func (s *mediaService) cleanupOldBanners(userID string, currentVersion int) {
+func (s *MediaService) cleanupOldBanners(userID string, currentVersion int) {
 	// 创建新的context避免原context被取消
 	cleanupCtx := context.Background()
 
@@ -1074,3 +1074,4 @@ func (s *mediaService) cleanupOldBanners(userID string, currentVersion int) {
 
 	fmt.Printf("[MEDIA SERVICE] Banner cleanup completed for user %s\n", userID)
 }
+

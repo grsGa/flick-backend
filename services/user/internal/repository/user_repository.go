@@ -14,19 +14,19 @@ import (
 )
 
 // userRepository 用户仓储实现
-type userRepository struct {
+type UserRepository struct {
 	db *gorm.DB
 }
 
 // NewUserRepository 创建用户仓储实例
-func NewUserRepository() UserRepository {
-	return &userRepository{
+func NewUserRepository() *UserRepository {
+	return &UserRepository{
 		db: database.GetDB(),
 	}
 }
 
 // CreateUser 创建用户
-func (r *userRepository) CreateUser(ctx context.Context, user *proto.User) error {
+func (r *UserRepository) CreateUser(ctx context.Context, user *proto.User) error {
 	modelUser := r.protoToModel(user)
 	if err := r.db.Create(modelUser).Error; err != nil {
 		return err
@@ -38,7 +38,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user *proto.User) error
 }
 
 // GetUserByID 根据ID获取用户
-func (r *userRepository) GetUserByID(ctx context.Context, id string) (*proto.User, error) {
+func (r *UserRepository) GetUserByID(ctx context.Context, id string) (*proto.User, error) {
 	var user models.User
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,7 +51,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (*proto.Use
 }
 
 // UpdateUser 更新用户
-func (r *userRepository) UpdateUser(ctx context.Context, user *proto.User) error {
+func (r *UserRepository) UpdateUser(ctx context.Context, user *proto.User) error {
 	// 直接更新现有用户记录，而不是使用Updates映射
 	var existingUser models.User
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", user.Id).First(&existingUser).Error; err != nil {
@@ -75,7 +75,7 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *proto.User) error
 		existingUser.Phone = &user.Phone
 	}
 
-	// 允许设置空值来清除头像和横幅
+	// 允许设置空值来清除头像和横�?
 	if user.AvatarUrl != "" {
 		existingUser.AvatarURL = user.AvatarUrl
 	}
@@ -113,14 +113,14 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *proto.User) error
 	return r.db.Save(&existingUser).Error
 }
 
-// DeleteUser 删除用户（软删除）
-func (r *userRepository) DeleteUser(ctx context.Context, id string) error {
-	// 软删除
+// DeleteUser 删除用户（软删除�?
+func (r *UserRepository) DeleteUser(ctx context.Context, id string) error {
+	// 软删�?
 	return r.db.Model(&models.User{}).Where("id = ?", id).Update("deleted_at", time.Now()).Error
 }
 
-// GetUserByUsername 根据用户名获取用户
-func (r *userRepository) GetUserByUsername(ctx context.Context, username string) (*proto.User, error) {
+// GetUserByUsername 根据用户名获取用�?
+func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*proto.User, error) {
 	var user models.User
 	if err := r.db.Where("username = ? AND deleted_at IS NULL", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -133,7 +133,7 @@ func (r *userRepository) GetUserByUsername(ctx context.Context, username string)
 }
 
 // GetUserByEmail 根据邮箱获取用户
-func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*proto.User, error) {
+func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*proto.User, error) {
 	var user models.User
 	// Log the email parameter
 	println("GetUserByEmail: email =", email)
@@ -153,7 +153,7 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*pro
 }
 
 // Authenticate 用户认证
-func (r *userRepository) Authenticate(ctx context.Context, identifier, password string) (*proto.User, error) {
+func (r *UserRepository) Authenticate(ctx context.Context, identifier, password string) (*proto.User, error) {
 	var user models.User
 
 	// 根据用户名或邮箱查找用户
@@ -170,14 +170,14 @@ func (r *userRepository) Authenticate(ctx context.Context, identifier, password 
 		return nil, errors.New("invalid credentials")
 	}
 
-	// 更新最后登录时间
+	// 更新最后登录时�?
 	r.db.Model(&user).Update("last_login_at", time.Now())
 
 	return r.modelToProto(&user), nil
 }
 
 // modelToProto 将模型转换为protobuf消息
-func (r *userRepository) modelToProto(user *models.User) *proto.User {
+func (r *UserRepository) modelToProto(user *models.User) *proto.User {
 	pbUser := &proto.User{
 		Id:              user.ID,
 		Username:        user.Username,
@@ -208,7 +208,7 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 		pbUser.BannerUrl = *user.BannerURL
 	}
 
-	// 添加横幅版本号映射
+	// 添加横幅版本号映�?
 	pbUser.BannerVersion = int32(user.BannerVersion)
 
 	if user.LastLoginAt != nil {
@@ -218,8 +218,8 @@ func (r *userRepository) modelToProto(user *models.User) *proto.User {
 	return pbUser
 }
 
-// protoToModel 将protobuf消息转换为模型
-func (r *userRepository) protoToModel(user *proto.User) *models.User {
+// protoToModel 将protobuf消息转换为模�?
+func (r *UserRepository) protoToModel(user *proto.User) *models.User {
 	modelUser := &models.User{
 		ID:              user.Id,
 		Username:        user.Username,
@@ -283,7 +283,7 @@ func (r *userRepository) protoToModel(user *proto.User) *models.User {
 	return modelUser
 }
 
-// toString 将*string转换为string
+// toString �?string转换为string
 func toString(s *string) string {
 	if s == nil {
 		return ""
@@ -291,8 +291,8 @@ func toString(s *string) string {
 	return *s
 }
 
-// GetFollowers 获取关注者
-func (r *userRepository) GetFollowers(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
+// GetFollowers 获取关注�?
+func (r *UserRepository) GetFollowers(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
 	var users []*models.User
 	db := r.db.Joins("JOIN follows ON follows.follower_id = users.id").
 		Where("follows.followee_id = ?", userID).
@@ -331,7 +331,7 @@ func (r *userRepository) GetFollowers(ctx context.Context, userID string, first 
 }
 
 // GetFollowing 获取正在关注
-func (r *userRepository) GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
+func (r *UserRepository) GetFollowing(ctx context.Context, userID string, first int, after string) ([]*proto.User, *proto.PageInfo, error) {
 	var users []*models.User
 	db := r.db.Joins("JOIN follows ON follows.followee_id = users.id").
 		Where("follows.follower_id = ?", userID).
@@ -369,8 +369,8 @@ func (r *userRepository) GetFollowing(ctx context.Context, userID string, first 
 	return pbUsers, pageInfo, nil
 }
 
-// FollowUser 关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理）
-func (r *userRepository) FollowUser(ctx context.Context, followerID, followingID string) error {
+// FollowUser 关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理�?
+func (r *UserRepository) FollowUser(ctx context.Context, followerID, followingID string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Update follower's following count
 		if err := tx.Model(&models.User{}).Where("id = ?", followerID).
@@ -388,8 +388,8 @@ func (r *userRepository) FollowUser(ctx context.Context, followerID, followingID
 	})
 }
 
-// UnfollowUser 取消关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理）
-func (r *userRepository) UnfollowUser(ctx context.Context, followerID, followingID string) error {
+// UnfollowUser 取消关注用户 - 只更新计数，不管理关注关系（由Interaction服务管理�?
+func (r *UserRepository) UnfollowUser(ctx context.Context, followerID, followingID string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Update follower's following count
 		if err := tx.Model(&models.User{}).Where("id = ?", followerID).
@@ -408,7 +408,7 @@ func (r *userRepository) UnfollowUser(ctx context.Context, followerID, following
 }
 
 // UpdateUserAvatar 更新用户头像版本和URL
-func (r *userRepository) UpdateUserAvatar(ctx context.Context, userID, avatarURL string, avatarVersion int32) error {
+func (r *UserRepository) UpdateUserAvatar(ctx context.Context, userID, avatarURL string, avatarVersion int32) error {
 	return r.db.Model(&models.User{}).
 		Where("id = ?", userID).
 		Updates(map[string]interface{}{
@@ -419,7 +419,7 @@ func (r *userRepository) UpdateUserAvatar(ctx context.Context, userID, avatarURL
 }
 
 // UpdateUserBanner 更新用户横幅版本和URL
-func (r *userRepository) UpdateUserBanner(ctx context.Context, userID, bannerURL string, bannerVersion int32) error {
+func (r *UserRepository) UpdateUserBanner(ctx context.Context, userID, bannerURL string, bannerVersion int32) error {
 	return r.db.Model(&models.User{}).
 		Where("id = ?", userID).
 		Updates(map[string]interface{}{
@@ -428,3 +428,4 @@ func (r *userRepository) UpdateUserBanner(ctx context.Context, userID, bannerURL
 			"updated_at":     time.Now(),
 		}).Error
 }
+

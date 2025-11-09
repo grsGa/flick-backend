@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 )
 
 // notificationService 通知服务实现
-type notificationService struct {
-	notificationRepo repository.NotificationRepository
+type NotificationService struct {
+	notificationRepo *repository.NotificationRepository
 }
 
 // NewNotificationService 创建通知服务实例
-func NewNotificationService(notificationRepo repository.NotificationRepository) NotificationService {
-	return &notificationService{
+func NewNotificationService(notificationRepo *repository.NotificationRepository) *NotificationService {
+	return &NotificationService{
 		notificationRepo: notificationRepo,
 	}
 }
 
 // CreateNotification 创建通知
-func (s *notificationService) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.CreateNotificationResponse, error) {
+func (s *NotificationService) CreateNotification(ctx context.Context, req *proto.CreateNotificationRequest) (*proto.CreateNotificationResponse, error) {
 	// 创建通知对象
 	notification := &proto.Notification{
 		Id:         uuid.New().String(),
@@ -53,7 +53,7 @@ func (s *notificationService) CreateNotification(ctx context.Context, req *proto
 }
 
 // ListNotifications 获取用户通知列表
-func (s *notificationService) ListNotifications(ctx context.Context, req *proto.ListNotificationsRequest) (*proto.ListNotificationsResponse, error) {
+func (s *NotificationService) ListNotifications(ctx context.Context, req *proto.ListNotificationsRequest) (*proto.ListNotificationsResponse, error) {
 	notifications, total, err := s.notificationRepo.ListNotifications(ctx, req.UserId, req.UnreadOnly, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.ListNotificationsResponse{
@@ -71,7 +71,7 @@ func (s *notificationService) ListNotifications(ctx context.Context, req *proto.
 }
 
 // MarkAsRead 标记通知为已读
-func (s *notificationService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
+func (s *NotificationService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
 	err := s.notificationRepo.MarkAsRead(ctx, req.NotificationId)
 	if err != nil {
 		return &proto.MarkAsReadResponse{
@@ -89,7 +89,7 @@ func (s *notificationService) MarkAsRead(ctx context.Context, req *proto.MarkAsR
 }
 
 // MarkAllAsRead 标记所有通知为已读
-func (s *notificationService) MarkAllAsRead(ctx context.Context, req *proto.MarkAllAsReadRequest) (*proto.MarkAllAsReadResponse, error) {
+func (s *NotificationService) MarkAllAsRead(ctx context.Context, req *proto.MarkAllAsReadRequest) (*proto.MarkAllAsReadResponse, error) {
 	count, err := s.notificationRepo.MarkAllAsRead(ctx, req.UserId)
 	if err != nil {
 		return &proto.MarkAllAsReadResponse{
@@ -106,7 +106,7 @@ func (s *notificationService) MarkAllAsRead(ctx context.Context, req *proto.Mark
 }
 
 // DeleteNotification 删除通知
-func (s *notificationService) DeleteNotification(ctx context.Context, req *proto.DeleteNotificationRequest) (*proto.DeleteNotificationResponse, error) {
+func (s *NotificationService) DeleteNotification(ctx context.Context, req *proto.DeleteNotificationRequest) (*proto.DeleteNotificationResponse, error) {
 	err := s.notificationRepo.DeleteNotification(ctx, req.NotificationId)
 	if err != nil {
 		return &proto.DeleteNotificationResponse{
@@ -124,7 +124,7 @@ func (s *notificationService) DeleteNotification(ctx context.Context, req *proto
 }
 
 // GetUnreadCount 获取未读通知数
-func (s *notificationService) GetUnreadCount(ctx context.Context, req *proto.GetUnreadCountRequest) (*proto.GetUnreadCountResponse, error) {
+func (s *NotificationService) GetUnreadCount(ctx context.Context, req *proto.GetUnreadCountRequest) (*proto.GetUnreadCountResponse, error) {
 	count, err := s.notificationRepo.GetUnreadCount(ctx, req.UserId)
 	if err != nil {
 		return &proto.GetUnreadCountResponse{
@@ -139,3 +139,4 @@ func (s *notificationService) GetUnreadCount(ctx context.Context, req *proto.Get
 		Count: count,
 	}, nil
 }
+

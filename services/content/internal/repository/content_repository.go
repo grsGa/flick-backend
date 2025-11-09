@@ -27,7 +27,7 @@ type EventPublisher interface {
 }
 
 // postRepository 帖子仓储实现
-type postRepository struct {
+type PostRepository struct {
 	db             *gorm.DB
 	userClient     user_proto.UserServiceClient
 	mediaClient    media_proto.MediaServiceClient
@@ -35,7 +35,7 @@ type postRepository struct {
 }
 
 // NewPostRepository 创建帖子仓储实例
-func NewPostRepository(eventPublisher EventPublisher) PostRepository {
+func NewPostRepository(eventPublisher EventPublisher) *PostRepository {
 	fmt.Printf("[Content Repository] Initializing PostRepository with user service integration\n")
 
 	// 连接用户服务
@@ -65,7 +65,7 @@ func NewPostRepository(eventPublisher EventPublisher) PostRepository {
 		fmt.Printf("[Content Repository] Successfully connected to media service\n")
 	}
 
-	return &postRepository{
+	return &PostRepository{
 		db:             database.GetDB(),
 		userClient:     userClient,
 		mediaClient:    mediaClient,
@@ -74,7 +74,7 @@ func NewPostRepository(eventPublisher EventPublisher) PostRepository {
 }
 
 // CreatePost 创建帖子
-func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.CreatePostRequest) (*content_proto.Post, error) {
+func (r *PostRepository) CreatePost(ctx context.Context, req *content_proto.CreatePostRequest) (*content_proto.Post, error) {
 	fmt.Printf("[Content Repository] CreatePost called with:\n")
 	fmt.Printf("  UserID: %s\n", req.UserId)
 	fmt.Printf("  Content: %s\n", req.Content)
@@ -89,7 +89,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	}
 	fmt.Printf("[Content Repository] User validation passed: %s (%s)\n", author.Username, author.DisplayName)
 
-	// 开始事务
+	// 开始事�?
 	fmt.Printf("[Content Repository] Starting database transaction\n")
 	tx := r.db.Begin()
 	defer func() {
@@ -152,20 +152,20 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				// 对一级回复的回复：设为level 2
 				post.ReplyLevel = 2
 				post.RootID = parentPost.RootID
-				// ParentID指向被回复的一级回复
-				// post.ParentID 已经设置为 req.ParentId
+				// ParentID指向被回复的一级回�?
+				// post.ParentID 已经设置�?req.ParentId
 
-				// 保存原始被回复的用户信息到ReplyMention表
+				// 保存原始被回复的用户信息到ReplyMention�?
 				originalReplyToUserID := parentPost.UserID
 				fmt.Printf("[Content Repository] Creating level 2 reply to level 1 - RootID: %v, ParentID: %v, OriginalReplyTo: %s\n", post.RootID, post.ParentID, originalReplyToUserID)
 			} else {
 				// 对二级回复的回复：仍然设为level 2，但ParentID指向被回复的二级回复的ParentID（即一级回复）
 				post.ReplyLevel = 2
 				post.RootID = parentPost.RootID
-				// 关键：ParentID应该指向被回复的二级回复的ParentID，这样可以正确分组显示
+				// 关键：ParentID应该指向被回复的二级回复的ParentID，这样可以正确分组显�?
 				post.ParentID = parentPost.ParentID
 
-				// 保存被回复的二级回复用户信息到ReplyMention表
+				// 保存被回复的二级回复用户信息到ReplyMention�?
 				originalReplyToUserID := parentPost.UserID
 				fmt.Printf("[Content Repository] Creating level 2 reply to level 2 - RootID: %v, ParentID: %v (grouped under same level 1), OriginalReplyTo: %s\n", post.RootID, post.ParentID, originalReplyToUserID)
 			}
@@ -178,7 +178,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 			fmt.Printf("[Content Repository] Creating level 1 reply - RootID: %v, ParentID: %v\n", post.RootID, post.ParentID)
 		}
 
-		// 验证回复层级（应该永远不会超过2）
+		// 验证回复层级（应该永远不会超�?�?
 		if post.ReplyLevel > 2 {
 			tx.Rollback()
 			return nil, fmt.Errorf("reply level cannot exceed 2 - current level: %d", post.ReplyLevel)
@@ -200,9 +200,9 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 	}
 	fmt.Printf("[Content Repository] Post inserted successfully with ID: %s\n", post.ID)
 
-	// 如果是二级回复，创建ReplyMention记录来保存原始被回复的用户信息
+	// 如果是二级回复，创建ReplyMention记录来保存原始被回复的用户信�?
 	if post.ReplyLevel == 2 && req.ParentId != "" {
-		// 获取被回复的帖子信息（可能是一级回复或二级回复）
+		// 获取被回复的帖子信息（可能是一级回复或二级回复�?
 		var repliedPost models.Post
 		if err := tx.Where("id = ?", req.ParentId).First(&repliedPost).Error; err == nil {
 			var mentionedUserID string
@@ -225,7 +225,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				}
 				if err := tx.Create(&replyMention).Error; err != nil {
 					fmt.Printf("[Content Repository] Warning: Failed to create reply mention: %v\n", err)
-					// 不回滚，因为这不是关键错误
+					// 不回滚，因为这不是关键错�?
 				} else {
 					fmt.Printf("[Content Repository] Created reply mention for reply %s -> user %s\n", post.ID, mentionedUserID)
 				}
@@ -322,7 +322,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				continue
 			}
 
-			// 使用Media服务返回的完整信息创建媒体附件记录
+			// 使用Media服务返回的完整信息创建媒体附件记�?
 			mediaFile := mediaResp.File
 
 			// 转换variants到数据库格式
@@ -410,7 +410,7 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 				}
 			}
 
-			// 更新现有的媒体记录而不是创建新的
+			// 更新现有的媒体记录而不是创建新�?
 			updateData := map[string]interface{}{
 				"post_id":      &post.ID,
 				"filename":     mediaFile.Filename,
@@ -529,13 +529,13 @@ func (r *postRepository) CreatePost(ctx context.Context, req *content_proto.Crea
 		}
 	}
 
-	// 构建返回的帖子对象
+	// 构建返回的帖子对�?
 	fmt.Printf("[Content Repository] Building response with committed data\n")
 	return r.buildPostProto(ctx, post, req.MediaUrls, req.MentionedUsers, req.Tags, poll, req.PollData)
 }
 
 // GetPost 根据ID获取帖子
-func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID string) (*content_proto.Post, error) {
+func (r *PostRepository) GetPost(ctx context.Context, postID, requestingUserID string) (*content_proto.Post, error) {
 	var post models.Post
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", postID).First(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -555,7 +555,7 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 		fmt.Printf("[Content Repository] GetPost - Media %d: ID=%s, PostID=%v, URL=%s\n", i, media.ID, media.PostID, media.URL)
 	}
 
-	// 查询提及信息 (如果表存在)
+	// 查询提及信息 (如果表存�?
 	var mentions []models.PostMention
 	if r.db.Migrator().HasTable(&models.PostMention{}) {
 		if err := r.db.Where("post_id = ?", post.ID).Find(&mentions).Error; err != nil {
@@ -565,7 +565,7 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 		fmt.Printf("[Content Repository] PostMention table does not exist, skipping mentions query\n")
 	}
 
-	// 查询标签信息 (如果表存在)
+	// 查询标签信息 (如果表存�?
 	var tags []models.PostTag
 	if r.db.Migrator().HasTable(&models.PostTag{}) {
 		if err := r.db.Where("post_id = ?", post.ID).Find(&tags).Error; err != nil {
@@ -609,7 +609,7 @@ func (r *postRepository) GetPost(ctx context.Context, postID, requestingUserID s
 }
 
 // GetUserPosts 获取用户帖子列表
-func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+func (r *PostRepository) GetUserPosts(ctx context.Context, userID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetUserPosts called for userID: %s, requestingUserID: %s, limit: %d\n", userID, requestingUserID, limit)
 
 	var posts []models.Post
@@ -627,7 +627,7 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 			fmt.Printf("[Content Repository] Using cursor post %s with created_at: %s\n", cursor, cursorPost.CreatedAt.Format(time.RFC3339))
 		} else {
 			fmt.Printf("[Content Repository] Failed to find cursor post %s: %v, ignoring cursor\n", cursor, err)
-			// 如果找不到cursor post，忽略cursor继续查询，而不是失败
+			// 如果找不到cursor post，忽略cursor继续查询，而不是失�?
 		}
 	}
 
@@ -666,8 +666,8 @@ func (r *postRepository) GetUserPosts(ctx context.Context, userID, requestingUse
 	return postList, nextCursor, hasMore, nil
 }
 
-// GetTimeline 获取时间线帖子 (For you feed - 显示所有公开帖子)
-func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+// GetTimeline 获取时间线帖�?(For you feed - 显示所有公开帖子)
+func (r *PostRepository) GetTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetTimeline (For you) called for userID: %s, limit: %d\n", userID, limit)
 
 	// For you feed显示所有公开帖子，包括用户自己的帖子
@@ -675,8 +675,8 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL AND is_reply = false").
 		Order("created_at DESC")
 
-	// 如果limit为-1，表示获取所有帖子，不应用限制
-	// 如果limit为0或正数，应用相应的限制
+	// 如果limit�?1，表示获取所有帖子，不应用限�?
+	// 如果limit�?或正数，应用相应的限�?
 	if limit > 0 {
 		query = query.Limit(int(limit))
 	}
@@ -713,8 +713,8 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 
 	// 生成下一页cursor（简化处理）
 	nextCursor := ""
-	// 如果limit为-1（获取所有帖子），则没有更多页面
-	// 否则，如果返回的帖子数等于limit，说明可能还有更多
+	// 如果limit�?1（获取所有帖子），则没有更多页面
+	// 否则，如果返回的帖子数等于limit，说明可能还有更�?
 	hasMore := limit > 0 && len(posts) == int(limit)
 	if hasMore && len(posts) > 0 {
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
@@ -724,11 +724,11 @@ func (r *postRepository) GetTimeline(ctx context.Context, userID string, limit i
 	return postList, nextCursor, hasMore, nil
 }
 
-// GetFollowingTimeline 获取关注用户时间线帖子 (Following feed)
-func (r *postRepository) GetFollowingTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+// GetFollowingTimeline 获取关注用户时间线帖�?(Following feed)
+func (r *PostRepository) GetFollowingTimeline(ctx context.Context, userID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetFollowingTimeline called for userID: %s, limit: %d\n", userID, limit)
 
-	// 获取用户关注的用户列表
+	// 获取用户关注的用户列�?
 	followingUserIDs, err := r.getFollowingUserIDs(ctx, userID)
 	if err != nil {
 		fmt.Printf("[Content Repository] Failed to get following users: %v\n", err)
@@ -738,7 +738,7 @@ func (r *postRepository) GetFollowingTimeline(ctx context.Context, userID string
 
 	fmt.Printf("[Content Repository] User %s is following %d users: %v\n", userID, len(followingUserIDs), followingUserIDs)
 
-	// 如果用户没有关注任何人，返回空结果
+	// 如果用户没有关注任何人，返回空结�?
 	if len(followingUserIDs) == 0 {
 		fmt.Printf("[Content Repository] User %s is not following anyone, returning empty timeline\n", userID)
 		return []*content_proto.Post{}, "", false, nil
@@ -749,8 +749,8 @@ func (r *postRepository) GetFollowingTimeline(ctx context.Context, userID string
 	query := r.db.Where("visibility = 'public' AND deleted_at IS NULL AND is_reply = false AND user_id IN ?", followingUserIDs).
 		Order("created_at DESC")
 
-	// 如果limit为-1，表示获取所有帖子，不应用限制
-	// 如果limit为0或正数，应用相应的限制
+	// 如果limit�?1，表示获取所有帖子，不应用限�?
+	// 如果limit�?或正数，应用相应的限�?
 	if limit > 0 {
 		query = query.Limit(int(limit))
 	}
@@ -797,7 +797,7 @@ func (r *postRepository) GetFollowingTimeline(ctx context.Context, userID string
 }
 
 // getFollowingUserIDs 获取用户关注的用户ID列表
-func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string) ([]string, error) {
+func (r *PostRepository) getFollowingUserIDs(ctx context.Context, userID string) ([]string, error) {
 	// 检查用户服务客户端是否可用
 	if r.userClient == nil {
 		return nil, fmt.Errorf("user service client not available")
@@ -805,7 +805,7 @@ func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string)
 
 	req := &user_proto.GetFollowingRequest{
 		UserId: userID,
-		First:  1000, // 获取最多1000个关注用户
+		First:  1000, // 获取最�?000个关注用�?
 		After:  "",
 	}
 
@@ -826,8 +826,8 @@ func (r *postRepository) getFollowingUserIDs(ctx context.Context, userID string)
 	return followingIDs, nil
 }
 
-// DeletePost 删除帖子（软删除）
-func (r *postRepository) DeletePost(ctx context.Context, id, userID string) error {
+// DeletePost 删除帖子（软删除�?
+func (r *PostRepository) DeletePost(ctx context.Context, id, userID string) error {
 	// 首先获取要删除的帖子信息，用于后续的计数更新
 	var post models.Post
 	if err := r.db.Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).First(&post).Error; err != nil {
@@ -837,7 +837,7 @@ func (r *postRepository) DeletePost(ctx context.Context, id, userID string) erro
 		return fmt.Errorf("failed to get post: %w", err)
 	}
 
-	// 执行软删除
+	// 执行软删�?
 	result := r.db.Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).
 		Update("deleted_at", time.Now())
 
@@ -869,8 +869,8 @@ func (r *postRepository) DeletePost(ctx context.Context, id, userID string) erro
 	return nil
 }
 
-// CheckReplyPermission 检查回复权限
-func (r *postRepository) CheckReplyPermission(ctx context.Context, postID, userID string) (bool, string, error) {
+// CheckReplyPermission 检查回复权�?
+func (r *PostRepository) CheckReplyPermission(ctx context.Context, postID, userID string) (bool, string, error) {
 	var post models.Post
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", postID).First(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -888,8 +888,8 @@ func (r *postRepository) CheckReplyPermission(ctx context.Context, postID, userI
 	case "EVERYONE":
 		return true, "", nil
 	case "FOLLOWING":
-		// 需要检查关注关系，这里简化处理
-		// 实际应该调用用户服务检查关注关系
+		// 需要检查关注关系，这里简化处�?
+		// 实际应该调用用户服务检查关注关�?
 		return true, "", nil // 临时返回true
 	case "MENTIONED_ONLY":
 		// 检查用户是否被提及
@@ -907,8 +907,8 @@ func (r *postRepository) CheckReplyPermission(ctx context.Context, postID, userI
 }
 
 // buildPostProto 构建帖子Proto对象
-func (r *postRepository) buildPostProto(ctx context.Context, post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *content_proto.PollData) (*content_proto.Post, error) {
-	// 获取实际的媒体附件从数据库
+func (r *PostRepository) buildPostProto(ctx context.Context, post *models.Post, mediaURLs []string, mentionedUsers []string, tags []string, poll *models.Poll, pollData *content_proto.PollData) (*content_proto.Post, error) {
+	// 获取实际的媒体附件从数据�?
 	var dbMediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
 
@@ -976,13 +976,13 @@ func (r *postRepository) buildPostProto(ctx context.Context, post *models.Post, 
 	// 构建统计信息
 	var replyCount int64
 	if post.IsReply && post.ReplyLevel == 2 {
-		// 对于二级回复：始终返回0，因为对二级回复的回复会归类到父级一级回复下
+		// 对于二级回复：始终返�?，因为对二级回复的回复会归类到父级一级回复下
 		replyCount = 0
 	} else if post.IsReply && post.ReplyLevel == 1 {
-		// 对于一级回复：统计所有以它为父级的二级回复
+		// 对于一级回复：统计所有以它为父级的二级回�?
 		r.db.Model(&models.Post{}).Where("parent_id = ? AND is_reply = true AND deleted_at IS NULL", post.ID).Count(&replyCount)
 	} else {
-		// 对于原帖：统计所有回复（一级和二级）
+		// 对于原帖：统计所有回复（一级和二级�?
 		r.db.Model(&models.Post{}).Where("(parent_id = ? OR root_id = ?) AND is_reply = true AND deleted_at IS NULL", post.ID, post.ID).Count(&replyCount)
 	}
 
@@ -1027,10 +1027,10 @@ func (r *postRepository) buildPostProto(ctx context.Context, post *models.Post, 
 }
 
 // buildPostList 构建帖子列表
-func (r *postRepository) buildPostList(posts []models.Post) ([]*content_proto.Post, error) {
+func (r *PostRepository) buildPostList(posts []models.Post) ([]*content_proto.Post, error) {
 	result := make([]*content_proto.Post, len(posts))
 	for i, post := range posts {
-		// 获取每个帖子的详细信息
+		// 获取每个帖子的详细信�?
 		postProto, err := r.GetPost(context.Background(), post.ID, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to build post %s: %w", post.ID, err)
@@ -1041,7 +1041,7 @@ func (r *postRepository) buildPostList(posts []models.Post) ([]*content_proto.Po
 }
 
 // getMediaURLs 从媒体附件中提取URL列表
-func (r *postRepository) getMediaURLs(attachments []models.MediaAttachment) []string {
+func (r *PostRepository) getMediaURLs(attachments []models.MediaAttachment) []string {
 	urls := make([]string, len(attachments))
 	for i, attachment := range attachments {
 		urls[i] = attachment.URL
@@ -1050,15 +1050,15 @@ func (r *postRepository) getMediaURLs(attachments []models.MediaAttachment) []st
 }
 
 // stringPtrToString 将字符串指针转换为字符串
-func (r *postRepository) stringPtrToString(ptr *string) string {
+func (r *PostRepository) stringPtrToString(ptr *string) string {
 	if ptr == nil {
 		return ""
 	}
 	return *ptr
 }
 
-// fetchUserInfo 从用户服务获取用户信息
-func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *content_proto.Author {
+// fetchUserInfo 从用户服务获取用户信�?
+func (r *PostRepository) fetchUserInfo(ctx context.Context, userID string) *content_proto.Author {
 	// 如果没有用户客户端，返回临时数据
 	if r.userClient == nil {
 		fmt.Printf("[Content Repository] No user client available, using fallback data for user: %s\n", userID)
@@ -1109,19 +1109,19 @@ func (r *postRepository) fetchUserInfo(ctx context.Context, userID string) *cont
 	}
 }
 
-// 保留旧的内容仓储方法以保持兼容性
-type contentRepository struct {
+// 保留旧的内容仓储方法以保持兼容�?
+type ContentRepository struct {
 	db *gorm.DB
 }
 
-func NewContentRepository() ContentRepository {
-	return &contentRepository{
+func NewContentRepository() *ContentRepository {
+	return &ContentRepository{
 		db: database.GetDB(),
 	}
 }
 
 // CreateContent 创建内容
-func (r *contentRepository) CreateContent(ctx context.Context, content *content_proto.Post) error {
+func (r *ContentRepository) CreateContent(ctx context.Context, content *content_proto.Post) error {
 	// 创建帖子
 	createdAt, _ := time.Parse(time.RFC3339, content.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, content.UpdatedAt)
@@ -1155,7 +1155,7 @@ func (r *contentRepository) CreateContent(ctx context.Context, content *content_
 }
 
 // GetContent 获取内容
-func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*content_proto.Post, error) {
+func (r *ContentRepository) GetContent(ctx context.Context, contentID string) (*content_proto.Post, error) {
 	var post models.Post
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", contentID).First(&post).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1188,7 +1188,7 @@ func (r *contentRepository) GetContent(ctx context.Context, contentID string) (*
 }
 
 // UpdateContent 更新内容
-func (r *contentRepository) UpdateContent(ctx context.Context, content *content_proto.Post) error {
+func (r *ContentRepository) UpdateContent(ctx context.Context, content *content_proto.Post) error {
 	// 更新帖子
 	updatedAt, _ := time.Parse(time.RFC3339, content.UpdatedAt)
 	post := &models.Post{
@@ -1201,7 +1201,7 @@ func (r *contentRepository) UpdateContent(ctx context.Context, content *content_
 		return err
 	}
 
-	// 更新媒体附件（简化处理，实际应支持增删改）
+	// 更新媒体附件（简化处理，实际应支持增删改�?
 	for _, mediaFile := range content.MediaAttachments {
 		postID := content.Id
 		media := &models.MediaAttachment{
@@ -1220,8 +1220,8 @@ func (r *contentRepository) UpdateContent(ctx context.Context, content *content_
 }
 
 // DeleteContent 删除内容
-func (r *contentRepository) DeleteContent(ctx context.Context, id string) error {
-	// 软删除帖子
+func (r *ContentRepository) DeleteContent(ctx context.Context, id string) error {
+	// 软删除帖�?
 	if err := r.db.Where("id = ?", id).Delete(&models.Post{}).Error; err != nil {
 		return err
 	}
@@ -1231,7 +1231,7 @@ func (r *contentRepository) DeleteContent(ctx context.Context, id string) error 
 }
 
 // ListContent 列出内容
-func (r *contentRepository) ListContent(ctx context.Context, userID string, page, pageSize int32) ([]*content_proto.Post, int32, error) {
+func (r *ContentRepository) ListContent(ctx context.Context, userID string, page, pageSize int32) ([]*content_proto.Post, int32, error) {
 	var posts []models.Post
 	var total int64
 
@@ -1275,7 +1275,7 @@ func (r *contentRepository) ListContent(ctx context.Context, userID string, page
 }
 
 // getMediaVariants 从Media服务获取媒体variants信息
-func (r *postRepository) getMediaVariants(ctx context.Context, mediaID string) *content_proto.MediaVariants {
+func (r *PostRepository) getMediaVariants(ctx context.Context, mediaID string) *content_proto.MediaVariants {
 	if r.mediaClient == nil {
 		log.Printf("[Content Repository] Media client not available, returning nil variants for media ID: %s", mediaID)
 		return nil
@@ -1390,15 +1390,15 @@ func (r *postRepository) getMediaVariants(ctx context.Context, mediaID string) *
 	return variants
 }
 
-// GetPostReplies 获取帖子的回复列表 - 优化版本
-func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+// GetPostReplies 获取帖子的回复列�?- 优化版本
+func (r *PostRepository) GetPostReplies(ctx context.Context, postID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetPostReplies called for postID: %s\n", postID)
 
 	// 优化查询：使用索引友好的查询方式
-	// 1. 先获取直接回复 (reply_level = 1, parent_id = postID)
-	// 2. 再获取嵌套回复 (reply_level = 2, root_id = postID)
+	// 1. 先获取直接回�?(reply_level = 1, parent_id = postID)
+	// 2. 再获取嵌套回�?(reply_level = 2, root_id = postID)
 	query := r.db.Where("((parent_id = ? AND reply_level = 1) OR (root_id = ? AND reply_level = 2)) AND is_reply = true AND deleted_at IS NULL", postID, postID).
-		Order("reply_level ASC, created_at ASC") // 改为ASC，保持时间顺序
+		Order("reply_level ASC, created_at ASC") // 改为ASC，保持时间顺�?
 
 	// 处理分页
 	if cursor != "" {
@@ -1421,7 +1421,7 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 	nextCursor := ""
 	if len(posts) > int(limit) {
 		hasMore = true
-		posts = posts[:limit] // 移除多余的记录
+		posts = posts[:limit] // 移除多余的记�?
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
 
@@ -1441,10 +1441,10 @@ func (r *postRepository) GetPostReplies(ctx context.Context, postID, requestingU
 }
 
 // GetConversationThread 获取完整对话线程
-func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
+func (r *PostRepository) GetConversationThread(ctx context.Context, rootID, requestingUserID string, limit int32, cursor string) ([]*content_proto.Post, string, bool, error) {
 	fmt.Printf("[Content Repository] GetConversationThread called for rootID: %s\n", rootID)
 
-	// 获取根帖子和所有相关回复
+	// 获取根帖子和所有相关回�?
 	query := r.db.Where("(id = ? OR root_id = ?) AND deleted_at IS NULL", rootID, rootID).
 		Order("reply_level ASC, created_at ASC")
 
@@ -1469,7 +1469,7 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 	nextCursor := ""
 	if len(posts) > int(limit) {
 		hasMore = true
-		posts = posts[:limit] // 移除多余的记录
+		posts = posts[:limit] // 移除多余的记�?
 		nextCursor = posts[len(posts)-1].CreatedAt.Format(time.RFC3339)
 	}
 
@@ -1489,10 +1489,10 @@ func (r *postRepository) GetConversationThread(ctx context.Context, rootID, requ
 }
 
 // DeleteReply 删除回复
-func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
+func (r *PostRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
 	fmt.Printf("[Content Repository] DeleteReply called for replyID: %s by user: %s\n", replyID, userID)
 
-	// 检查回复是否存在且属于该用户
+	// 检查回复是否存在且属于该用�?
 	var reply models.Post
 	if err := r.db.Where("id = ? AND user_id = ? AND is_reply = true AND deleted_at IS NULL", replyID, userID).First(&reply).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1501,7 +1501,7 @@ func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string
 		return fmt.Errorf("failed to find reply: %w", err)
 	}
 
-	// 软删除回复
+	// 软删除回�?
 	now := time.Now()
 	if err := r.db.Model(&reply).Update("deleted_at", now).Error; err != nil {
 		return fmt.Errorf("failed to delete reply: %w", err)
@@ -1511,9 +1511,9 @@ func (r *postRepository) DeleteReply(ctx context.Context, replyID, userID string
 	return nil
 }
 
-// buildPostProtoSimple 构建帖子Proto对象（简化版本，用于回复查询）
-func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.Post, requestingUserID string) (*content_proto.Post, error) {
-	// 获取实际的媒体附件从数据库
+// buildPostProtoSimple 构建帖子Proto对象（简化版本，用于回复查询�?
+func (r *PostRepository) buildPostProtoSimple(ctx context.Context, post *models.Post, requestingUserID string) (*content_proto.Post, error) {
+	// 获取实际的媒体附件从数据�?
 	var dbMediaAttachments []models.MediaAttachment
 	r.db.Where("post_id = ? AND deleted_at IS NULL", post.ID).Find(&dbMediaAttachments)
 
@@ -1532,7 +1532,7 @@ func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.
 		}
 	}
 
-	// 获取提及的用户
+	// 获取提及的用�?
 	var mentions []models.PostMention
 	r.db.Where("post_id = ?", post.ID).Find(&mentions)
 	mentionedUsers := make([]string, len(mentions))
@@ -1578,13 +1578,13 @@ func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.
 	// 构建统计信息
 	var replyCount int64
 	if post.IsReply && post.ReplyLevel == 2 {
-		// 对于二级回复：始终返回0，因为对二级回复的回复会归类到父级一级回复下
+		// 对于二级回复：始终返�?，因为对二级回复的回复会归类到父级一级回复下
 		replyCount = 0
 	} else if post.IsReply && post.ReplyLevel == 1 {
-		// 对于一级回复：统计所有以它为父级的二级回复
+		// 对于一级回复：统计所有以它为父级的二级回�?
 		r.db.Model(&models.Post{}).Where("parent_id = ? AND is_reply = true AND deleted_at IS NULL", post.ID).Count(&replyCount)
 	} else {
-		// 对于原帖：统计所有回复（一级和二级）
+		// 对于原帖：统计所有回复（一级和二级�?
 		r.db.Model(&models.Post{}).Where("(parent_id = ? OR root_id = ?) AND is_reply = true AND deleted_at IS NULL", post.ID, post.ID).Count(&replyCount)
 	}
 
@@ -1595,7 +1595,7 @@ func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.
 		ViewCount:   0,
 	}
 
-	// 构建作者信息
+	// 构建作者信�?
 	author := r.fetchUserInfo(context.Background(), post.UserID)
 	
 	// Security check: reject if user does not exist
@@ -1629,7 +1629,7 @@ func (r *postRepository) buildPostProtoSimple(ctx context.Context, post *models.
 }
 
 // GetReplyMention 获取回复提及信息
-func (r *postRepository) GetReplyMention(ctx context.Context, replyID string) (*content_proto.ReplyMention, error) {
+func (r *PostRepository) GetReplyMention(ctx context.Context, replyID string) (*content_proto.ReplyMention, error) {
 	db := database.GetDB()
 
 	var replyMention models.ReplyMention
@@ -1644,3 +1644,5 @@ func (r *postRepository) GetReplyMention(ctx context.Context, replyID string) (*
 		CreatedAt:       replyMention.CreatedAt.Format(time.RFC3339),
 	}, nil
 }
+
+

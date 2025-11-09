@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	// 初始化仓库
+	// 初始化仓�?
 	messageRepo := repository.NewMessageRepository()
 
-	// 初始化服务
+	// 初始化服�?
 	messageService := service.NewMessageService(messageRepo)
 
 	// 初始化服务端
@@ -30,3 +30,4 @@ func main() {
 		log.Fatalf("Failed to run messages service: %v", err)
 	}
 }
+

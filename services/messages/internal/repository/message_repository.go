@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"context"
@@ -13,19 +13,19 @@ import (
 )
 
 // messageRepository 消息仓储实现
-type messageRepository struct {
+type MessageRepository struct {
 	db *gorm.DB
 }
 
 // NewMessageRepository 创建消息仓储实例
-func NewMessageRepository() MessageRepository {
-	return &messageRepository{
+func NewMessageRepository() *MessageRepository {
+	return &MessageRepository{
 		db: database.GetDB(),
 	}
 }
 
 // CreateConversation 创建会话
-func (r *messageRepository) CreateConversation(ctx context.Context, conversation *proto.Conversation) error {
+func (r *MessageRepository) CreateConversation(ctx context.Context, conversation *proto.Conversation) error {
 	createdAt, _ := time.Parse(time.RFC3339, conversation.CreatedAt)
 	updatedAt, _ := time.Parse(time.RFC3339, conversation.UpdatedAt)
 	c := &models.Conversation{
@@ -41,7 +41,7 @@ func (r *messageRepository) CreateConversation(ctx context.Context, conversation
 }
 
 // GetConversationByID 根据ID获取会话
-func (r *messageRepository) GetConversationByID(ctx context.Context, id string) (*proto.Conversation, error) {
+func (r *MessageRepository) GetConversationByID(ctx context.Context, id string) (*proto.Conversation, error) {
 	var conversation models.Conversation
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&conversation).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -61,7 +61,7 @@ func (r *messageRepository) GetConversationByID(ctx context.Context, id string) 
 }
 
 // ListConversations 列出用户会话
-func (r *messageRepository) ListConversations(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Conversation, int32, error) {
+func (r *MessageRepository) ListConversations(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Conversation, int32, error) {
 	var conversations []models.Conversation
 	var total int64
 
@@ -92,7 +92,7 @@ func (r *messageRepository) ListConversations(ctx context.Context, userID string
 }
 
 // CreateMessage 创建消息
-func (r *messageRepository) CreateMessage(ctx context.Context, message *proto.Message) error {
+func (r *MessageRepository) CreateMessage(ctx context.Context, message *proto.Message) error {
 	createdAt, _ := time.Parse(time.RFC3339, message.CreatedAt)
 	m := &models.Message{
 		ID:             message.Id,
@@ -110,7 +110,7 @@ func (r *messageRepository) CreateMessage(ctx context.Context, message *proto.Me
 }
 
 // GetMessageByID 根据ID获取消息
-func (r *messageRepository) GetMessageByID(ctx context.Context, id string) (*proto.Message, error) {
+func (r *MessageRepository) GetMessageByID(ctx context.Context, id string) (*proto.Message, error) {
 	var message models.Message
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&message).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -136,7 +136,7 @@ func (r *messageRepository) GetMessageByID(ctx context.Context, id string) (*pro
 }
 
 // ListMessages 列出会话消息
-func (r *messageRepository) ListMessages(ctx context.Context, conversationID string, page, pageSize int32) ([]*proto.Message, int32, error) {
+func (r *MessageRepository) ListMessages(ctx context.Context, conversationID string, page, pageSize int32) ([]*proto.Message, int32, error) {
 	var messages []models.Message
 	var total int64
 
@@ -171,7 +171,7 @@ func (r *messageRepository) ListMessages(ctx context.Context, conversationID str
 }
 
 // MarkAsRead 标记消息为已读
-func (r *messageRepository) MarkAsRead(ctx context.Context, conversationID, userID string) error {
+func (r *MessageRepository) MarkAsRead(ctx context.Context, conversationID, userID string) error {
 	// 更新会话中用户不是发送者的消息为已读
 	return r.db.Model(&models.Message{}).
 		Where("conversation_id = ? AND sender_id != ?", conversationID, userID).
@@ -179,13 +179,13 @@ func (r *messageRepository) MarkAsRead(ctx context.Context, conversationID, user
 }
 
 // DeleteConversation 删除会话
-func (r *messageRepository) DeleteConversation(ctx context.Context, id string) error {
+func (r *MessageRepository) DeleteConversation(ctx context.Context, id string) error {
 	// 软删除会话
 	return r.db.Where("id = ?", id).Delete(&models.Conversation{}).Error
 }
 
 // UpdateConversationLastMessage 更新会话最后消息
-func (r *messageRepository) UpdateConversationLastMessage(ctx context.Context, conversationID, lastMessage string) error {
+func (r *MessageRepository) UpdateConversationLastMessage(ctx context.Context, conversationID, lastMessage string) error {
 	return r.db.Model(&models.Conversation{}).
 		Where("id = ? AND deleted_at IS NULL", conversationID).
 		Update("last_message", lastMessage).
@@ -199,3 +199,4 @@ func toString(s *string) string {
 	}
 	return *s
 }
+

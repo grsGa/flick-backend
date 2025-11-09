@@ -26,15 +26,15 @@ type MediaProcessor interface {
 }
 
 // postService 帖子服务实现
-type postService struct {
-	postRepo       repository.PostRepository
+type PostService struct {
+	postRepo       *repository.PostRepository
 	eventPublisher EventPublisher
 	mediaProcessor MediaProcessor
 }
 
 // NewPostService 创建帖子服务实例
-func NewPostService(postRepo repository.PostRepository, eventPublisher EventPublisher, mediaProcessor MediaProcessor) PostService {
-	return &postService{
+func NewPostService(postRepo *repository.PostRepository, eventPublisher EventPublisher, mediaProcessor MediaProcessor) *PostService {
+	return &PostService{
 		postRepo:       postRepo,
 		eventPublisher: eventPublisher,
 		mediaProcessor: mediaProcessor,
@@ -42,7 +42,7 @@ func NewPostService(postRepo repository.PostRepository, eventPublisher EventPubl
 }
 
 // CreatePost 创建帖子
-func (s *postService) CreatePost(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
+func (s *PostService) CreatePost(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
 	fmt.Printf("[Content Service] CreatePost called with:\n")
 	fmt.Printf("  UserID: %s\n", req.UserId)
 	fmt.Printf("  Content: %s\n", req.Content)
@@ -120,7 +120,7 @@ func (s *postService) CreatePost(ctx context.Context, req *proto.CreatePostReque
 }
 
 // GetPost 获取帖子
-func (s *postService) GetPost(ctx context.Context, req *proto.GetPostRequest) (*proto.GetPostResponse, error) {
+func (s *PostService) GetPost(ctx context.Context, req *proto.GetPostRequest) (*proto.GetPostResponse, error) {
 	post, err := s.postRepo.GetPost(ctx, req.PostId, req.RequestingUserId)
 	if err != nil {
 		return &proto.GetPostResponse{
@@ -137,7 +137,7 @@ func (s *postService) GetPost(ctx context.Context, req *proto.GetPostRequest) (*
 }
 
 // GetUserPosts 获取用户帖子列表
-func (s *postService) GetUserPosts(ctx context.Context, req *proto.GetUserPostsRequest) (*proto.GetUserPostsResponse, error) {
+func (s *PostService) GetUserPosts(ctx context.Context, req *proto.GetUserPostsRequest) (*proto.GetUserPostsResponse, error) {
 	posts, nextCursor, hasMore, err := s.postRepo.GetUserPosts(ctx, req.UserId, req.RequestingUserId, req.Limit, req.Cursor)
 	if err != nil {
 		return &proto.GetUserPostsResponse{
@@ -156,7 +156,7 @@ func (s *postService) GetUserPosts(ctx context.Context, req *proto.GetUserPostsR
 }
 
 // GetTimeline 获取时间线 (For you feed)
-func (s *postService) GetTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
+func (s *PostService) GetTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
 	posts, nextCursor, hasMore, err := s.postRepo.GetTimeline(ctx, req.UserId, req.Limit, req.Cursor)
 	if err != nil {
 		return &proto.GetTimelineResponse{
@@ -175,7 +175,7 @@ func (s *postService) GetTimeline(ctx context.Context, req *proto.GetTimelineReq
 }
 
 // GetFollowingTimeline 获取关注用户时间线 (Following feed)
-func (s *postService) GetFollowingTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
+func (s *PostService) GetFollowingTimeline(ctx context.Context, req *proto.GetTimelineRequest) (*proto.GetTimelineResponse, error) {
 	posts, nextCursor, hasMore, err := s.postRepo.GetFollowingTimeline(ctx, req.UserId, req.Limit, req.Cursor)
 	if err != nil {
 		return &proto.GetTimelineResponse{
@@ -194,7 +194,7 @@ func (s *postService) GetFollowingTimeline(ctx context.Context, req *proto.GetTi
 }
 
 // DeletePost 删除帖子
-func (s *postService) DeletePost(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error) {
+func (s *PostService) DeletePost(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error) {
 	err := s.postRepo.DeletePost(ctx, req.PostId, req.UserId)
 	if err != nil {
 		return &proto.DeletePostResponse{
@@ -212,7 +212,7 @@ func (s *postService) DeletePost(ctx context.Context, req *proto.DeletePostReque
 }
 
 // CheckReplyPermission 检查回复权限
-func (s *postService) CheckReplyPermission(ctx context.Context, req *proto.CheckReplyPermissionRequest) (*proto.CheckReplyPermissionResponse, error) {
+func (s *PostService) CheckReplyPermission(ctx context.Context, req *proto.CheckReplyPermissionRequest) (*proto.CheckReplyPermissionResponse, error) {
 	canReply, reason, err := s.postRepo.CheckReplyPermission(ctx, req.PostId, req.UserId)
 	if err != nil {
 		return &proto.CheckReplyPermissionResponse{
@@ -231,7 +231,7 @@ func (s *postService) CheckReplyPermission(ctx context.Context, req *proto.Check
 }
 
 // validateCreatePostRequest 验证创建帖子请求
-func (s *postService) validateCreatePostRequest(req *proto.CreatePostRequest) error {
+func (s *PostService) validateCreatePostRequest(req *proto.CreatePostRequest) error {
 	// 检查用户ID
 	if req.UserId == "" {
 		return errors.New("user ID is required")
@@ -298,19 +298,19 @@ func (s *postService) validateCreatePostRequest(req *proto.CreatePostRequest) er
 }
 
 // contentService 内容服务实现（保持兼容性）
-type contentService struct {
-	contentRepo repository.ContentRepository
+type ContentService struct {
+	contentRepo *repository.ContentRepository
 }
 
 // NewContentService 创建内容服务实例
-func NewContentService(contentRepo repository.ContentRepository) ContentService {
-	return &contentService{
+func NewContentService(contentRepo *repository.ContentRepository) *ContentService {
+	return &ContentService{
 		contentRepo: contentRepo,
 	}
 }
 
 // GetContent 获取内容（保持兼容性）
-func (s *contentService) GetContent(ctx context.Context, req *proto.GetPostRequest) (*proto.GetPostResponse, error) {
+func (s *ContentService) GetContent(ctx context.Context, req *proto.GetPostRequest) (*proto.GetPostResponse, error) {
 	content, err := s.contentRepo.GetContent(ctx, req.PostId)
 	if err != nil {
 		return &proto.GetPostResponse{
@@ -327,7 +327,7 @@ func (s *contentService) GetContent(ctx context.Context, req *proto.GetPostReque
 }
 
 // CreateContent 创建内容（保持兼容性）
-func (s *contentService) CreateContent(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
+func (s *ContentService) CreateContent(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
 	// 创建帖子对象
 	post := &proto.Post{
 		Id:              uuid.New().String(),
@@ -356,7 +356,7 @@ func (s *contentService) CreateContent(ctx context.Context, req *proto.CreatePos
 }
 
 // UpdateContent 更新内容（保持兼容性）
-func (s *contentService) UpdateContent(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
+func (s *ContentService) UpdateContent(ctx context.Context, req *proto.CreatePostRequest) (*proto.CreatePostResponse, error) {
 	// 首先获取现有内容
 	content, err := s.contentRepo.GetContent(ctx, req.UserId)
 	if err != nil {
@@ -392,7 +392,7 @@ func (s *contentService) UpdateContent(ctx context.Context, req *proto.CreatePos
 }
 
 // DeleteContent 删除内容（保持兼容性）
-func (s *contentService) DeleteContent(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error) {
+func (s *ContentService) DeleteContent(ctx context.Context, req *proto.DeletePostRequest) (*proto.DeletePostResponse, error) {
 	err := s.contentRepo.DeleteContent(ctx, req.PostId)
 	if err != nil {
 		return &proto.DeletePostResponse{
@@ -409,7 +409,7 @@ func (s *contentService) DeleteContent(ctx context.Context, req *proto.DeletePos
 }
 
 // ListContent 列出内容（保持兼容性）
-func (s *contentService) ListContent(ctx context.Context, req *proto.GetUserPostsRequest) (*proto.GetUserPostsResponse, error) {
+func (s *ContentService) ListContent(ctx context.Context, req *proto.GetUserPostsRequest) (*proto.GetUserPostsResponse, error) {
 	contents, total, err := s.contentRepo.ListContent(ctx, req.UserId, req.Limit, 20)
 	if err != nil {
 		return &proto.GetUserPostsResponse{
@@ -427,7 +427,7 @@ func (s *contentService) ListContent(ctx context.Context, req *proto.GetUserPost
 }
 
 // GetPostReplies 获取帖子回复
-func (s *postService) GetPostReplies(ctx context.Context, req *proto.GetPostRepliesRequest) (*proto.GetPostRepliesResponse, error) {
+func (s *PostService) GetPostReplies(ctx context.Context, req *proto.GetPostRepliesRequest) (*proto.GetPostRepliesResponse, error) {
 	// 验证请求参数
 	if req.PostId == "" {
 		return &proto.GetPostRepliesResponse{
@@ -464,7 +464,7 @@ func (s *postService) GetPostReplies(ctx context.Context, req *proto.GetPostRepl
 }
 
 // GetConversationThread 获取对话线程
-func (s *postService) GetConversationThread(ctx context.Context, req *proto.GetConversationThreadRequest) (*proto.GetConversationThreadResponse, error) {
+func (s *PostService) GetConversationThread(ctx context.Context, req *proto.GetConversationThreadRequest) (*proto.GetConversationThreadResponse, error) {
 	// 验证请求参数
 	if req.RootId == "" {
 		return &proto.GetConversationThreadResponse{
@@ -501,7 +501,7 @@ func (s *postService) GetConversationThread(ctx context.Context, req *proto.GetC
 }
 
 // DeleteReply 删除回复
-func (s *postService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+func (s *PostService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
 	// 验证请求参数
 	if req.ReplyId == "" {
 		return &proto.DeleteReplyResponse{
@@ -538,7 +538,7 @@ func (s *postService) DeleteReply(ctx context.Context, req *proto.DeleteReplyReq
 }
 
 // GetReplyMention 获取回复提及信息
-func (s *postService) GetReplyMention(ctx context.Context, req *proto.GetReplyMentionRequest) (*proto.GetReplyMentionResponse, error) {
+func (s *PostService) GetReplyMention(ctx context.Context, req *proto.GetReplyMentionRequest) (*proto.GetReplyMentionResponse, error) {
 	// 验证请求参数
 	if req.ReplyId == "" {
 		return &proto.GetReplyMentionResponse{

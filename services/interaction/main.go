@@ -24,7 +24,7 @@ import (
 // interactionServiceServer gRPC服务器包装器
 type interactionServiceServer struct {
 	proto.UnimplementedInteractionServiceServer
-	service service.InteractionService
+	service *service.InteractionService
 }
 
 // CreateFollow 创建关注

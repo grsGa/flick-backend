@@ -10,55 +10,55 @@ import (
 )
 
 // grpcServer gRPC服务实现
-type grpcServer struct {
+type GRPCServer struct {
 	proto.UnimplementedMessageServiceServer
-	messageService service.MessageService
+	messageService *service.MessageService
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(messageService service.MessageService) *grpcServer {
-	return &grpcServer{
+func NewGRPCServer(messageService *service.MessageService) *GRPCServer {
+	return &GRPCServer{
 		messageService: messageService,
 	}
 }
 
 // CreateConversation 实现创建会话接口
-func (s *grpcServer) CreateConversation(ctx context.Context, req *proto.CreateConversationRequest) (*proto.CreateConversationResponse, error) {
+func (s *GRPCServer) CreateConversation(ctx context.Context, req *proto.CreateConversationRequest) (*proto.CreateConversationResponse, error) {
 	return s.messageService.CreateConversation(ctx, req)
 }
 
 // ListConversations 实现获取会话列表接口
-func (s *grpcServer) ListConversations(ctx context.Context, req *proto.ListConversationsRequest) (*proto.ListConversationsResponse, error) {
+func (s *GRPCServer) ListConversations(ctx context.Context, req *proto.ListConversationsRequest) (*proto.ListConversationsResponse, error) {
 	return s.messageService.ListConversations(ctx, req)
 }
 
 // GetConversation 实现获取会话详情接口
-func (s *grpcServer) GetConversation(ctx context.Context, req *proto.GetConversationRequest) (*proto.GetConversationResponse, error) {
+func (s *GRPCServer) GetConversation(ctx context.Context, req *proto.GetConversationRequest) (*proto.GetConversationResponse, error) {
 	return s.messageService.GetConversation(ctx, req)
 }
 
 // SendMessage 实现发送消息接口
-func (s *grpcServer) SendMessage(ctx context.Context, req *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
+func (s *GRPCServer) SendMessage(ctx context.Context, req *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
 	return s.messageService.SendMessage(ctx, req)
 }
 
 // ListMessages 实现获取消息列表接口
-func (s *grpcServer) ListMessages(ctx context.Context, req *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
+func (s *GRPCServer) ListMessages(ctx context.Context, req *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
 	return s.messageService.ListMessages(ctx, req)
 }
 
 // MarkAsRead 实现标记消息为已读接口
-func (s *grpcServer) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
+func (s *GRPCServer) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
 	return s.messageService.MarkAsRead(ctx, req)
 }
 
 // DeleteConversation 实现删除会话接口
-func (s *grpcServer) DeleteConversation(ctx context.Context, req *proto.DeleteConversationRequest) (*proto.DeleteConversationResponse, error) {
+func (s *GRPCServer) DeleteConversation(ctx context.Context, req *proto.DeleteConversationRequest) (*proto.DeleteConversationResponse, error) {
 	return s.messageService.DeleteConversation(ctx, req)
 }
 
 // Run 启动gRPC服务
-func (s *grpcServer) Run(port string) error {
+func (s *GRPCServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -69,3 +69,4 @@ func (s *grpcServer) Run(port string) error {
 
 	return grpcServer.Serve(lis)
 }
+

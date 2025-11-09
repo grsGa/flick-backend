@@ -14,27 +14,27 @@ import (
 )
 
 // mediaRepository 媒体仓储实现
-type mediaRepository struct {
+type MediaRepository struct {
 	db          *gorm.DB
-	storageRepo *MinIOStorageRepository
+    storage *MinIOStorageRepository
 }
 
 // NewMediaRepository 创建媒体仓储实例
-func NewMediaRepository(storageRepo *MinIOStorageRepository) MediaRepository {
-	return &mediaRepository{
+func NewMediaRepository(storage *MinIOStorageRepository) *MediaRepository {
+	return &MediaRepository{
 		db:          database.GetDB(),
-		storageRepo: storageRepo,
+		storage: storage,
 	}
 }
 
 // CreateFile 创建文件记录
-func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile) error {
+func (r *MediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile) error {
 	createdAt, _ := time.Parse(time.RFC3339, file.CreatedAt)
 	media := &models.MediaAttachment{
 		ID:        file.Id,
 		PostID:    nil,           // 对于头像/横幅等独立文件，PostID为nil
 		UserID:    file.UserId,   // 添加用户ID字段
-		Filename:  file.Filename, // 设置文件名
+		Filename:  file.Filename, // 设置文件�?
 		URL:       file.Url,
 		Type:      file.Type,
 		MimeType:  file.MimeType, // 设置MIME类型
@@ -42,7 +42,7 @@ func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile)
 		CreatedAt: createdAt,
 	}
 
-	// 如果有PostID，则设置它
+	// 如果有PostID，则设置�?
 	if file.PostId != "" {
 		media.PostID = &file.PostId
 	}
@@ -51,7 +51,7 @@ func (r *mediaRepository) CreateFile(ctx context.Context, file *proto.MediaFile)
 }
 
 // GetFileByID 根据ID获取文件
-func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.MediaFile, error) {
+func (r *MediaRepository) GetFileByID(ctx context.Context, id string) (*proto.MediaFile, error) {
 	var media models.MediaAttachment
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&media).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -192,7 +192,7 @@ func (r *mediaRepository) GetFileByID(ctx context.Context, id string) (*proto.Me
 }
 
 // GetFileByURL 根据URL获取文件
-func (r *mediaRepository) GetFileByURL(ctx context.Context, url string) (*proto.MediaFile, error) {
+func (r *MediaRepository) GetFileByURL(ctx context.Context, url string) (*proto.MediaFile, error) {
 	var media models.MediaAttachment
 	if err := r.db.Where("url = ? AND deleted_at IS NULL", url).First(&media).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -332,10 +332,10 @@ func (r *mediaRepository) GetFileByURL(ctx context.Context, url string) (*proto.
 }
 
 // UpdateFile 更新文件记录
-func (r *mediaRepository) UpdateFile(ctx context.Context, file *proto.MediaFile) error {
+func (r *MediaRepository) UpdateFile(ctx context.Context, file *proto.MediaFile) error {
 	updatedAt, _ := time.Parse(time.RFC3339, file.UpdatedAt)
 
-	// 将proto.MediaVariants转换为models.MediaVariants（JSON格式）
+	// 将proto.MediaVariants转换为models.MediaVariants（JSON格式�?
 	var variants models.MediaVariants
 	if file.Variants != nil {
 		if file.Variants.Thumbnail != nil {
@@ -428,14 +428,14 @@ func (r *mediaRepository) UpdateFile(ctx context.Context, file *proto.MediaFile)
 }
 
 // DeleteFile 删除文件记录
-func (r *mediaRepository) DeleteFile(ctx context.Context, id string) error {
+func (r *MediaRepository) DeleteFile(ctx context.Context, id string) error {
 	return r.db.Where("id = ?", id).Delete(&models.MediaAttachment{}).Error
 }
 
 // ListFiles 列出文件
-func (r *mediaRepository) ListFiles(ctx context.Context, userID string, page, pageSize int32) ([]*proto.MediaFile, int32, error) {
-	// 注意：由于媒体附件与帖子关联而不是直接与用户关联，
-	// 这里需要与内容服务进行交互来获取特定用户的所有媒体文件
+func (r *MediaRepository) ListFiles(ctx context.Context, userID string, page, pageSize int32) ([]*proto.MediaFile, int32, error) {
+	// 注意：由于媒体附件与帖子关联而不是直接与用户关联�?
+	// 这里需要与内容服务进行交互来获取特定用户的所有媒体文�?
 	// 为简化实现，这里仅演示查询逻辑
 
 	var mediaAttachments []models.MediaAttachment
@@ -468,19 +468,19 @@ func (r *mediaRepository) ListFiles(ctx context.Context, userID string, page, pa
 }
 
 // SaveFileToStorage 保存文件到MinIO存储
-func (r *mediaRepository) SaveFileToStorage(ctx context.Context, fileID string, fileData []byte, contentType, category, userID string) (string, error) {
+func (r *MediaRepository) SaveFileToStorage(ctx context.Context, fileID string, fileData []byte, contentType, category, userID string) (string, error) {
 	// 使用MinIO存储文件
 	reader := bytes.NewReader(fileData)
 	fileSize := int64(len(fileData))
-	return r.storageRepo.UploadFile(ctx, reader, fileSize, contentType, category, userID)
+	return r.storage.UploadFile(ctx, reader, fileSize, contentType, category, userID)
 }
 
 // DeleteFileFromStorage 从存储中删除文件
-func (r *mediaRepository) DeleteFileFromStorage(ctx context.Context, url string) error {
-	return r.storageRepo.DeleteFile(ctx, url)
+func (r *MediaRepository) DeleteFileFromStorage(ctx context.Context, url string) error {
+	return r.storage.DeleteFile(ctx, url)
 }
 
-// toString 将*string转换为string
+// toString �?string转换为string
 func toString(s *string) string {
 	if s == nil {
 		return ""
@@ -488,10 +488,11 @@ func toString(s *string) string {
 	return *s
 }
 
-// formatTimePtr 将*time.Time转换为RFC3339格式字符串
+// formatTimePtr �?time.Time转换为RFC3339格式字符�?
 func formatTimePtr(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
 	return t.Format(time.RFC3339)
 }
+

@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"context"
@@ -10,35 +10,35 @@ import (
 )
 
 // grpcServer gRPC服务实现
-type grpcServer struct {
+type GRPCServer struct {
 	proto.UnimplementedRecommendationServiceServer
-	recommendationService service.RecommendationService
+	recommendationService *service.RecommendationService
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(recommendationService service.RecommendationService) *grpcServer {
-	return &grpcServer{
+func NewGRPCServer(recommendationService *service.RecommendationService) *GRPCServer {
+	return &GRPCServer{
 		recommendationService: recommendationService,
 	}
 }
 
 // GetRecommendations 实现获取推荐内容接口
-func (s *grpcServer) GetRecommendations(ctx context.Context, req *proto.GetRecommendationsRequest) (*proto.GetRecommendationsResponse, error) {
+func (s *GRPCServer) GetRecommendations(ctx context.Context, req *proto.GetRecommendationsRequest) (*proto.GetRecommendationsResponse, error) {
 	return s.recommendationService.GetRecommendations(ctx, req)
 }
 
 // RecordUserAction 实现记录用户行为接口
-func (s *grpcServer) RecordUserAction(ctx context.Context, req *proto.RecordUserActionRequest) (*proto.RecordUserActionResponse, error) {
+func (s *GRPCServer) RecordUserAction(ctx context.Context, req *proto.RecordUserActionRequest) (*proto.RecordUserActionResponse, error) {
 	return s.recommendationService.RecordUserAction(ctx, req)
 }
 
 // UpdateUserInterest 实现更新用户兴趣接口
-func (s *grpcServer) UpdateUserInterest(ctx context.Context, req *proto.UpdateUserInterestRequest) (*proto.UpdateUserInterestResponse, error) {
+func (s *GRPCServer) UpdateUserInterest(ctx context.Context, req *proto.UpdateUserInterestRequest) (*proto.UpdateUserInterestResponse, error) {
 	return s.recommendationService.UpdateUserInterest(ctx, req)
 }
 
 // Run 启动gRPC服务
-func (s *grpcServer) Run(port string) error {
+func (s *GRPCServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -49,3 +49,4 @@ func (s *grpcServer) Run(port string) error {
 	
 	return grpcServer.Serve(lis)
 }
+

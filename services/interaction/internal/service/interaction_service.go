@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 )
 
 // interactionService 互动服务实现
-type interactionService struct {
-	interactionRepo repository.InteractionRepository
+type InteractionService struct {
+	interactionRepo *repository.InteractionRepository
 }
 
 // NewInteractionService 创建互动服务实例
-func NewInteractionService(interactionRepo repository.InteractionRepository) InteractionService {
-	return &interactionService{
+func NewInteractionService(interactionRepo *repository.InteractionRepository) *InteractionService {
+	return &InteractionService{
 		interactionRepo: interactionRepo,
 	}
 }
 
 // CreateFollow 创建关注
-func (s *interactionService) CreateFollow(ctx context.Context, req *proto.CreateFollowRequest) (*proto.CreateFollowResponse, error) {
+func (s *InteractionService) CreateFollow(ctx context.Context, req *proto.CreateFollowRequest) (*proto.CreateFollowResponse, error) {
 	// 检查是否已经关注
 	isFollowing, err := s.interactionRepo.IsFollowing(ctx, req.FollowerId, req.FolloweeId)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *interactionService) CreateFollow(ctx context.Context, req *proto.Create
 }
 
 // DeleteFollow 删除关注
-func (s *interactionService) DeleteFollow(ctx context.Context, req *proto.DeleteFollowRequest) (*proto.DeleteFollowResponse, error) {
+func (s *InteractionService) DeleteFollow(ctx context.Context, req *proto.DeleteFollowRequest) (*proto.DeleteFollowResponse, error) {
 	err := s.interactionRepo.DeleteFollow(ctx, req.FollowerId, req.FolloweeId)
 	if err != nil {
 		return &proto.DeleteFollowResponse{
@@ -95,7 +95,7 @@ func (s *interactionService) DeleteFollow(ctx context.Context, req *proto.Delete
 }
 
 // IsFollowing 检查是否关注
-func (s *interactionService) IsFollowing(ctx context.Context, req *proto.IsFollowingRequest) (*proto.IsFollowingResponse, error) {
+func (s *InteractionService) IsFollowing(ctx context.Context, req *proto.IsFollowingRequest) (*proto.IsFollowingResponse, error) {
 	isFollowing, err := s.interactionRepo.IsFollowing(ctx, req.FollowerId, req.FolloweeId)
 	if err != nil {
 		return &proto.IsFollowingResponse{
@@ -112,7 +112,7 @@ func (s *interactionService) IsFollowing(ctx context.Context, req *proto.IsFollo
 }
 
 // GetFollowers 获取粉丝列表
-func (s *interactionService) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
+func (s *InteractionService) GetFollowers(ctx context.Context, req *proto.GetFollowersRequest) (*proto.GetFollowersResponse, error) {
 	followers, total, err := s.interactionRepo.GetFollowers(ctx, req.UserId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.GetFollowersResponse{
@@ -130,7 +130,7 @@ func (s *interactionService) GetFollowers(ctx context.Context, req *proto.GetFol
 }
 
 // GetFollowing 获取关注列表
-func (s *interactionService) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
+func (s *InteractionService) GetFollowing(ctx context.Context, req *proto.GetFollowingRequest) (*proto.GetFollowingResponse, error) {
 	following, total, err := s.interactionRepo.GetFollowing(ctx, req.UserId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.GetFollowingResponse{
@@ -148,7 +148,7 @@ func (s *interactionService) GetFollowing(ctx context.Context, req *proto.GetFol
 }
 
 // CreateLike 创建点赞
-func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLikeRequest) (*proto.CreateLikeResponse, error) {
+func (s *InteractionService) CreateLike(ctx context.Context, req *proto.CreateLikeRequest) (*proto.CreateLikeResponse, error) {
 	// 检查是否已经点赞
 	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
 	if err != nil {
@@ -195,7 +195,7 @@ func (s *interactionService) CreateLike(ctx context.Context, req *proto.CreateLi
 }
 
 // DeleteLike 删除点赞
-func (s *interactionService) DeleteLike(ctx context.Context, req *proto.DeleteLikeRequest) (*proto.DeleteLikeResponse, error) {
+func (s *InteractionService) DeleteLike(ctx context.Context, req *proto.DeleteLikeRequest) (*proto.DeleteLikeResponse, error) {
 	err := s.interactionRepo.DeleteLike(ctx, req.UserId, req.PostId)
 	if err != nil {
 		return &proto.DeleteLikeResponse{
@@ -213,7 +213,7 @@ func (s *interactionService) DeleteLike(ctx context.Context, req *proto.DeleteLi
 }
 
 // IsLiked 检查是否点赞
-func (s *interactionService) IsLiked(ctx context.Context, req *proto.IsLikedRequest) (*proto.IsLikedResponse, error) {
+func (s *InteractionService) IsLiked(ctx context.Context, req *proto.IsLikedRequest) (*proto.IsLikedResponse, error) {
 	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
 	if err != nil {
 		return &proto.IsLikedResponse{
@@ -230,7 +230,7 @@ func (s *interactionService) IsLiked(ctx context.Context, req *proto.IsLikedRequ
 }
 
 // GetLikes 获取点赞列表
-func (s *interactionService) GetLikes(ctx context.Context, req *proto.GetLikesRequest) (*proto.GetLikesResponse, error) {
+func (s *InteractionService) GetLikes(ctx context.Context, req *proto.GetLikesRequest) (*proto.GetLikesResponse, error) {
 	likes, total, err := s.interactionRepo.GetLikes(ctx, req.PostId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.GetLikesResponse{
@@ -248,7 +248,7 @@ func (s *interactionService) GetLikes(ctx context.Context, req *proto.GetLikesRe
 }
 
 // CreateRepost 创建转发
-func (s *interactionService) CreateRepost(ctx context.Context, req *proto.CreateRepostRequest) (*proto.CreateRepostResponse, error) {
+func (s *InteractionService) CreateRepost(ctx context.Context, req *proto.CreateRepostRequest) (*proto.CreateRepostResponse, error) {
 	// 创建转发对象
 	repost := &proto.Repost{
 		Id:        uuid.New().String(),
@@ -275,7 +275,7 @@ func (s *interactionService) CreateRepost(ctx context.Context, req *proto.Create
 }
 
 // DeleteRepost 删除转发
-func (s *interactionService) DeleteRepost(ctx context.Context, req *proto.DeleteRepostRequest) (*proto.DeleteRepostResponse, error) {
+func (s *InteractionService) DeleteRepost(ctx context.Context, req *proto.DeleteRepostRequest) (*proto.DeleteRepostResponse, error) {
 	err := s.interactionRepo.DeleteRepost(ctx, req.UserId, req.PostId)
 	if err != nil {
 		return &proto.DeleteRepostResponse{
@@ -293,7 +293,7 @@ func (s *interactionService) DeleteRepost(ctx context.Context, req *proto.Delete
 }
 
 // CreateReport 创建举报
-func (s *interactionService) CreateReport(ctx context.Context, req *proto.CreateReportRequest) (*proto.CreateReportResponse, error) {
+func (s *InteractionService) CreateReport(ctx context.Context, req *proto.CreateReportRequest) (*proto.CreateReportResponse, error) {
 	// 创建举报对象
 	report := &proto.Report{
 		Id:         uuid.New().String(),
@@ -321,7 +321,7 @@ func (s *interactionService) CreateReport(ctx context.Context, req *proto.Create
 }
 
 // IsBookmarked 检查是否收藏
-func (s *interactionService) IsBookmarked(ctx context.Context, req *proto.IsBookmarkedRequest) (*proto.IsBookmarkedResponse, error) {
+func (s *InteractionService) IsBookmarked(ctx context.Context, req *proto.IsBookmarkedRequest) (*proto.IsBookmarkedResponse, error) {
 	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
 	if err != nil {
 		return &proto.IsBookmarkedResponse{
@@ -338,7 +338,7 @@ func (s *interactionService) IsBookmarked(ctx context.Context, req *proto.IsBook
 }
 
 // GetBookmarks 获取收藏列表
-func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBookmarksRequest) (*proto.GetBookmarksResponse, error) {
+func (s *InteractionService) GetBookmarks(ctx context.Context, req *proto.GetBookmarksRequest) (*proto.GetBookmarksResponse, error) {
 	bookmarks, nextCursor, hasMore, err := s.interactionRepo.GetBookmarks(ctx, req.UserId, req.Limit, req.Cursor)
 	if err != nil {
 		return &proto.GetBookmarksResponse{
@@ -357,7 +357,7 @@ func (s *interactionService) GetBookmarks(ctx context.Context, req *proto.GetBoo
 }
 
 // CreateReply 创建回复
-func (s *interactionService) CreateReply(ctx context.Context, req *proto.CreateReplyRequest) (*proto.CreateReplyResponse, error) {
+func (s *InteractionService) CreateReply(ctx context.Context, req *proto.CreateReplyRequest) (*proto.CreateReplyResponse, error) {
 	reply := &proto.Reply{
 		Id:            uuid.New().String(),
 		PostId:        req.PostId,
@@ -384,7 +384,7 @@ func (s *interactionService) CreateReply(ctx context.Context, req *proto.CreateR
 }
 
 // DeleteReply 删除回复
-func (s *interactionService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
+func (s *InteractionService) DeleteReply(ctx context.Context, req *proto.DeleteReplyRequest) (*proto.DeleteReplyResponse, error) {
 	err := s.interactionRepo.DeleteReply(ctx, req.ReplyId, req.UserId)
 	if err != nil {
 		return &proto.DeleteReplyResponse{
@@ -401,7 +401,7 @@ func (s *interactionService) DeleteReply(ctx context.Context, req *proto.DeleteR
 }
 
 // GetReplies 获取回复列表
-func (s *interactionService) GetReplies(ctx context.Context, req *proto.GetRepliesRequest) (*proto.GetRepliesResponse, error) {
+func (s *InteractionService) GetReplies(ctx context.Context, req *proto.GetRepliesRequest) (*proto.GetRepliesResponse, error) {
 	replies, nextCursor, hasMore, err := s.interactionRepo.GetReplies(ctx, req.PostId, req.Limit, req.Cursor)
 	if err != nil {
 		return &proto.GetRepliesResponse{
@@ -420,7 +420,7 @@ func (s *interactionService) GetReplies(ctx context.Context, req *proto.GetRepli
 }
 
 // GetPostStats 获取帖子统计
-func (s *interactionService) GetPostStats(ctx context.Context, req *proto.GetPostStatsRequest) (*proto.GetPostStatsResponse, error) {
+func (s *InteractionService) GetPostStats(ctx context.Context, req *proto.GetPostStatsRequest) (*proto.GetPostStatsResponse, error) {
 	stats, err := s.interactionRepo.GetPostStats(ctx, req.PostId)
 	if err != nil {
 		return &proto.GetPostStatsResponse{
@@ -437,7 +437,7 @@ func (s *interactionService) GetPostStats(ctx context.Context, req *proto.GetPos
 }
 
 // UpdatePostStats 更新帖子统计
-func (s *interactionService) UpdatePostStats(ctx context.Context, req *proto.UpdatePostStatsRequest) (*proto.UpdatePostStatsResponse, error) {
+func (s *InteractionService) UpdatePostStats(ctx context.Context, req *proto.UpdatePostStatsRequest) (*proto.UpdatePostStatsResponse, error) {
 	stats, err := s.interactionRepo.UpdatePostStats(ctx, req.PostId, req.Action, req.Delta)
 	if err != nil {
 		return &proto.UpdatePostStatsResponse{
@@ -454,7 +454,7 @@ func (s *interactionService) UpdatePostStats(ctx context.Context, req *proto.Upd
 }
 
 // VotePoll 投票
-func (s *interactionService) VotePoll(ctx context.Context, req *proto.VotePollRequest) (*proto.VotePollResponse, error) {
+func (s *InteractionService) VotePoll(ctx context.Context, req *proto.VotePollRequest) (*proto.VotePollResponse, error) {
 	vote := &proto.PollVote{
 		Id:           uuid.New().String(),
 		PollId:       req.PollId,
@@ -479,7 +479,7 @@ func (s *interactionService) VotePoll(ctx context.Context, req *proto.VotePollRe
 }
 
 // CreateBookmark 创建收藏
-func (s *interactionService) CreateBookmark(ctx context.Context, req *proto.CreateBookmarkRequest) (*proto.CreateBookmarkResponse, error) {
+func (s *InteractionService) CreateBookmark(ctx context.Context, req *proto.CreateBookmarkRequest) (*proto.CreateBookmarkResponse, error) {
 	// 检查是否已经收藏
 	isBookmarked, err := s.interactionRepo.IsBookmarked(ctx, req.UserId, req.PostId)
 	if err != nil {
@@ -523,7 +523,7 @@ func (s *interactionService) CreateBookmark(ctx context.Context, req *proto.Crea
 }
 
 // DeleteBookmark 删除收藏
-func (s *interactionService) DeleteBookmark(ctx context.Context, req *proto.DeleteBookmarkRequest) (*proto.DeleteBookmarkResponse, error) {
+func (s *InteractionService) DeleteBookmark(ctx context.Context, req *proto.DeleteBookmarkRequest) (*proto.DeleteBookmarkResponse, error) {
 	err := s.interactionRepo.DeleteBookmark(ctx, req.UserId, req.PostId)
 	if err != nil {
 		return &proto.DeleteBookmarkResponse{
@@ -540,7 +540,7 @@ func (s *interactionService) DeleteBookmark(ctx context.Context, req *proto.Dele
 }
 
 // LikePost 点赞帖子 (高级接口，包含统计更新)
-func (s *interactionService) LikePost(ctx context.Context, req *proto.LikePostRequest) (*proto.LikePostResponse, error) {
+func (s *InteractionService) LikePost(ctx context.Context, req *proto.LikePostRequest) (*proto.LikePostResponse, error) {
 	// 检查是否已经点赞
 	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
 	if err != nil {
@@ -603,7 +603,7 @@ func (s *interactionService) LikePost(ctx context.Context, req *proto.LikePostRe
 }
 
 // UnlikePost 取消点赞帖子 (高级接口，包含统计更新)
-func (s *interactionService) UnlikePost(ctx context.Context, req *proto.UnlikePostRequest) (*proto.UnlikePostResponse, error) {
+func (s *InteractionService) UnlikePost(ctx context.Context, req *proto.UnlikePostRequest) (*proto.UnlikePostResponse, error) {
 	// 检查是否已经点赞
 	isLiked, err := s.interactionRepo.IsLiked(ctx, req.UserId, req.PostId)
 	if err != nil {
@@ -657,3 +657,4 @@ func (s *interactionService) UnlikePost(ctx context.Context, req *proto.UnlikePo
 		LikeCount: stats.LikeCount,
 	}, nil
 }
+

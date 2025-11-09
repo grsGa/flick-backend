@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -7,19 +7,19 @@ import (
 )
 
 // searchService 搜索服务实现
-type searchService struct {
-	searchRepo repository.SearchRepository
+type SearchService struct {
+	searchRepo *repository.SearchRepository
 }
 
 // NewSearchService 创建搜索服务实例
-func NewSearchService(searchRepo repository.SearchRepository) SearchService {
-	return &searchService{
+func NewSearchService(searchRepo *repository.SearchRepository) *SearchService {
+	return &SearchService{
 		searchRepo: searchRepo,
 	}
 }
 
 // SearchContent 搜索内容
-func (s *searchService) SearchContent(ctx context.Context, req *proto.SearchContentRequest) (*proto.SearchContentResponse, error) {
+func (s *SearchService) SearchContent(ctx context.Context, req *proto.SearchContentRequest) (*proto.SearchContentResponse, error) {
 	items, total, err := s.searchRepo.SearchContent(ctx, req.Query, req.Page, req.PageSize, req.SortBy)
 	if err != nil {
 		return &proto.SearchContentResponse{
@@ -37,7 +37,7 @@ func (s *searchService) SearchContent(ctx context.Context, req *proto.SearchCont
 }
 
 // SearchUsers 搜索用户
-func (s *searchService) SearchUsers(ctx context.Context, req *proto.SearchUsersRequest) (*proto.SearchUsersResponse, error) {
+func (s *SearchService) SearchUsers(ctx context.Context, req *proto.SearchUsersRequest) (*proto.SearchUsersResponse, error) {
 	items, total, err := s.searchRepo.SearchUsers(ctx, req.Query, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.SearchUsersResponse{
@@ -55,7 +55,7 @@ func (s *searchService) SearchUsers(ctx context.Context, req *proto.SearchUsersR
 }
 
 // SearchHashtags 搜索标签
-func (s *searchService) SearchHashtags(ctx context.Context, req *proto.SearchHashtagsRequest) (*proto.SearchHashtagsResponse, error) {
+func (s *SearchService) SearchHashtags(ctx context.Context, req *proto.SearchHashtagsRequest) (*proto.SearchHashtagsResponse, error) {
 	items, total, err := s.searchRepo.SearchHashtags(ctx, req.Query, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.SearchHashtagsResponse{
@@ -71,3 +71,4 @@ func (s *searchService) SearchHashtags(ctx context.Context, req *proto.SearchHas
 		Total: total,
 	}, nil
 }
+

@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 )
 
 // grpcServer gRPC服务实现
-type grpcServer struct {
+type GRPCServer struct {
 	proto.UnimplementedMediaServiceServer
-	mediaService service.MediaService
+	mediaService *service.MediaService
 	config       *config.Config
 	userClient   user_proto.UserServiceClient
 }
 
 // NewGRPCServer 创建gRPC服务实例
-func NewGRPCServer(mediaService service.MediaService, cfg *config.Config) *grpcServer {
+func NewGRPCServer(mediaService *service.MediaService, cfg *config.Config) *GRPCServer {
 	// 创建user service客户端连接 - 重试机制
 	var userConn *grpc.ClientConn
 	var err error
@@ -51,7 +51,7 @@ func NewGRPCServer(mediaService service.MediaService, cfg *config.Config) *grpcS
 
 	userClient := user_proto.NewUserServiceClient(userConn)
 
-	return &grpcServer{
+	return &GRPCServer{
 		mediaService: mediaService,
 		config:       cfg,
 		userClient:   userClient,
@@ -59,27 +59,27 @@ func NewGRPCServer(mediaService service.MediaService, cfg *config.Config) *grpcS
 }
 
 // UploadFile 实现上传文件接口
-func (s *grpcServer) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
+func (s *GRPCServer) UploadFile(ctx context.Context, req *proto.UploadFileRequest) (*proto.UploadFileResponse, error) {
 	return s.mediaService.UploadFile(ctx, req)
 }
 
 // GetFile 实现获取文件信息接口
-func (s *grpcServer) GetFile(ctx context.Context, req *proto.GetFileRequest) (*proto.GetFileResponse, error) {
+func (s *GRPCServer) GetFile(ctx context.Context, req *proto.GetFileRequest) (*proto.GetFileResponse, error) {
 	return s.mediaService.GetFile(ctx, req)
 }
 
 // DeleteFile 实现删除文件接口
-func (s *grpcServer) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.DeleteFileResponse, error) {
+func (s *GRPCServer) DeleteFile(ctx context.Context, req *proto.DeleteFileRequest) (*proto.DeleteFileResponse, error) {
 	return s.mediaService.DeleteFile(ctx, req)
 }
 
 // ListFiles 实现获取文件列表接口
-func (s *grpcServer) ListFiles(ctx context.Context, req *proto.ListFilesRequest) (*proto.ListFilesResponse, error) {
+func (s *GRPCServer) ListFiles(ctx context.Context, req *proto.ListFilesRequest) (*proto.ListFilesResponse, error) {
 	return s.mediaService.ListFiles(ctx, req)
 }
 
 // Run 启动gRPC服务
-func (s *grpcServer) Run(port string) error {
+func (s *GRPCServer) Run(port string) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -96,3 +96,4 @@ func (s *grpcServer) Run(port string) error {
 
 	return grpcServer.Serve(lis)
 }
+

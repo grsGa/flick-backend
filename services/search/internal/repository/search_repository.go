@@ -11,19 +11,19 @@ import (
 )
 
 // searchRepository 搜索仓储实现
-type searchRepository struct {
+type SearchRepository struct {
 	db *gorm.DB
 }
 
 // NewSearchRepository 创建搜索仓储实例
-func NewSearchRepository() SearchRepository {
-	return &searchRepository{
+func NewSearchRepository() *SearchRepository {
+	return &SearchRepository{
 		db: database.GetDB(),
 	}
 }
 
 // SearchContent 搜索内容
-func (r *searchRepository) SearchContent(ctx context.Context, query string, page, pageSize int32, sortBy string) ([]*proto.SearchResultItem, int32, error) {
+func (r *SearchRepository) SearchContent(ctx context.Context, query string, page, pageSize int32, sortBy string) ([]*proto.SearchResultItem, int32, error) {
 	var posts []models.Post
 	var total int64
 
@@ -43,7 +43,7 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 		// 简化处理，实际应该根据点赞数等排序
 		dbQuery = dbQuery.Order("created_at DESC")
 	default:
-		// 默认按相关性排序，这里简化处理
+		// 默认按相关性排序，这里简化处�?
 		dbQuery = dbQuery.Order("created_at DESC")
 	}
 
@@ -55,7 +55,7 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 
 	items := make([]*proto.SearchResultItem, len(posts))
 	for i, post := range posts {
-		// 获取作者信息
+		// 获取作者信�?
 		var user models.User
 		r.db.Where("id = ?", post.UserID).First(&user)
 
@@ -63,11 +63,11 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 		var mediaAttachments []models.MediaAttachment
 		r.db.Where("post_id = ?", post.ID).Find(&mediaAttachments)
 
-		// 获取点赞数
+		// 获取点赞�?
 		var likeCount int64
 		r.db.Model(&models.Like{}).Where("post_id = ?", post.ID).Count(&likeCount)
 
-		// 获取回复数
+		// 获取回复�?
 		var replyCount int64
 		r.db.Model(&models.Post{}).Where("parent_id = ?", post.ID).Count(&replyCount)
 
@@ -80,7 +80,7 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 			LikeCount:    int32(likeCount),
 			ReplyCount:   int32(replyCount),
 			CreatedAt:    post.CreatedAt.Format(time.RFC3339),
-			Hashtags:     []string{}, // 简化处理，实际应从内容中提取标签
+			Hashtags:     []string{}, // 简化处理，实际应从内容中提取标�?
 		}
 	}
 
@@ -88,7 +88,7 @@ func (r *searchRepository) SearchContent(ctx context.Context, query string, page
 }
 
 // SearchUsers 搜索用户
-func (r *searchRepository) SearchUsers(ctx context.Context, query string, page, pageSize int32) ([]*proto.SearchResultItem, int32, error) {
+func (r *SearchRepository) SearchUsers(ctx context.Context, query string, page, pageSize int32) ([]*proto.SearchResultItem, int32, error) {
 	var users []models.User
 	var total int64
 
@@ -102,7 +102,7 @@ func (r *searchRepository) SearchUsers(ctx context.Context, query string, page, 
 		return nil, 0, err
 	}
 
-	// 排序和分页
+	// 排序和分�?
 	offset := (page - 1) * pageSize
 	if err := dbQuery.Offset(int(offset)).Limit(int(pageSize)).Find(&users).Error; err != nil {
 		return nil, 0, err
@@ -125,7 +125,7 @@ func (r *searchRepository) SearchUsers(ctx context.Context, query string, page, 
 }
 
 // SearchHashtags 搜索标签
-func (r *searchRepository) SearchHashtags(ctx context.Context, query string, page, pageSize int32) ([]*proto.SearchResultItem, int32, error) {
+func (r *SearchRepository) SearchHashtags(ctx context.Context, query string, page, pageSize int32) ([]*proto.SearchResultItem, int32, error) {
 	// 简化处理，实际应从帖子内容中提取和搜索标签
 	items := make([]*proto.SearchResultItem, 0)
 	total := int32(0)
@@ -133,10 +133,11 @@ func (r *searchRepository) SearchHashtags(ctx context.Context, query string, pag
 	return items, total, nil
 }
 
-// toString 将*string转换为string
+// toString �?string转换为string
 func toString(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
 }
+

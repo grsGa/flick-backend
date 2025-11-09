@@ -13,22 +13,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type postgresRepository struct {
+type InteractionRepository struct {
 	db *gorm.DB
 }
 
 // NewInteractionRepository 创建互动仓储实例
-func NewInteractionRepository() InteractionRepository {
-	return &postgresRepository{db: database.GetDB()}
+func NewInteractionRepository() *InteractionRepository {
+	return &InteractionRepository{db: database.GetDB()}
 }
 
 // NewPostgresRepository 创建PostgreSQL仓储实现（保持向后兼容）
-func NewPostgresRepository() InteractionRepository {
-	return &postgresRepository{db: database.GetDB()}
+func NewPostgresRepository() *InteractionRepository {
+	return &InteractionRepository{db: database.GetDB()}
 }
 
 // CreateFollow 创建关注
-func (r *postgresRepository) CreateFollow(ctx context.Context, follow *proto.Follow) error {
+func (r *InteractionRepository) CreateFollow(ctx context.Context, follow *proto.Follow) error {
 	model := &models.Follow{
 		FollowerID: follow.FollowerId,
 		FolloweeID: follow.FolloweeId,
@@ -38,14 +38,14 @@ func (r *postgresRepository) CreateFollow(ctx context.Context, follow *proto.Fol
 }
 
 // DeleteFollow 删除关注
-func (r *postgresRepository) DeleteFollow(ctx context.Context, followerID, followeeID string) error {
+func (r *InteractionRepository) DeleteFollow(ctx context.Context, followerID, followeeID string) error {
 	return r.db.WithContext(ctx).
 		Where("follower_id = ? AND followee_id = ?", followerID, followeeID).
 		Delete(&models.Follow{}).Error
 }
 
-// IsFollowing 检查是否关注
-func (r *postgresRepository) IsFollowing(ctx context.Context, followerID, followeeID string) (bool, error) {
+// IsFollowing 检查是否关�?
+func (r *InteractionRepository) IsFollowing(ctx context.Context, followerID, followeeID string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&models.Follow{}).
@@ -55,7 +55,7 @@ func (r *postgresRepository) IsFollowing(ctx context.Context, followerID, follow
 }
 
 // GetFollow 获取关注记录
-func (r *postgresRepository) GetFollow(ctx context.Context, followerID, followeeID string) (*proto.Follow, error) {
+func (r *InteractionRepository) GetFollow(ctx context.Context, followerID, followeeID string) (*proto.Follow, error) {
 	var follow models.Follow
 	err := r.db.WithContext(ctx).
 		Where("follower_id = ? AND followee_id = ?", followerID, followeeID).
@@ -73,7 +73,7 @@ func (r *postgresRepository) GetFollow(ctx context.Context, followerID, followee
 }
 
 // GetFollowers 获取粉丝列表
-func (r *postgresRepository) GetFollowers(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Follow, int32, error) {
+func (r *InteractionRepository) GetFollowers(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Follow, int32, error) {
 	var follows []models.Follow
 	var total int64
 
@@ -112,7 +112,7 @@ func (r *postgresRepository) GetFollowers(ctx context.Context, userID string, pa
 }
 
 // GetFollowing 获取关注列表
-func (r *postgresRepository) GetFollowing(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Follow, int32, error) {
+func (r *InteractionRepository) GetFollowing(ctx context.Context, userID string, page, pageSize int32) ([]*proto.Follow, int32, error) {
 	var follows []models.Follow
 	var total int64
 
@@ -151,7 +151,7 @@ func (r *postgresRepository) GetFollowing(ctx context.Context, userID string, pa
 }
 
 // CreateLike 创建点赞
-func (r *postgresRepository) CreateLike(ctx context.Context, like *proto.Like) error {
+func (r *InteractionRepository) CreateLike(ctx context.Context, like *proto.Like) error {
 	model := &models.Like{
 		UserID:    like.UserId,
 		PostID:    like.PostId,
@@ -161,14 +161,14 @@ func (r *postgresRepository) CreateLike(ctx context.Context, like *proto.Like) e
 }
 
 // DeleteLike 删除点赞
-func (r *postgresRepository) DeleteLike(ctx context.Context, userID, postID string) error {
+func (r *InteractionRepository) DeleteLike(ctx context.Context, userID, postID string) error {
 	return r.db.WithContext(ctx).
 		Where("user_id = ? AND post_id = ?", userID, postID).
 		Delete(&models.Like{}).Error
 }
 
-// IsLiked 检查是否点赞
-func (r *postgresRepository) IsLiked(ctx context.Context, userID, postID string) (bool, error) {
+// IsLiked 检查是否点�?
+func (r *InteractionRepository) IsLiked(ctx context.Context, userID, postID string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&models.Like{}).
@@ -178,7 +178,7 @@ func (r *postgresRepository) IsLiked(ctx context.Context, userID, postID string)
 }
 
 // GetLikes 获取点赞列表
-func (r *postgresRepository) GetLikes(ctx context.Context, postID string, page, pageSize int32) ([]*proto.Like, int32, error) {
+func (r *InteractionRepository) GetLikes(ctx context.Context, postID string, page, pageSize int32) ([]*proto.Like, int32, error) {
 	var likes []models.Like
 	var total int64
 
@@ -217,7 +217,7 @@ func (r *postgresRepository) GetLikes(ctx context.Context, postID string, page, 
 }
 
 // CreateRepost 创建转发
-func (r *postgresRepository) CreateRepost(ctx context.Context, repost *proto.Repost) error {
+func (r *InteractionRepository) CreateRepost(ctx context.Context, repost *proto.Repost) error {
 	model := &models.Repost{
 		UserID:    repost.UserId,
 		PostID:    repost.PostId,
@@ -230,33 +230,33 @@ func (r *postgresRepository) CreateRepost(ctx context.Context, repost *proto.Rep
 }
 
 // DeleteRepost 删除转发
-func (r *postgresRepository) DeleteRepost(ctx context.Context, userID, postID string) error {
+func (r *InteractionRepository) DeleteRepost(ctx context.Context, userID, postID string) error {
 	return r.db.WithContext(ctx).
 		Where("user_id = ? AND post_id = ?", userID, postID).
 		Delete(&models.Repost{}).Error
 }
 
 // CreateReply 创建回复 - 回复现在作为Post处理，由content服务管理
-func (r *postgresRepository) CreateReply(ctx context.Context, reply *proto.Reply) error {
-	// 回复功能已迁移到content服务，这里只需要返回成功
+func (r *InteractionRepository) CreateReply(ctx context.Context, reply *proto.Reply) error {
+	// 回复功能已迁移到content服务，这里只需要返回成�?
 	// 实际的回复创建通过content服务的CreatePost完成
 	return nil
 }
 
 // DeleteReply 删除回复 - 回复现在作为Post处理，由content服务管理
-func (r *postgresRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
+func (r *InteractionRepository) DeleteReply(ctx context.Context, replyID, userID string) error {
 	// 回复删除功能已迁移到content服务
 	return nil
 }
 
 // GetReplies 获取回复列表 - 回复现在作为Post处理，由content服务管理
-func (r *postgresRepository) GetReplies(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Reply, string, bool, error) {
+func (r *InteractionRepository) GetReplies(ctx context.Context, postID string, limit int32, cursor string) ([]*proto.Reply, string, bool, error) {
 	// 回复功能已迁移到content服务，返回空列表
 	return []*proto.Reply{}, "", false, nil
 }
 
 // GetPostStats 获取帖子统计
-func (r *postgresRepository) GetPostStats(ctx context.Context, postID string) (*proto.PostStats, error) {
+func (r *InteractionRepository) GetPostStats(ctx context.Context, postID string) (*proto.PostStats, error) {
 	var stats models.PostStats
 	err := r.db.WithContext(ctx).Where("post_id = ?", postID).First(&stats).Error
 	if err != nil {
@@ -287,10 +287,10 @@ func (r *postgresRepository) GetPostStats(ctx context.Context, postID string) (*
 }
 
 // UpdatePostStats 更新帖子统计
-func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action string, delta int32) (*proto.PostStats, error) {
+func (r *InteractionRepository) UpdatePostStats(ctx context.Context, postID, action string, delta int32) (*proto.PostStats, error) {
 	var stats models.PostStats
 
-	// 使用事务确保原子性
+	// 使用事务确保原子�?
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 先查询或创建统计记录
 		err := tx.Where("post_id = ?", postID).First(&stats).Error
@@ -310,7 +310,7 @@ func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action
 			return err
 		}
 
-		// 根据动作更新对应的计数
+		// 根据动作更新对应的计�?
 		updates := map[string]interface{}{
 			"updated_at": time.Now(),
 		}
@@ -350,7 +350,7 @@ func (r *postgresRepository) UpdatePostStats(ctx context.Context, postID, action
 }
 
 // VotePoll 投票
-func (r *postgresRepository) VotePoll(ctx context.Context, vote *proto.PollVote) error {
+func (r *InteractionRepository) VotePoll(ctx context.Context, vote *proto.PollVote) error {
 	model := &models.PollVote{
 		PollID:       vote.PollId,
 		PollOptionID: vote.PollOptionId,
@@ -361,7 +361,7 @@ func (r *postgresRepository) VotePoll(ctx context.Context, vote *proto.PollVote)
 }
 
 // CreateBookmark 创建收藏
-func (r *postgresRepository) CreateBookmark(ctx context.Context, bookmark *proto.Bookmark) error {
+func (r *InteractionRepository) CreateBookmark(ctx context.Context, bookmark *proto.Bookmark) error {
 	model := &models.Bookmark{
 		UserID:    bookmark.UserId,
 		PostID:    bookmark.PostId,
@@ -371,14 +371,14 @@ func (r *postgresRepository) CreateBookmark(ctx context.Context, bookmark *proto
 }
 
 // DeleteBookmark 删除收藏
-func (r *postgresRepository) DeleteBookmark(ctx context.Context, userID, postID string) error {
+func (r *InteractionRepository) DeleteBookmark(ctx context.Context, userID, postID string) error {
 	return r.db.WithContext(ctx).
 		Where("user_id = ? AND post_id = ?", userID, postID).
 		Delete(&models.Bookmark{}).Error
 }
 
-// IsBookmarked 检查是否收藏
-func (r *postgresRepository) IsBookmarked(ctx context.Context, userID, postID string) (bool, error) {
+// IsBookmarked 检查是否收�?
+func (r *InteractionRepository) IsBookmarked(ctx context.Context, userID, postID string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&models.Bookmark{}).
@@ -388,13 +388,13 @@ func (r *postgresRepository) IsBookmarked(ctx context.Context, userID, postID st
 }
 
 // GetBookmarks 获取收藏列表
-func (r *postgresRepository) GetBookmarks(ctx context.Context, userID string, limit int32, cursor string) ([]*proto.Bookmark, string, bool, error) {
+func (r *InteractionRepository) GetBookmarks(ctx context.Context, userID string, limit int32, cursor string) ([]*proto.Bookmark, string, bool, error) {
 	var bookmarks []models.Bookmark
 	query := r.db.WithContext(ctx).Where("user_id = ?", userID)
 
 	// 处理游标分页
 	if cursor != "" {
-		// 解码游标获取时间戳
+		// 解码游标获取时间�?
 		decoded, err := base64.StdEncoding.DecodeString(cursor)
 		if err == nil {
 			if timestamp, err := strconv.ParseInt(string(decoded), 10, 64); err == nil {
@@ -413,7 +413,7 @@ func (r *postgresRepository) GetBookmarks(ctx context.Context, userID string, li
 
 	hasMore := len(bookmarks) > int(limit)
 	if hasMore {
-		bookmarks = bookmarks[:limit] // 移除多查的那一条
+		bookmarks = bookmarks[:limit] // 移除多查的那一�?
 	}
 
 	// 转换为proto格式
@@ -427,7 +427,7 @@ func (r *postgresRepository) GetBookmarks(ctx context.Context, userID string, li
 		}
 	}
 
-	// 生成下一页游标
+	// 生成下一页游�?
 	var nextCursor string
 	if hasMore && len(bookmarks) > 0 {
 		lastBookmark := bookmarks[len(bookmarks)-1]
@@ -439,7 +439,7 @@ func (r *postgresRepository) GetBookmarks(ctx context.Context, userID string, li
 }
 
 // CreateReport 创建举报
-func (r *postgresRepository) CreateReport(ctx context.Context, report *proto.Report) error {
+func (r *InteractionRepository) CreateReport(ctx context.Context, report *proto.Report) error {
 	model := &models.Report{
 		UserID:     report.UserId,
 		TargetID:   report.TargetId,
@@ -449,3 +449,4 @@ func (r *postgresRepository) CreateReport(ctx context.Context, report *proto.Rep
 	}
 	return r.db.WithContext(ctx).Create(model).Error
 }
+

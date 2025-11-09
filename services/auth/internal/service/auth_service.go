@@ -17,9 +17,9 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-// authService 认证服务实现
-type authService struct {
-	authRepo          repository.AuthRepository
+// AuthService 认证服务实现
+type AuthService struct {
+	authRepo          *repository.AuthRepository
 	cfg               *config.Config
 	logger            *zap.Logger
 	githubOauthConfig *oauth2.Config
@@ -27,7 +27,7 @@ type authService struct {
 }
 
 // NewAuthService 创建认证服务实例
-func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logger *zap.Logger) AuthService {
+func NewAuthService(authRepo *repository.AuthRepository, cfg *config.Config, logger *zap.Logger) *AuthService {
 	// Validate that required OAuth configuration is present.
 	if cfg.GoogleClientID == "" || cfg.GoogleClientSecret == "" || cfg.GoogleRedirectURL == "" {
 		logger.Warn("Google OAuth configuration is incomplete. OAuth login will be disabled. Please check environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URL")
@@ -52,7 +52,7 @@ func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logg
 		Endpoint:     google.Endpoint,
 	}
 
-	return &authService{
+	return &AuthService{
 		authRepo:          authRepo,
 		cfg:               cfg,
 		logger:            logger,
@@ -62,7 +62,7 @@ func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logg
 }
 
 // Login 用户登录
-func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
 	s.logger.Info("Login attempt", zap.String("identifier", req.Identifier))
 	// 获取用户信息
 	user, err := s.authRepo.GetUserByIdentifier(ctx, req.Identifier)
@@ -113,7 +113,7 @@ func (s *authService) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 }
 
 // Register 用户注册
-func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s *AuthService) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	s.logger.Info("Registration attempt", zap.String("email", req.Email), zap.String("username", req.Username))
 	// 检查用户是否已存在
 	_, err := s.authRepo.GetUserByIdentifier(ctx, req.Email)
@@ -175,7 +175,7 @@ func (s *authService) Register(ctx context.Context, req *proto.RegisterRequest) 
 }
 
 // ValidateToken 验证令牌
-func (s *authService) ValidateToken(ctx context.Context, req *proto.ValidateTokenRequest) (*proto.ValidateTokenResponse, error) {
+func (s *AuthService) ValidateToken(ctx context.Context, req *proto.ValidateTokenRequest) (*proto.ValidateTokenResponse, error) {
 	// 解析和验证JWT令牌
 	claims, err := s.parseToken(req.Token)
 	if err != nil {
@@ -206,7 +206,7 @@ func (s *authService) ValidateToken(ctx context.Context, req *proto.ValidateToke
 }
 
 // RefreshToken 刷新令牌
-func (s *authService) RefreshToken(ctx context.Context, req *proto.RefreshTokenRequest) (*proto.RefreshTokenResponse, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, req *proto.RefreshTokenRequest) (*proto.RefreshTokenResponse, error) {
 	// 获取会话信息
 	session, err := s.authRepo.GetSession(ctx, req.RefreshToken)
 	if err != nil {
@@ -247,7 +247,7 @@ func (s *authService) RefreshToken(ctx context.Context, req *proto.RefreshTokenR
 }
 
 // Logout 登出
-func (s *authService) Logout(ctx context.Context, req *proto.LogoutRequest) (*proto.LogoutResponse, error) {
+func (s *AuthService) Logout(ctx context.Context, req *proto.LogoutRequest) (*proto.LogoutResponse, error) {
 	// 删除用户所有会话
 	err := s.authRepo.DeleteUserSessions(ctx, req.UserId)
 	if err != nil {
@@ -266,7 +266,7 @@ func (s *authService) Logout(ctx context.Context, req *proto.LogoutRequest) (*pr
 }
 
 // GithubLogin Github登录
-func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginRequest) (*proto.GithubLoginResponse, error) {
+func (s *AuthService) GithubLogin(ctx context.Context, req *proto.GithubLoginRequest) (*proto.GithubLoginResponse, error) {
 	s.logger.Info("Initiating GitHub login flow")
 	url := s.githubOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GithubLoginResponse{
@@ -275,7 +275,7 @@ func (s *authService) GithubLogin(ctx context.Context, req *proto.GithubLoginReq
 }
 
 // GithubCallback Github回调
-func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallbackRequest) (*proto.GithubCallbackResponse, error) {
+func (s *AuthService) GithubCallback(ctx context.Context, req *proto.GithubCallbackRequest) (*proto.GithubCallbackResponse, error) {
 	s.logger.Info("Received GitHub callback")
 
 	// Use the configurable HTTP client
@@ -391,7 +391,7 @@ func (s *authService) GithubCallback(ctx context.Context, req *proto.GithubCallb
 }
 
 // GoogleLogin Google登录
-func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginRequest) (*proto.GoogleLoginResponse, error) {
+func (s *AuthService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginRequest) (*proto.GoogleLoginResponse, error) {
 	s.logger.Info("Initiating Google login flow")
 	url := s.googleOauthConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return &proto.GoogleLoginResponse{
@@ -400,7 +400,7 @@ func (s *authService) GoogleLogin(ctx context.Context, req *proto.GoogleLoginReq
 }
 
 // GoogleCallback Google回调
-func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallbackRequest) (*proto.GoogleCallbackResponse, error) {
+func (s *AuthService) GoogleCallback(ctx context.Context, req *proto.GoogleCallbackRequest) (*proto.GoogleCallbackResponse, error) {
 	s.logger.Info("Received Google callback")
 
 	// Use the configurable HTTP client
@@ -511,7 +511,7 @@ func (s *authService) GoogleCallback(ctx context.Context, req *proto.GoogleCallb
 }
 
 // generateTokens 生成访问令牌和刷新令牌
-func (s *authService) generateTokens(userID string) (accessToken, refreshToken string, err error) {
+func (s *AuthService) generateTokens(userID string) (accessToken, refreshToken string, err error) {
 	// 生成访问令牌
 	accessClaims := jwt.MapClaims{
 		"user_id": userID,
@@ -542,7 +542,7 @@ func (s *authService) generateTokens(userID string) (accessToken, refreshToken s
 }
 
 // parseToken 解析和验证令牌
-func (s *authService) parseToken(tokenString string) (jwt.MapClaims, error) {
+func (s *AuthService) parseToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWTSecret), nil // 实际项目中应从配置获取
 	})

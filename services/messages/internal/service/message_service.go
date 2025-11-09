@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 )
 
 // messageService 消息服务实现
-type messageService struct {
-	messageRepo repository.MessageRepository
+type MessageService struct {
+	messageRepo *repository.MessageRepository
 }
 
 // NewMessageService 创建消息服务实例
-func NewMessageService(messageRepo repository.MessageRepository) MessageService {
-	return &messageService{
+func NewMessageService(messageRepo *repository.MessageRepository) *MessageService {
+	return &MessageService{
 		messageRepo: messageRepo,
 	}
 }
 
 // CreateConversation 创建会话
-func (s *messageService) CreateConversation(ctx context.Context, req *proto.CreateConversationRequest) (*proto.CreateConversationResponse, error) {
+func (s *MessageService) CreateConversation(ctx context.Context, req *proto.CreateConversationRequest) (*proto.CreateConversationResponse, error) {
 	// 创建会话对象
 	conversation := &proto.Conversation{
 		Id:        uuid.New().String(),
@@ -49,7 +49,7 @@ func (s *messageService) CreateConversation(ctx context.Context, req *proto.Crea
 }
 
 // ListConversations 获取会话列表
-func (s *messageService) ListConversations(ctx context.Context, req *proto.ListConversationsRequest) (*proto.ListConversationsResponse, error) {
+func (s *MessageService) ListConversations(ctx context.Context, req *proto.ListConversationsRequest) (*proto.ListConversationsResponse, error) {
 	conversations, total, err := s.messageRepo.ListConversations(ctx, req.UserId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.ListConversationsResponse{
@@ -67,7 +67,7 @@ func (s *messageService) ListConversations(ctx context.Context, req *proto.ListC
 }
 
 // GetConversation 获取会话详情
-func (s *messageService) GetConversation(ctx context.Context, req *proto.GetConversationRequest) (*proto.GetConversationResponse, error) {
+func (s *MessageService) GetConversation(ctx context.Context, req *proto.GetConversationRequest) (*proto.GetConversationResponse, error) {
 	conversation, err := s.messageRepo.GetConversationByID(ctx, req.ConversationId)
 	if err != nil {
 		return &proto.GetConversationResponse{
@@ -84,7 +84,7 @@ func (s *messageService) GetConversation(ctx context.Context, req *proto.GetConv
 }
 
 // SendMessage 发送消息
-func (s *messageService) SendMessage(ctx context.Context, req *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
+func (s *MessageService) SendMessage(ctx context.Context, req *proto.SendMessageRequest) (*proto.SendMessageResponse, error) {
 	// 创建消息对象
 	message := &proto.Message{
 		Id:             uuid.New().String(),
@@ -116,7 +116,7 @@ func (s *messageService) SendMessage(ctx context.Context, req *proto.SendMessage
 }
 
 // ListMessages 获取消息列表
-func (s *messageService) ListMessages(ctx context.Context, req *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
+func (s *MessageService) ListMessages(ctx context.Context, req *proto.ListMessagesRequest) (*proto.ListMessagesResponse, error) {
 	messages, total, err := s.messageRepo.ListMessages(ctx, req.ConversationId, req.Page, req.PageSize)
 	if err != nil {
 		return &proto.ListMessagesResponse{
@@ -134,7 +134,7 @@ func (s *messageService) ListMessages(ctx context.Context, req *proto.ListMessag
 }
 
 // MarkAsRead 标记消息为已读
-func (s *messageService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
+func (s *MessageService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRequest) (*proto.MarkAsReadResponse, error) {
 	err := s.messageRepo.MarkAsRead(ctx, req.ConversationId, req.UserId)
 	if err != nil {
 		return &proto.MarkAsReadResponse{
@@ -152,7 +152,7 @@ func (s *messageService) MarkAsRead(ctx context.Context, req *proto.MarkAsReadRe
 }
 
 // DeleteConversation 删除会话
-func (s *messageService) DeleteConversation(ctx context.Context, req *proto.DeleteConversationRequest) (*proto.DeleteConversationResponse, error) {
+func (s *MessageService) DeleteConversation(ctx context.Context, req *proto.DeleteConversationRequest) (*proto.DeleteConversationResponse, error) {
 	err := s.messageRepo.DeleteConversation(ctx, req.ConversationId)
 	if err != nil {
 		return &proto.DeleteConversationResponse{
@@ -168,3 +168,4 @@ func (s *messageService) DeleteConversation(ctx context.Context, req *proto.Dele
 		Success: true,
 	}, nil
 }
+

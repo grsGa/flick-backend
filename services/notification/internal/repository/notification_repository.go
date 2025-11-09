@@ -13,19 +13,19 @@ import (
 )
 
 // notificationRepository 通知仓储实现
-type notificationRepository struct {
+type NotificationRepository struct {
 	db *gorm.DB
 }
 
 // NewNotificationRepository 创建通知仓储实例
-func NewNotificationRepository() NotificationRepository {
-	return &notificationRepository{
+func NewNotificationRepository() *NotificationRepository {
+	return &NotificationRepository{
 		db: database.GetDB(),
 	}
 }
 
 // CreateNotification 创建通知
-func (r *notificationRepository) CreateNotification(ctx context.Context, notification *proto.Notification) error {
+func (r *NotificationRepository) CreateNotification(ctx context.Context, notification *proto.Notification) error {
 	createdAt, _ := time.Parse(time.RFC3339, notification.CreatedAt)
 	n := &models.Notification{
 		ID:         notification.Id,
@@ -42,7 +42,7 @@ func (r *notificationRepository) CreateNotification(ctx context.Context, notific
 }
 
 // GetNotificationByID 根据ID获取通知
-func (r *notificationRepository) GetNotificationByID(ctx context.Context, id string) (*proto.Notification, error) {
+func (r *NotificationRepository) GetNotificationByID(ctx context.Context, id string) (*proto.Notification, error) {
 	var notification models.Notification
 	if err := r.db.Where("id = ? AND deleted_at IS NULL", id).First(&notification).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -64,7 +64,7 @@ func (r *notificationRepository) GetNotificationByID(ctx context.Context, id str
 }
 
 // ListNotifications 列出用户通知
-func (r *notificationRepository) ListNotifications(ctx context.Context, userID string, unreadOnly bool, page, pageSize int32) ([]*proto.Notification, int32, error) {
+func (r *NotificationRepository) ListNotifications(ctx context.Context, userID string, unreadOnly bool, page, pageSize int32) ([]*proto.Notification, int32, error) {
 	var notifications []models.Notification
 	var total int64
 
@@ -103,16 +103,16 @@ func (r *notificationRepository) ListNotifications(ctx context.Context, userID s
 	return protoNotifications, int32(total), nil
 }
 
-// MarkAsRead 标记通知为已读
-func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID string) error {
+// MarkAsRead 标记通知为已�?
+func (r *NotificationRepository) MarkAsRead(ctx context.Context, notificationID string) error {
 	return r.db.Model(&models.Notification{}).
 		Where("id = ? AND deleted_at IS NULL", notificationID).
 		Update("is_read", true).
 		Update("updated_at", time.Now()).Error
 }
 
-// MarkAllAsRead 标记所有通知为已读
-func (r *notificationRepository) MarkAllAsRead(ctx context.Context, userID string) (int32, error) {
+// MarkAllAsRead 标记所有通知为已�?
+func (r *NotificationRepository) MarkAllAsRead(ctx context.Context, userID string) (int32, error) {
 	result := r.db.Model(&models.Notification{}).
 		Where("receiver_id = ? AND is_read = false AND deleted_at IS NULL", userID).
 		Update("is_read", true).
@@ -126,13 +126,13 @@ func (r *notificationRepository) MarkAllAsRead(ctx context.Context, userID strin
 }
 
 // DeleteNotification 删除通知
-func (r *notificationRepository) DeleteNotification(ctx context.Context, id string) error {
+func (r *NotificationRepository) DeleteNotification(ctx context.Context, id string) error {
 	// 软删除通知
 	return r.db.Where("id = ?", id).Delete(&models.Notification{}).Error
 }
 
-// GetUnreadCount 获取未读通知数
-func (r *notificationRepository) GetUnreadCount(ctx context.Context, userID string) (int32, error) {
+// GetUnreadCount 获取未读通知�?
+func (r *NotificationRepository) GetUnreadCount(ctx context.Context, userID string) (int32, error) {
 	var count int64
 	err := r.db.Model(&models.Notification{}).
 		Where("receiver_id = ? AND is_read = false AND deleted_at IS NULL", userID).
@@ -140,3 +140,4 @@ func (r *notificationRepository) GetUnreadCount(ctx context.Context, userID stri
 
 	return int32(count), err
 }
+
