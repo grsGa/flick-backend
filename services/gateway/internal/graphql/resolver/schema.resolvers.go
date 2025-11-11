@@ -24,13 +24,13 @@ import (
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
-	identifier := input.Username
-	if identifier == "" {
-		return nil, errors.New("username is required")
+	// Validate identifier (can be username, email, or phone)
+	if input.Identifier == "" {
+		return nil, errors.New("identifier is required")
 	}
 
 	res, err := r.UserServiceClient.Login(ctx, &user_proto.LoginRequest{
-		Identifier: identifier,
+		Identifier: input.Identifier,
 		Password:   input.Password,
 	})
 	if err != nil {
